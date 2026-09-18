@@ -1,0 +1,42 @@
+'use client';
+import {useState} from 'react';
+import {X,Cloud,RefreshCw,Download,LogOut,LockKeyhole,Smartphone,Eye,EyeOff,KeyRound} from 'lucide-react';
+import {CloudConfig,Session,signInPassword,signUpPassword,sendPasswordReset,updatePassword} from '../lib/cloud';
+
+export default function CloudPanel({config,session,status,error,needsMigration,conflict,busy,pending,close,migrate,refresh,signOut,retry,backup,recovery}:{config:CloudConfig|null;session:Session|null;status:string;error:string;needsMigration:boolean;conflict:boolean;busy:boolean;pending:boolean;close:()=>void;migrate:(local:boolean)=>Promise<void>;refresh:()=>Promise<void>;signOut:()=>Promise<void>;retry:()=>void;backup:()=>void;recovery:()=>void}){
+  const [sending,setSending]=useState(false),[message,setMessage]=useState(''),[create,setCreate]=useState(false),[showPassword,setShowPassword]=useState(false),[resetMode,setResetMode]=useState(false),[recoveryMode,setRecoveryMode]=useState(Boolean(session?.recovery));
+  async function authenticate(form:HTMLFormElement){
+    const values=new FormData(form);
+    const email=String(values.get('email')||'').trim();
+    const password=String(values.get('password')||'');
+    setSending(true);setMessage('');
+    try{
+      if(create){
+        const result=await signUpPassword(config!,email,password);
+        if(result.session){location.reload();return}
+        if(result.user?.identities&&Array.isArray(result.user.identities)&&result.user.identities.length===0){setMessage('This email already has a Collector account. Switch to Sign in and use its password.')}else{setMessage('Account created. If this project requires email confirmation, confirm once, then sign in with your password.')}
+        setCreate(false);
+      }else{
+        await signInPassword(config!,email,password);
+        location.reload();
+      }
+    }catch(err){setMessage(err instanceof Error?err.message:'Unable to sign in.')}finally{setSending(false)}
+  }
+
+  async function requestReset(form:HTMLFormElement){
+    const email=String(new FormData(form).get('email')||'').trim();
+    setSending(true);setMessage('');
+    try{await sendPasswordReset(config!,email);setMessage('Password reset email sent. Open it on this device and choose a new password.');}
+    catch(err){setMessage(err instanceof Error?err.message:'Unable to send password reset email.');}
+    finally{setSending(false)}
+  }
+  async function saveNewPassword(form:HTMLFormElement){
+    const values=new FormData(form),password=String(values.get('password')||''),confirm=String(values.get('confirmPassword')||'');
+    if(password!==confirm){setMessage('Passwords do not match.');return}
+    setSending(true);setMessage('');
+    try{await updatePassword(config!,password);setMessage('Password updated. Your Collector account is ready.');setRecoveryMode(false);setCreate(false);setResetMode(false);setTimeout(()=>location.reload(),700)}
+    catch(err){setMessage(err instanceof Error?err.message:'Unable to update password.');}
+    finally{setSending(false)}
+  }
+  return <div className="overlay"><section className="modal cloud-panel" role="dialog" aria-modal="true" aria-label="Account and sync"><div className="modal-header"><h2><Cloud size={19}/> Account & sync</h2><button aria-label="Close account" onClick={close}><X/></button></div><div className="cloud-body"><div className="cloud-status">{status}</div>{error&&<p role="alert" className="market-message">{error}</p>}{!config?.configured?<><h3>Cloud setup is not connected yet</h3><p>Collector needs your Supabase project and hosted address. Your collection remains saved in this browser.</p><a className="secondary" href="/SETUP.html" target="_blank">Open setup guide</a></>:recoveryMode&&session?<form onSubmit={async e=>{e.preventDefault();await saveNewPassword(e.currentTarget)}}><h3>Set a new password</h3><p>Your recovery link is valid. Choose the password you want to use on both your PC and iPhone.</p><label>New password<div className="password-field"><input name="password" type={showPassword?'text':'password'} autoComplete="new-password" minLength={6} required placeholder="At least 6 characters"/><button type="button" className="password-toggle" aria-label={showPassword?'Hide password':'Show password'} onClick={()=>setShowPassword(!showPassword)}>{showPassword?<EyeOff size={16}/>:<Eye size={16}/>}</button></div></label><label>Confirm password<input name="confirmPassword" type={showPassword?'text':'password'} autoComplete="new-password" minLength={6} required placeholder="Repeat password"/></label><button className="primary auth-submit" disabled={sending}><KeyRound size={15}/> {sending?'Saving…':'Save new password'}</button>{message&&<p role="status" className="auth-message">{message}</p>}</form>:!session&&resetMode?<form onSubmit={async e=>{e.preventDefault();await requestReset(e.currentTarget)}}><h3>Reset your password</h3><p>Enter your Collector email. We’ll send one recovery email that returns to this Collector site so you can set a new password.</p><label>Email address<input name="email" type="email" autoComplete="email" required placeholder="you@example.com"/></label><button className="primary auth-submit" disabled={sending}><KeyRound size={15}/> {sending?'Sending…':'Send reset email'}</button><button type="button" className="text-button auth-switch" onClick={()=>{setResetMode(false);setMessage('')}}>Back to sign in</button>{message&&<p role="status" className="auth-message">{message}</p>}</form>:!session?<form onSubmit={async e=>{e.preventDefault();await authenticate(e.currentTarget)}}><h3>{create?'Create your Collector account':'Sign in to Collector'}</h3><p>Use the same email and password on your PC and phone. Collector creates your private cloud workspace automatically and keeps it synced.</p><label>Email address<input name="email" type="email" autoComplete="email" required placeholder="you@example.com"/></label><label>Password<div className="password-field"><input name="password" type={showPassword?'text':'password'} autoComplete={create?'new-password':'current-password'} minLength={6} required placeholder="At least 6 characters"/><button type="button" className="password-toggle" aria-label={showPassword?'Hide password':'Show password'} onClick={()=>setShowPassword(!showPassword)}>{showPassword?<EyeOff size={16}/>:<Eye size={16}/>}</button></div></label><button className="primary auth-submit" disabled={sending}><LockKeyhole size={15}/> {sending?'Working…':create?'Create account':'Sign in'}</button>{!create&&<button type="button" className="text-button auth-switch" onClick={()=>{setResetMode(true);setMessage('')}}>Forgot password?</button>}<button type="button" className="text-button auth-switch" onClick={()=>{setCreate(!create);setMessage('')}}>{create?'Already have an account? Sign in':'New here? Create an account'}</button>{message&&<p role="status" className="auth-message">{message}</p>}</form>:<><p className="account-email">{session.user.email||'Signed in'}</p><p className="sync-explainer"><b>Cloud connected.</b> Edits upload automatically and this device checks for newer cloud changes every 30 seconds.</p>{needsMigration?<div className="migration-box"><h3>Finishing cloud setup</h3><p>Your local collection can be copied into the cloud now.</p><button className="primary" disabled={busy} onClick={()=>migrate(true)}>Copy this device’s collection</button></div>:<><button className="secondary" disabled={busy||status==='Syncing…'} onClick={async()=>{if(pending&&!confirm('Load the latest cloud version? Your current edits will be kept in a local recovery backup.'))return;await refresh()}}><RefreshCw size={14}/> {busy?'Loading…':'Load latest cloud version'}</button>{pending&&!conflict&&<button className="text-button" disabled={busy} onClick={retry}>Retry sync</button>}{conflict&&<p>Download your edits as a backup before loading the cloud version.</p>}</>}<button className="secondary backup-button" onClick={backup}><Download size={14}/> Download collection backup</button><button className="text-button" onClick={recovery}>Download latest conflict recovery</button><button className="text-button" disabled={busy||status==='Syncing…'} onClick={signOut}><LogOut size={14}/> Sign out on this device</button></>}<div className="iphone-tip"><Smartphone size={17}/><div><b>Use on iPhone</b><p>Open the same Collector address in Safari, sign in with the same email and password, then Share → Add to Home Screen.</p></div></div></div></section></div>
+}

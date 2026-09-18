@@ -1,0 +1,3 @@
+import {NextResponse} from 'next/server';
+export const dynamic='force-dynamic';
+export async function GET(){const url=process.env.NEXT_PUBLIC_SUPABASE_URL||'',key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY||process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY||'';let safe=false;try{const parsed=new URL(url);const publicKey=key.startsWith('sb_publishable_')||JSON.parse(Buffer.from(key.split('.')[1]||'','base64url').toString()).role==='anon';safe=parsed.protocol==='https:'&&parsed.hostname.endsWith('.supabase.co')&&parsed.pathname==='/'&&!parsed.username&&!parsed.password&&publicKey}catch{}return NextResponse.json({url:safe?url.replace(/\/$/,''):'',key:safe?key:'',configured:safe},{headers:{'Cache-Control':'no-store'}})}
