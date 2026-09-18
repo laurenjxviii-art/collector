@@ -1,0 +1,51 @@
+name: Expand Collector v7
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Collector-source-v7-mobile-polish.zip'
+      - '.github/workflows/expand-collector.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  expand:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Expand Collector source
+        shell: bash
+        run: |
+          if [ ! -f Collector-source-v7-mobile-polish.zip ]; then
+            echo "Collector ZIP not found; nothing to do."
+            exit 0
+          fi
+
+          rm -rf _collector_unpack
+          mkdir _collector_unpack
+          unzip -q Collector-source-v7-mobile-polish.zip -d _collector_unpack
+
+          rsync -a \
+            --exclude='.git' \
+            --exclude='.vercel' \
+            _collector_unpack/collector_v6/ ./
+
+          rm -rf _collector_unpack
+          rm -f Collector-source-v7-mobile-polish.zip
+
+      - name: Commit expanded app
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && exit 0
+          git commit -m "Deploy Collector v7 mobile polish"
+          git push
