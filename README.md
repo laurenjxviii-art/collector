@@ -27,4 +27,3 @@ This package is linked to the existing Vercel `collector` project. On Windows, d
 
 ## Password recovery
 Collector now supports Forgot password from the Account & sync panel. Recovery links request the current deployed Collector origin and open a Set new password form inside Collector. If a recovery email still opens localhost, add `https://collector-five-ecru.vercel.app/**` to Supabase Authentication > URL Configuration > Redirect URLs (and preferably set the Site URL to `https://collector-five-ecru.vercel.app`).
-Vercel deployment trigger
