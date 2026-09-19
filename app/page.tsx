@@ -12,8 +12,9 @@ import ItemDetail from './ItemDetail';
 import ValueChart from './ValueChart';
 
 const RED='#ff1f2d';
-type MainView='portfolio'|'collections'|'watchlist'|'gains'|'budget';
+type MainView='portfolio'|'collections'|'watchlist'|'budget';
 type Trail={type?:string;line?:string;collection?:string};
+type CollectionMeta=Collection&{targetCount?:number;releaseDate?:string};
 
 function typeEntries(data:Store){
   return Object.entries(data.libraryGroups||{}).filter(([k])=>k.startsWith('type::')).map(([k,g])=>({id:k.slice(6),group:g}));
@@ -35,15 +36,25 @@ function totalValue(items:Item[]){return owned(items).reduce((sum,i)=>sum+i.curr
 function totalCost(items:Item[]){return owned(items).reduce((sum,i)=>sum+i.purchasePrice*i.quantity,0)}
 function uniqueOwned(items:Item[]){return new Set(owned(items).map(i=>i.identity?.collectorNumber||i.identity?.upc||i.id)).size}
 function watched(item:Item){return item.status==='wishlist'||item.customFields?.__watchlist==='true'}
-function collectionImage(c:Collection){return c.coverLogo||c.coverImage||c.logo||''}
-function groupImage(g?:LibraryGroup){return g?.coverLogo||g?.coverImage||''}
-function releaseDate(c:Collection){return c.name.match(/\b(20\d{2})\b/)?.[1]||''}
-function setTarget(collection:Collection,lineName:string){
-  const custom=Number(collection.name.match(/\[(\d+)\s*cards?\]/i)?.[1]||0);
+function collectionImage(c:Collection){return c.coverImage||c.coverLogo||c.logo||''}
+function groupImage(g?:LibraryGroup){return g?.coverImage||g?.coverLogo||''}
+function releaseDate(c:Collection,items:Item[]=[]){
+  const meta=c as CollectionMeta;if(meta.releaseDate?.trim())return meta.releaseDate.trim();
+  const keys=['Released Date','Release Date','Release date','Date Released','Set Release Date','Released'];
+  for(const item of items){for(const key of keys){const v=item.customFields?.[key];if(v?.trim())return v.trim()}}
+  const year=items.map(i=>i.identity?.year).find(Boolean);
+  return c.name.match(/\b(20\d{2})\b/)?.[1]||year||'—';
+}
+function setTarget(collection:Collection,lineName:string,items:Item[]=[]){
+  const meta=collection as CollectionMeta;if(Number(meta.targetCount)>0)return Number(meta.targetCount);
+  const custom=Number(collection.name.match(/\[(\d+)\s*(?:cards?|items?)\]/i)?.[1]||0);
   if(custom>0)return custom;
-  const s=`${collection.name} ${lineName}`.toLowerCase();
-  if(/jujutsu|jjk/.test(s)&&/(vol\.?\s*1|volume\s*1|jjk-1|ue03bt)/.test(s))return 106;
-  if(/jujutsu|jjk/.test(s)&&/(vol\.?\s*2|volume\s*2|jjk-2|uex02bt)/.test(s))return 90;
+  const totalKeys=['Set Total','Total Cards','Cards in Set','Checklist Total','Total in Set','Total Items'];
+  for(const item of items){for(const key of totalKeys){const n=Number((item.customFields?.[key]||'').replace(/[^0-9]/g,''));if(n>0)return n}}
+  const itemHints=items.map(i=>[i.identity?.setCode,i.identity?.series,i.identity?.description,i.identity?.collectorNumber].filter(Boolean).join(' ')).join(' ');
+  const s=`${collection.name} ${lineName} ${itemHints}`.toLowerCase();
+  if(/jujutsu|jjk/.test(s)&&/(vol\.?\s*1|volume\s*1|jjk-1|ue03bt|ue03)/.test(s))return 106;
+  if(/jujutsu|jjk/.test(s)&&/(vol\.?\s*2|volume\s*2|jjk-2|uex02bt|uex02)/.test(s))return 90;
   return 0;
 }
 function pct(have:number,target:number){return target?Math.min(100,(have/target)*100):0}
@@ -111,10 +122,9 @@ export default function Home(){
   return <div className={`cl-app density-${prefs.density} cards-${prefs.cardSize}`} style={{'--accent':prefs.accentColor||RED} as React.CSSProperties}>
     {chrome}
     <main className="cl-main">
-      {view==='portfolio'&&<Portfolio data={data} openItem={setDetail} goWatchlist={()=>go('watchlist')}/>} 
+      {view==='portfolio'&&<Portfolio data={data} openItem={setDetail} goWatchlist={()=>go('watchlist')} increment={increment}/>} 
       {view==='collections'&&<CollectionsView data={data} trail={trail} setTrail={setTrail} query={query} setQuery={setQuery} openItem={setDetail} addItem={()=>setEditingItem(blankItem(currentCollection?.id||''))} editCollection={setEditingCollection} editGroup={setEditingGroup} createGroup={(level,type)=>setEditingGroup(level==='type'?{level:'type',type:crypto.randomUUID()}:{level:'line',type:type!,line:crypto.randomUUID()})} createCollection={(type,line)=>setEditingCollection({id:crypto.randomUUID(),name:'New Collection',icon:'Layers',color:RED,libraryType:type,libraryLine:line})} increment={increment}/>} 
       {view==='watchlist'&&<Watchlist data={data} openItem={setDetail} toggleWatch={toggleWatch}/>} 
-      {view==='gains'&&<Gains data={data} openItem={setDetail}/>} 
       {view==='budget'&&<Budget data={data}/>} 
     </main>
     {cloudOpen&&<CloudPanel {...cloud} close={()=>setCloudOpen(false)} backup={downloadBackup} recovery={()=>{}}/>}
@@ -130,10 +140,9 @@ function TopNav({view,go,cloud,onCloud,onSettings}:{view:MainView;go:(v:MainView
     <div className="cl-nav-inner">
       <button className="cl-wordmark" onClick={()=>go('portfolio')} aria-label="Collector home">COLLECTR<span>COLLECT · TRACK · PROFIT</span></button>
       <nav className="cl-nav" aria-label="Main navigation">
-        <button className={view==='collections'?'active':''} onClick={()=>go('collections')}>Collections</button>
         <button className={view==='portfolio'?'active':''} onClick={()=>go('portfolio')}>Portfolio</button>
+        <button className={view==='collections'?'active':''} onClick={()=>go('collections')}>Collections</button>
         <button className={view==='watchlist'?'active':''} onClick={()=>go('watchlist')}>Watchlist</button>
-        <button className={view==='gains'?'active':''} onClick={()=>go('gains')}>Gains</button>
         <button className={view==='budget'?'active':''} onClick={()=>go('budget')}>Budget</button>
       </nav>
       <div className="cl-header-actions">
@@ -147,7 +156,7 @@ function TopNav({view,go,cloud,onCloud,onSettings}:{view:MainView;go:(v:MainView
   </header>
 }
 
-function Portfolio({data,openItem,goWatchlist}:{data:Store;openItem:(i:Item)=>void;goWatchlist:()=>void}){
+function Portfolio({data,openItem,goWatchlist,increment}:{data:Store;openItem:(i:Item)=>void;goWatchlist:()=>void;increment:(i:Item)=>void}){
   const [tab,setTab]=useState<'overview'|'products'|'performance'>('overview');
   const value=totalValue(data.items),cost=totalCost(data.items),watch=data.items.filter(watched).slice(0,5);
   const top=[...owned(data.items)].sort((a,b)=>b.currentValue*b.quantity-a.currentValue*a.quantity).slice(0,5);
@@ -165,15 +174,15 @@ function Portfolio({data,openItem,goWatchlist}:{data:Store;openItem:(i:Item)=>vo
         <section className="cl-card"><div className="cl-card-title"><h2>Most Valuable</h2><button>View All</button></div><div className="cl-most-list">{top.map(i=><button key={i.id} onClick={()=>openItem(i)}><span><b>{i.name}</b><small>{i.identity?.series||i.category}</small></span><strong>{money(i.currentValue*i.quantity)}</strong></button>)}</div></section>
       </div>
     </div>}
-    {tab==='products'&&<AllProducts data={data} openItem={openItem}/>} 
+    {tab==='products'&&<AllProducts data={data} openItem={openItem} increment={increment}/>} 
     {tab==='performance'&&<Performance data={data}/>} 
   </div>
 }
 
-function AllProducts({data,openItem}:{data:Store;openItem:(i:Item)=>void}){
+function AllProducts({data,openItem,increment}:{data:Store;openItem:(i:Item)=>void;increment:(i:Item)=>void}){
   const [q,setQ]=useState('');
   const items=owned(data.items).filter(i=>`${i.name} ${i.identity?.series||''} ${i.category}`.toLowerCase().includes(q.toLowerCase()));
-  return <section className="cl-product-page"><div className="cl-search-panel"><h2>Find a Product</h2><div><Search size={15}/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search any product..."/></div></div><div className="cl-product-grid">{items.map(i=><ProductCard key={i.id} item={i} open={()=>openItem(i)} add={()=>{}} hideAdd/>)}</div></section>
+  return <section className="cl-product-page"><div className="cl-search-panel"><h2>Find a Product</h2><div className="cl-search-row"><label><Search size={15}/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search any product..."/></label><button>Search</button><button className="cl-clear" onClick={()=>setQ('')}>Clear</button></div></div><div className="cl-product-grid">{items.map(i=><ProductCard key={i.id} item={i} open={()=>openItem(i)} add={()=>increment(i)}/>)}</div></section>
 }
 
 function Performance({data}:{data:Store}){
@@ -209,7 +218,7 @@ function CollectionsView({data,trail,setTrail,query,setQuery,openItem,addItem,ed
   return <div className="cl-content cl-set-browser">
     <div className="cl-browser-top"><button className="cl-back-square" onClick={()=>setTrail({type:trail.type})}><ChevronLeft size={18}/></button><h1>{lineName} Collections</h1><div className="cl-browser-search"><Search size={14}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search collections..."/></div></div>
     <div className="cl-browser-controls"><button className="cl-edit-btn" onClick={()=>editGroup({level:'line',type:trail.type!,line:trail.line})}><Pencil size={13}/> Edit {lineName}</button><button className="cl-edit-btn" onClick={()=>createCollection(trail.type!,trail.line!)}><Plus size={13}/> New Collection</button></div>
-    <div className="cl-line-grid">{collections.filter(c=>c.name.toLowerCase().includes(query.toLowerCase())).map(c=>{const items=data.items.filter(i=>i.collectionId===c.id),target=setTarget(c,lineName),have=uniqueOwned(items),percent=pct(have,target),img=collectionImage(c);return <article className="cl-line-tile" key={c.id}><button className="cl-line-open" onClick={()=>{setQuery('');setTrail({type:trail.type,line:trail.line,collection:c.id})}}><div className="cl-line-art">{img?<img src={img} alt=""/>:<span>{c.name}</span>}<small className="cl-date-badge">{releaseDate(c)||'Collection'}</small>{target>0&&<i className="cl-image-progress"><em style={{width:`${percent}%`}}/></i>}</div><h2>{c.name}</h2><p>{target?`Progress: ${have} / ${target}`:`Items: ${owned(items).reduce((n,i)=>n+i.quantity,0)}`}</p><p>Total value: {money(totalValue(items))}</p></button><button className="cl-mini-edit" onClick={()=>editCollection(c)}><Pencil size={12}/> Edit</button></article>})}</div>
+    <div className="cl-line-grid">{collections.filter(c=>c.name.toLowerCase().includes(query.toLowerCase())).map(c=>{const items=data.items.filter(i=>i.collectionId===c.id),target=setTarget(c,lineName,items),have=uniqueOwned(items),percent=pct(have,target),img=collectionImage(c);return <article className="cl-line-tile" key={c.id}><button className="cl-line-open" onClick={()=>{setQuery('');setTrail({type:trail.type,line:trail.line,collection:c.id})}}><div className="cl-line-art">{img?<img src={img} alt=""/>:<span>{c.name}</span>}<small className="cl-date-badge">{releaseDate(c,items)}</small>{target>0&&<i className="cl-image-progress"><span>{percent.toFixed(0)}%</span><em style={{width:`${percent}%`}}/></i>}</div><h2>{c.name}</h2><p>{target?`Progress: ${have} / ${target}`:`Items: ${owned(items).reduce((n,i)=>n+i.quantity,0)}`}</p><p>Total value: {money(totalValue(items))}</p></button><button className="cl-mini-edit" onClick={()=>editCollection(c)}><Pencil size={12}/> Edit</button></article>})}</div>
     <div className="cl-browser-footnote">{typeName} → {lineName}</div>
   </div>
 }
@@ -220,7 +229,7 @@ function CollectionDetail({data,collection,type,line,query,setQuery,back,openIte
   const items=data.items.filter(i=>i.collectionId===collection.id);
   const shown=items.filter(i=>`${i.name} ${i.identity?.series||''} ${i.identity?.collectorNumber||''} ${i.identity?.upc||''}`.toLowerCase().includes(query.toLowerCase())).sort((a,b)=>sort==='name'?a.name.localeCompare(b.name):sort==='value'?b.currentValue-a.currentValue:b.updatedAt.localeCompare(a.updatedAt));
   const lineName=groupName(data,'line',type,line),typeName=groupName(data,'type',type);
-  const have=uniqueOwned(items),target=setTarget(collection,lineName),percent=pct(have,target),value=totalValue(items),cost=totalCost(items),img=collectionImage(collection);
+  const have=uniqueOwned(items),target=setTarget(collection,lineName,items),percent=pct(have,target),value=totalValue(items),cost=totalCost(items),img=collectionImage(collection),released=releaseDate(collection,items);
 
   return <div className="cl-content cl-collection-page">
     <div className="cl-breadcrumbs"><button onClick={back}>Collections</button><ChevronRight size={12}/><span>{typeName}</span><ChevronRight size={12}/><span>{lineName}</span><ChevronRight size={12}/><b>{collection.name}</b></div>
@@ -232,16 +241,16 @@ function CollectionDetail({data,collection,type,line,query,setQuery,back,openIte
     {tab!=='performance'&&<>
       <section className="cl-search-panel cl-collection-search"><h2>Find a Product in {collection.name}</h2><div className="cl-search-row"><label><Search size={14}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search any product..."/></label><button>Search</button><button className="cl-clear" onClick={()=>setQuery('')}>Clear</button></div></section>
       <div className="cl-edit-strip"><div><button onClick={edit}><Pencil size={13}/> Edit Collection</button><button onClick={addItem}><Plus size={13}/> Add Item</button></div><div><button><SlidersHorizontal size={13}/> Filters</button><select value={sort} onChange={e=>setSort(e.target.value as any)}><option value="best">Sort by: Best Match</option><option value="value">Sort by: Value</option><option value="name">Sort by: Name</option></select></div></div>
-      <section className="cl-collection-summary"><div className="cl-summary-art">{img?<img src={img} alt=""/>:<Package size={36}/>}</div><div className="cl-summary-copy"><h2>{collection.name}</h2><p>{target?`Progress: ${have} / ${target}`:`Items owned: ${owned(items).reduce((n,i)=>n+i.quantity,0)}`}</p><p>Total Value: {money(value)}</p>{target>0&&<><div className="cl-summary-progress"><i style={{width:`${percent}%`}}/></div><small>{percent.toFixed(1)}% complete</small></>}</div></section>
+      <section className="cl-collection-summary"><div className="cl-summary-art">{img?<img src={img} alt=""/>:<Package size={36}/>}</div><div className="cl-summary-copy"><h2>{collection.name}</h2><p>{target?`Progress: ${have} / ${target}`:`Items owned: ${owned(items).reduce((n,i)=>n+i.quantity,0)}`}</p><p>Total Value: {money(value)}</p><p>Released Date: {released}</p>{target>0&&<><div className="cl-summary-progress"><i style={{width:`${percent}%`}}/></div><small>{percent.toFixed(1)}% complete</small></>}</div></section>
       <div className="cl-product-grid">{shown.map(i=><ProductCard key={i.id} item={i} open={()=>openItem(i)} add={()=>increment(i)}/>)}</div>
       {!shown.length&&<div className="cl-empty"><Package size={32}/><h3>No products found</h3><p>Add an item or clear your search.</p></div>}
     </>}
   </div>
 }
 
-function ProductCard({item,open,add,hideAdd=false}:{item:Item;open:()=>void;add:()=>void;hideAdd?:boolean}){
+function ProductCard({item,open,add}:{item:Item;open:()=>void;add:()=>void}){
   const change=recentChange(item);
-  return <article className="cl-product-card"><button className="cl-product-open" onClick={open}><div className="cl-product-image"><img src={item.image||'/art/empty.svg'} alt={item.name}/>{watched(item)&&<Heart className="cl-watch-heart" size={14} fill="currentColor"/>}</div><div className="cl-product-copy"><h3>{item.name}</h3><a>{item.identity?.series||item.category||'Collectible'}</a><strong>{money(item.currentValue)}</strong><small className={change>=0?'gain':'loss'}>{change>=0?'+':''}{money(change)} {change===0?'(0.00%)':''}</small><span>Qty: {item.status==='owned'?item.quantity:0}</span></div></button>{!hideAdd&&<button className="cl-plus" onClick={e=>{e.stopPropagation();add()}} aria-label={`Add one ${item.name}`}><Plus size={18}/></button>}</article>
+  return <article className="cl-product-card"><button className="cl-product-open" onClick={open}><div className="cl-product-image"><img src={item.image||'/art/empty.svg'} alt={item.name}/>{watched(item)&&<Heart className="cl-watch-heart" size={14} fill="currentColor"/>}</div><div className="cl-product-copy"><h3>{item.name}</h3><a>{item.identity?.series||item.category||'Collectible'}</a><strong>{money(item.currentValue)}</strong><small className={change>=0?'gain':'loss'}>{change>=0?'▲ ':'▼ '}{money(Math.abs(change))} {change===0?'(0.00%)':''}</small><span>Qty: {item.status==='owned'?item.quantity:0}</span></div></button><button className="cl-plus" onClick={e=>{e.stopPropagation();add()}} aria-label={`Add one ${item.name}`}><Plus size={19}/></button></article>
 }
 
 function Watchlist({data,openItem,toggleWatch}:{data:Store;openItem:(i:Item)=>void;toggleWatch:(i:Item)=>void}){
@@ -276,8 +285,8 @@ function ItemEditor({item,collections,close,save}:{item:Item;collections:Collect
 }
 
 function CollectionEditor({collection,close,save}:{collection:Collection;close:()=>void;save:(c:Collection)=>void}){
-  const [draft,setDraft]=useState(collection);
-  return <div className="overlay"><form className="modal cl-editor-modal small" onSubmit={e=>{e.preventDefault();save(draft)}}><div className="modal-header"><div><small>COLLECTION</small><h2>Edit Collection</h2></div><button type="button" onClick={close}><X/></button></div><div className="cl-editor-body"><ImageInput value={draft.coverImage||draft.coverLogo||''} onChange={coverImage=>setDraft({...draft,coverImage,coverLogo:undefined})}/><div className="cl-form-grid"><label className="wide">Name<input required value={draft.name} onChange={e=>setDraft({...draft,name:e.target.value})}/></label><label>Highlight<input type="color" value={draft.color||RED} onChange={e=>setDraft({...draft,color:e.target.value})}/></label></div><p className="cl-help">For a measurable collection, add a total with <b>[100 cards]</b> in the collection name. Jujutsu Kaisen Union Arena Vol. 1 and Vol. 2 are detected automatically.</p></div><div className="modal-actions"><button type="button" className="secondary" onClick={close}>Cancel</button><button className="primary">Save</button></div></form></div>
+  const [draft,setDraft]=useState<CollectionMeta>(collection as CollectionMeta);
+  return <div className="overlay"><form className="modal cl-editor-modal small" onSubmit={e=>{e.preventDefault();save(draft)}}><div className="modal-header"><div><small>COLLECTION</small><h2>Edit Collection</h2></div><button type="button" onClick={close}><X/></button></div><div className="cl-editor-body"><ImageInput value={draft.coverImage||draft.coverLogo||''} onChange={coverImage=>setDraft({...draft,coverImage,coverLogo:undefined})}/><div className="cl-form-grid"><label className="wide">Name<input required value={draft.name} onChange={e=>setDraft({...draft,name:e.target.value})}/></label><label>Highlight<input type="color" value={draft.color||RED} onChange={e=>setDraft({...draft,color:e.target.value})}/></label><label>Released date<input type="date" value={draft.releaseDate||''} onChange={e=>setDraft({...draft,releaseDate:e.target.value})}/></label><label>Total possible items<input type="number" min="0" step="1" value={draft.targetCount||''} placeholder="Leave blank if not measurable" onChange={e=>setDraft({...draft,targetCount:Number(e.target.value)||undefined})}/></label></div><p className="cl-help">Use <b>Total possible items</b> for measurable collections. Union Arena Jujutsu Kaisen Vol. 1 and Vol. 2 are detected automatically at 106 and 90 checklist entries.</p></div><div className="modal-actions"><button type="button" className="secondary" onClick={close}>Cancel</button><button className="primary">Save</button></div></form></div>
 }
 
 function GroupEditor({target,data,close,save}:{target:{level:'type'|'line';type:string;line?:string};data:Store;close:()=>void;save:(key:string,g:LibraryGroup)=>void}){

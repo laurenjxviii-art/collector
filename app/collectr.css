@@ -127,3 +127,132 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 }
 .cl-global-search{height:28px;min-width:78px;padding:0 9px;display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:6px;border:1px solid #2d2f34!important;border-radius:7px!important;background:#121317!important;color:#8c8e95!important;font-size:8px!important}.cl-global-search:hover{border-color:#44464c!important;color:#ddd!important}
 @media(max-width:860px){.cl-global-search span{display:none}.cl-global-search{min-width:28px!important;width:28px!important;padding:0!important;justify-content:center!important}}
+
+/* ===== Collector v3 precision pass: screenshot-matched spacing + larger UI ===== */
+:root{--content:1220px}
+html,body{font-size:15px}
+
+/* Header: wordmark, then Portfolio immediately beside it */
+.cl-header{height:62px}
+.cl-nav-inner{width:min(var(--content),calc(100% - 48px));grid-template-columns:auto 1fr auto;gap:28px}
+.cl-wordmark{font-size:21px;letter-spacing:3.5px;min-width:174px}
+.cl-wordmark span{font-size:5px;letter-spacing:2.35px;margin-top:5px}
+.cl-nav{justify-content:flex-start;gap:28px}
+.cl-nav button{font-size:12px;font-weight:650;padding:0 1px}
+.cl-header-actions{gap:13px}.cl-header-actions b{font-size:11px}
+.cl-global-search{height:31px!important;min-width:86px!important;font-size:9px!important}
+.cl-sync{height:32px;font-size:9.5px;padding:0 11px}
+
+/* Shared sizing */
+.cl-content{width:min(var(--content),calc(100% - 48px));padding:22px 0 72px}
+.cl-card{border-radius:9px}
+.cl-pill-tabs{padding:3px;margin:0 0 18px 4px}
+.cl-pill-tabs button{height:28px;padding:0 13px;font-size:11px}
+.cl-breadcrumbs{font-size:10px;margin-bottom:14px}
+.cl-search-panel{padding:13px 15px;border-radius:8px}
+.cl-search-panel h2{font-size:13px;margin-bottom:10px}
+.cl-search-row{gap:11px}.cl-search-row label{height:36px;padding:0 11px;border-radius:7px}
+.cl-search-row input{font-size:10px}.cl-search-row>button{height:32px;min-width:62px;font-size:9px}
+
+/* Portfolio: match Collectr proportions, not oversized */
+.cl-portfolio{padding-top:19px}
+.cl-portfolio-grid{grid-template-columns:minmax(0,850px) 320px;gap:17px}
+.cl-portfolio-left,.cl-portfolio-rail{gap:15px}
+.cl-portfolio-chart .value-chart{padding:18px 18px 13px!important}
+.chart-label{font-size:10px!important}.chart-label b{font-weight:700;color:#bfc0c5}.chart-label span{font-size:10px!important}
+.chart-total{font-size:28px!important;margin-top:8px!important}.chart-total>span{font-size:11px!important}
+.chart-gain{font-size:10px!important;margin-top:6px!important}
+.chart-current{padding:9px 11px!important}.chart-current small{font-size:8.5px!important}.chart-current b{font-size:11px!important}
+.value-chart svg{height:235px!important;max-height:235px!important}
+.chart-ranges button{height:27px!important;min-width:40px!important;font-size:9.5px!important}
+.cl-portfolio-rail .cl-card{padding:14px 16px}
+.cl-card-title{height:38px}.cl-card-title h2{font-size:13px}.cl-card-title button{font-size:9.5px}
+.cl-holdings{gap:12px;margin-top:7px}.cl-holdings>div>div{font-size:10px}.cl-holdings span small{font-size:8.5px}.cl-holdings b{font-size:10px}.cl-holdings i{height:7px}
+.cl-most-list b{font-size:10px;max-width:190px}.cl-most-list small{font-size:8px}.cl-most-list strong{font-size:10px}.cl-most-list button{padding:9px 0}
+.cl-watch-preview{padding:14px 16px 16px}.cl-watch-cards{gap:10px;margin-top:9px}.cl-watch-card{padding:8px;border-radius:7px}.cl-watch-img{height:150px}.cl-watch-img img{padding:3px}.cl-watch-card b{font-size:10px;margin-top:8px}.cl-watch-card small{font-size:8px}.cl-watch-card strong{font-size:12px}.cl-watch-card>span{font-size:8px}
+
+/* Top Collections page: same tile rhythm as Collectr TCG brand chooser */
+.cl-type-page{padding-top:32px}.cl-type-toolbar{margin-bottom:14px}
+.cl-type-grid{grid-template-columns:repeat(6,1fr);gap:13px}
+.cl-type-open{height:112px;border-radius:7px;background:#1b1c20;border-color:#383a3f;overflow:hidden}
+.cl-type-open img{width:100%;height:100%;object-fit:cover;padding:0;background:#090a0c}
+.cl-type-open img[src$='.svg']{object-fit:contain;padding:16px}
+.cl-type-open span{font-size:14px}
+.cl-mini-edit{height:25px;padding:0 7px;font-size:8px;top:7px;right:7px}
+
+/* Lines / collection browser: copy Pokemon Sets density and spacing */
+.cl-set-browser{padding-top:48px}
+.cl-browser-top{grid-template-columns:230px 1fr 230px;margin-bottom:29px}
+.cl-browser-top h1{font-size:27px;letter-spacing:-.65px}
+.cl-back-square{width:38px;height:38px;border-radius:7px}
+.cl-browser-search{height:35px;width:225px;padding:0 10px}.cl-browser-search input{font-size:10px}
+.cl-browser-controls{gap:9px;margin-bottom:31px}.cl-edit-btn{height:33px;padding:0 11px;font-size:10px;border-radius:7px}
+.cl-line-grid{grid-template-columns:repeat(6,1fr);gap:30px 8px}
+.cl-line-art{height:126px;border-radius:7px;background:#55575b}
+.cl-line-art img{width:100%;height:100%;object-fit:cover;padding:0;background:#090a0c}
+.cl-line-art img[src$='.svg']{object-fit:contain;padding:15px}
+.cl-line-art>span{font-size:13px}
+.cl-date-badge{top:5px;right:5px;font-size:7px;padding:3px 6px;background:#3d3f43;color:#bfc0c5}
+.cl-image-progress{height:12px;background:#d8dfe0;display:block;overflow:hidden}
+.cl-image-progress em{position:absolute;inset:0 auto 0 0;background:var(--accent);z-index:1}
+.cl-image-progress span{position:absolute;left:5px;top:50%;transform:translateY(-50%);z-index:2;color:#fff;font-size:7px;font-style:normal;font-weight:800;text-shadow:0 1px 2px #0008}
+.cl-line-open h2{font-size:12px;line-height:1.3;margin:9px 2px 3px}.cl-line-open p{font-size:9.5px;line-height:1.35;margin:2px}
+.cl-line-tile .cl-mini-edit{top:6px;left:6px}
+
+/* Collection detail: 30th Celebration structure */
+.cl-collection-page{padding-top:17px}.cl-collection-tabs{margin-bottom:14px}
+.cl-collection-chart{margin-bottom:15px}.cl-collection-chart .value-chart{padding:14px 16px 10px!important}.cl-collection-chart .value-chart svg{height:215px!important;max-height:215px!important}.cl-collection-chart .chart-total{font-size:24px!important}
+.cl-edit-strip{height:48px}.cl-edit-strip button,.cl-edit-strip select{height:31px;font-size:9px;padding:0 11px}
+.cl-collection-summary{min-height:92px;grid-template-columns:145px 1fr;gap:15px;padding:9px;border-radius:8px;margin-bottom:13px}
+.cl-summary-art{height:72px;border-radius:7px;background:#0b0c0e}
+.cl-summary-art img{width:100%;height:100%;object-fit:cover;padding:0;background:transparent}
+.cl-summary-art img[src$='.svg']{object-fit:contain;padding:10px}
+.cl-summary-copy h2{font-size:13px;margin-bottom:4px}.cl-summary-copy p{font-size:9.5px;line-height:1.35;margin:2px 0}.cl-summary-progress{height:7px;width:min(360px,100%);margin-top:7px}.cl-summary-copy small{font-size:8px;margin-top:3px;display:block}
+
+/* Product cards: Collectr proportions, readable text, transparent imagery, + quantity control */
+.cl-product-grid{grid-template-columns:repeat(6,minmax(0,1fr));gap:11px;margin-top:12px}
+.cl-product-card{border-radius:8px;background:#17181b;border-color:#36383d;min-height:338px}
+.cl-product-open{display:flex;flex-direction:column;height:100%}
+.cl-product-image{height:214px;background:#111216;padding:8px;overflow:hidden}
+.cl-product-image img{width:100%;height:100%;object-fit:contain;padding:0;background:transparent!important}
+.cl-watch-heart{top:9px;left:9px}
+.cl-product-copy{padding:10px 11px 39px;min-height:116px}
+.cl-product-copy h3{font-size:11.5px;line-height:1.26;margin:0 0 5px;min-height:29px;font-weight:700}
+.cl-product-copy a{font-size:8.5px;color:#8d8f96}
+.cl-product-copy strong{font-size:13px;margin-top:10px}.cl-product-copy small{font-size:7.5px;margin-top:3px}.cl-product-copy span{font-size:8px;margin-top:5px}
+.cl-plus{right:10px;bottom:10px;width:30px;height:30px;border-width:1.5px;background:#101114}
+.cl-plus svg{width:18px;height:18px}
+.cl-empty{min-height:210px}
+
+/* Watchlist + budget scale */
+.cl-watch-head,.cl-watch-row{grid-template-columns:minmax(320px,1fr) 145px 145px 95px 90px}.cl-watch-head{height:35px;font-size:8px}.cl-watch-row{min-height:68px;padding:8px 14px}.cl-watch-name img{width:49px;height:49px}.cl-watch-name b{font-size:10px}.cl-watch-name small{font-size:8px}.cl-watch-row>strong,.cl-watch-row>b,.cl-watch-row>span{font-size:10px}.cl-unwatch{font-size:8.5px;height:29px}
+.cl-budget-grid{gap:14px}.cl-budget-grid .cl-card{height:165px;padding:18px}.cl-budget-grid small{font-size:9px}.cl-budget-grid strong{font-size:25px}
+
+/* Individual product page: same 3-column Collectr composition, slightly larger */
+.cl-item-page{min-height:calc(100vh - 62px)}
+.cl-item-hero{height:176px}.cl-item-hero-inner{width:min(var(--content),calc(100% - 48px));padding-top:34px}
+.cl-item-crumbs{font-size:9.5px;margin-bottom:15px}.cl-item-title-row h1{font-size:25px}.cl-item-title-row a{font-size:9.5px}.cl-item-title-row p{font-size:8.5px}.cl-item-price strong{font-size:26px}.cl-item-price span{font-size:9px}
+.cl-item-watch-row{width:min(var(--content),calc(100% - 48px));height:40px}.cl-item-watch-row button{height:29px;font-size:9px}
+.cl-item-grid{width:min(var(--content),calc(100% - 48px));grid-template-columns:300px minmax(0,500px) minmax(0,360px);gap:14px;margin-bottom:72px}
+.cl-item-media{height:430px;border-radius:8px}.cl-item-media img{object-fit:contain;padding:4px;background:transparent}
+.cl-item-center,.cl-item-right{gap:12px}.cl-item-panel{padding:14px;border-radius:8px}.cl-item-panel-head h2{font-size:11.5px}.cl-item-panel-head>strong{font-size:10px}.cl-item-panel-head>button{font-size:8px}
+.cl-history-ranges button{height:25px;min-width:32px;font-size:7.5px}.cl-item-chart{height:285px}.cl-chart-legend{font-size:8px}.cl-detail-description{font-size:9px}.cl-detail-list>div{font-size:8px;padding:7px 0}.cl-item-panel h3{font-size:10px}.cl-owned-line b,.cl-owned-line strong{font-size:9px}.cl-owned-line small{font-size:7px}.cl-stepper button{width:28px;height:28px}.cl-stepper span{font-size:9px;min-width:27px}.cl-owned-summary span{font-size:8px}.cl-market-refresh{height:31px;font-size:8px}.cl-item-right a{height:34px;font-size:8px}.cl-item-actions button{height:31px;font-size:8px}
+
+@media(max-width:1240px){
+  :root{--content:calc(100vw - 36px)}
+  .cl-portfolio-grid{grid-template-columns:minmax(0,1fr) 295px}
+  .cl-type-grid,.cl-line-grid,.cl-product-grid{grid-template-columns:repeat(5,1fr)}
+  .cl-item-grid{grid-template-columns:270px minmax(0,1fr)}.cl-item-right{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr 1fr}.cl-item-actions{display:none}
+}
+@media(max-width:920px){
+  .cl-nav-inner{grid-template-columns:auto 1fr auto;gap:15px}.cl-wordmark{font-size:17px;min-width:auto}.cl-nav{gap:16px}.cl-nav button{font-size:10px}.cl-sync span,.cl-header-actions>b{display:none}
+  .cl-portfolio-grid{grid-template-columns:1fr}.cl-portfolio-rail{display:grid;grid-template-columns:1fr 1fr}.cl-type-grid,.cl-line-grid,.cl-product-grid{grid-template-columns:repeat(4,1fr)}
+  .cl-browser-top{grid-template-columns:90px 1fr 190px}.cl-browser-search{width:185px}.cl-item-grid{grid-template-columns:1fr}.cl-item-media{height:460px}.cl-item-right{grid-column:auto;grid-template-columns:1fr 1fr}.cl-detail-list{grid-template-columns:1fr 1fr}
+}
+@media(max-width:640px){
+  .cl-header{height:52px}.cl-nav-inner{width:calc(100% - 20px);grid-template-columns:auto 1fr auto}.cl-wordmark{font-size:16px}.cl-wordmark span{display:none}.cl-nav{position:fixed;left:0;right:0;bottom:0;height:60px;z-index:80;background:#0b0c0ef6;border-top:1px solid #2d2e33;justify-content:space-around;gap:0;padding-bottom:env(safe-area-inset-bottom)}.cl-nav button{flex:1;font-size:9px}.cl-nav button.active:after{top:0;bottom:auto}.cl-header-actions{gap:3px}.cl-header-actions>button:not(.cl-sync){display:none}.cl-sync{padding:0 7px}.cl-content{width:calc(100% - 20px);padding-bottom:86px}
+  .cl-portfolio-rail{display:flex}.cl-watch-cards{grid-template-columns:repeat(2,1fr)}.cl-watch-img{height:150px}.cl-type-grid{grid-template-columns:repeat(2,1fr);gap:10px}.cl-type-open{height:112px}.cl-mini-edit{opacity:1}.cl-set-browser{padding-top:22px}.cl-browser-top{grid-template-columns:44px 1fr}.cl-browser-top h1{font-size:20px}.cl-browser-search{grid-column:1/-1;width:100%;margin-top:13px}.cl-browser-controls{margin-bottom:19px;flex-wrap:wrap}.cl-line-grid{grid-template-columns:repeat(2,1fr);gap:25px 8px}.cl-line-art{height:116px}
+  .cl-product-grid{grid-template-columns:repeat(2,1fr);gap:8px}.cl-product-card{min-height:310px}.cl-product-image{height:190px}.cl-product-copy h3{font-size:10px}.cl-search-row{flex-wrap:wrap}.cl-search-row label{flex-basis:100%}.cl-edit-strip{height:auto;padding:9px 0;align-items:flex-start;flex-direction:column}.cl-edit-strip>div{width:100%;flex-wrap:wrap}.cl-collection-summary{grid-template-columns:105px 1fr}.cl-summary-art{height:78px}.cl-collection-chart .value-chart svg{height:190px!important}.cl-portfolio-chart .value-chart svg{height:205px!important}
+  .cl-watch-head{display:none}.cl-watch-row{grid-template-columns:minmax(0,1fr) auto;gap:7px}.cl-watch-row>strong,.cl-watch-row>b,.cl-watch-row>span,.cl-watch-row>.cl-unwatch{grid-column:2}.cl-budget-grid{grid-template-columns:1fr}
+  .cl-item-hero{height:auto;min-height:150px}.cl-item-hero-inner{width:calc(100% - 20px);padding:21px 0 16px}.cl-item-title-row{flex-direction:column}.cl-item-price{text-align:left}.cl-item-watch-row{width:calc(100% - 20px)}.cl-item-grid{width:calc(100% - 20px);padding-bottom:75px}.cl-item-media{height:370px}.cl-item-right{display:flex}.cl-detail-list{grid-template-columns:1fr}.value-chart svg{height:205px!important}.chart-total>span{display:block;margin:5px 0 0!important}.chart-current{display:none}
+}
