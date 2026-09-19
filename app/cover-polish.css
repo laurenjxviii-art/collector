@@ -1,0 +1,134 @@
+/*
+  Collection-cover geometry fix.
+  Reference tile measured from the supplied Collectr screenshot:
+  514 px × 325 px = 1.581538:1.
+*/
+:root{
+  --collectr-cover-ratio:514 / 325;
+  --collectr-cover-bg:#101010;
+}
+
+/* Every collection/type/line cover uses the same wide Collectr rectangle. */
+.cl-type-open,
+.cl-line-art{
+  width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  aspect-ratio:var(--collectr-cover-ratio)!important;
+  padding:0!important;
+  overflow:hidden!important;
+  background:var(--collectr-cover-bg)!important;
+  border-radius:10px!important;
+}
+
+/*
+  Fill the cover with the image the user chose.
+  `lighten` makes black image backgrounds merge into Collectr's #101010 tile
+  instead of showing a smaller black rectangle inside the cover.
+*/
+.cl-type-open img,
+.cl-line-art img{
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:none!important;
+  max-height:none!important;
+  object-fit:cover!important;
+  object-position:center!important;
+  padding:0!important;
+  margin:0!important;
+  background:transparent!important;
+  mix-blend-mode:lighten!important;
+  transform:none!important;
+}
+
+/* The collection header thumbnail uses the same landscape cover ratio. */
+.cl-collection-summary{
+  grid-template-columns:145px minmax(0,1fr)!important;
+  align-items:center!important;
+}
+.cl-summary-art{
+  width:145px!important;
+  height:auto!important;
+  aspect-ratio:var(--collectr-cover-ratio)!important;
+  min-height:0!important;
+  overflow:hidden!important;
+  border-radius:8px!important;
+  background:var(--collectr-cover-bg)!important;
+}
+.cl-summary-art img{
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:none!important;
+  max-height:none!important;
+  object-fit:cover!important;
+  object-position:center!important;
+  padding:0!important;
+  margin:0!important;
+  background:transparent!important;
+  mix-blend-mode:lighten!important;
+  transform:none!important;
+}
+
+/* Keep collection text below the wide tiles close to the Collectr reference. */
+.cl-line-open h2{
+  margin-top:9px!important;
+}
+.cl-type-tile,
+.cl-line-tile{
+  align-self:start!important;
+}
+
+/* Mobile geometry measured from the user's Collectr reference. */
+@media(max-width:640px){
+  .cl-type-grid,
+  .cl-line-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    column-gap:14px!important;
+  }
+
+  .cl-type-open,
+  .cl-line-art{
+    height:auto!important;
+    aspect-ratio:514 / 325!important;
+    border-radius:10px!important;
+    background:#101010!important;
+  }
+
+  .cl-type-open img,
+  .cl-line-art img{
+    object-fit:cover!important;
+    padding:0!important;
+    mix-blend-mode:lighten!important;
+  }
+
+  /* Collectr-style collection-row thumbnail: wide, not square. */
+  .cl-collection-summary{
+    grid-template-columns:96px minmax(0,1fr)!important;
+    gap:11px!important;
+    min-height:0!important;
+    padding:8px!important;
+  }
+  .cl-summary-art{
+    width:96px!important;
+    height:auto!important;
+    aspect-ratio:514 / 325!important;
+    border-radius:7px!important;
+    background:#101010!important;
+  }
+  .cl-summary-art img{
+    object-fit:cover!important;
+    padding:0!important;
+    mix-blend-mode:lighten!important;
+  }
+}
+
+/* Prevent the old 390px rules from turning covers back into taller cards. */
+@media(max-width:390px){
+  .cl-type-open,
+  .cl-line-art{
+    height:auto!important;
+    aspect-ratio:514 / 325!important;
+  }
+}
