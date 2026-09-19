@@ -143,3 +143,29 @@ html,body,input,textarea,select{color-scheme:dark}
 @media(max-width:760px){
   input,textarea,select{font-size:16px!important}
 }
+
+
+/* Desktop parity with the installed phone app. Keep the mobile look untouched,
+   but use the same near-black item surfaces on wider screens so product images
+   with black backgrounds disappear cleanly into their cards. */
+@media(min-width:761px){
+  .value-chart{background:#000!important;border-color:#252525!important}
+  .card{background:#080808!important;border-color:#252525!important}
+  .card-body{background:#080808!important}
+  .card-art,.card-art.art-figures,.card-art.art-records,.card-art.art-objects,.card-art.art-comics{background:#000!important}
+  .card-art img{background:transparent!important}
+  .status{background:#111c!important;border-color:#292929!important}
+  .most-valuable,.item-panel,.item-title-row{background:#000!important;border-color:#292929!important}
+  .item-photo{background:radial-gradient(ellipse at center,#250909 0%,#000 70%)!important;border-color:#292929!important}
+  .item-photo img,.detail-art img{background:transparent!important}
+  .search,.select-wrap{background:#000!important;border-color:#303030!important;color:#8d8d8d!important}
+  .filters input,.filters select{background:#000!important;border-color:#303030!important}
+  .tabs{background:#141414!important;border-color:#292929!important}
+  .tabs button.active{background:#303030!important;color:#eee!important}
+  .section-title h2 span{background:#111!important;border-color:#292929!important;color:#999!important}
+  .modal,.form-scroll,.modal-actions{background:#080808!important;color:#dedede!important}
+  .modal{border-color:#292929!important}
+  .modal-actions{border-top-color:#292929!important}
+  .photo-preview,.logo-preview{background:#111!important;border-color:#292929!important}
+  .quote{background:#080808!important;border-color:#292929!important}
+}
