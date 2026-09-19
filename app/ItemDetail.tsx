@@ -1,7 +1,7 @@
 'use client';
 
-import {useMemo,useState} from 'react';
-import {ArrowLeft,Check,ExternalLink,Heart,Minus,Pencil,Plus,RefreshCw,Trash2} from 'lucide-react';
+import {useState} from 'react';
+import {Check,ExternalLink,Heart,Minus,Pencil,Plus,RefreshCw,Trash2} from 'lucide-react';
 import {Collection,Item,money} from '../lib/model';
 import {PricePoint,marketQuery,variantKey,variantLabel} from '../lib/market';
 
@@ -10,21 +10,22 @@ type Quote={name:string;series:string;value:number;tier:string;source:string;url
 function watched(item:Item){return item.status==='wishlist'||item.customFields?.__watchlist==='true'}
 
 export default function ItemDetail({item,collection,close,edit,remove,save}:{item:Item;collection?:Collection;close:()=>void;edit:()=>void;remove:()=>void;save:(item:Item)=>void}){
-  const [busy,setBusy]=useState(false),[quote,setQuote]=useState<Quote|null>(null),[message,setMessage]=useState('');
-  const [range,setRange]=useState('1Y');
-  const isWatch=watched(item);
+  const [busy,setBusy]=useState(false),[quote,setQuote]=useState<Quote|null>(null),[message,setMessage]=useState(''),[range,setRange]=useState('1Y');
+  const isWatch=watched(item),key=variantKey(item),query=item.marketLink?.query||marketQuery(item);
   const gain=item.currentValue-item.purchasePrice;
-  const key=variantKey(item);
   const points=(item.priceHistory||[]).filter(p=>p.variant===key&&p.kind!=='sale').toSorted((a,b)=>a.date.localeCompare(b.date));
   const visible=filterRange(points,range);
-  const query=item.marketLink?.query||marketQuery(item);
   const ebay='https://www.ebay.com/sch/i.html?'+new URLSearchParams({_nkw:query,LH_Sold:'1',LH_Complete:'1'});
+  const priceCharting='https://www.pricecharting.com/search-products?'+new URLSearchParams({q:[item.name,item.identity?.series,item.identity?.edition].filter(Boolean).join(' '),type:'prices'});
 
-  function updateQuantity(delta:number){save({...item,status:'owned',quantity:Math.max(1,item.quantity+delta),updatedAt:new Date().toISOString()})}
+  function updateQuantity(delta:number){
+    const current=item.status==='owned'?item.quantity:0,next=Math.max(0,current+delta);
+    save({...item,status:next>0?'owned':item.status,quantity:Math.max(1,next),updatedAt:new Date().toISOString()});
+  }
   function toggleWatch(){
-    const customFields={...(item.customFields||{})};
-    if(isWatch&&item.status!=='wishlist')delete customFields.__watchlist; else customFields.__watchlist='true';
-    save({...item,customFields,status:item.status==='wishlist'?'owned':item.status,updatedAt:new Date().toISOString()});
+    const cf={...(item.customFields||{})};
+    if(isWatch)delete cf.__watchlist;else cf.__watchlist='true';
+    save({...item,customFields:cf,status:isWatch&&item.status==='wishlist'?'owned':item.status,updatedAt:new Date().toISOString()});
   }
   async function marketLookup(){
     setBusy(true);setMessage('');setQuote(null);
@@ -33,7 +34,7 @@ export default function ItemDetail({item,collection,close,edit,remove,save}:{ite
       const result=await r.json();
       if(!r.ok){setMessage(result.error||'Market lookup unavailable.');return}
       setQuote(result);
-    }catch{setMessage('Market lookup unavailable. Your saved price was not changed.')}finally{setBusy(false)}
+    }catch{setMessage('Market lookup unavailable. Your saved value was not changed.')}finally{setBusy(false)}
   }
   function applyQuote(){
     if(!quote)return;
@@ -42,7 +43,7 @@ export default function ItemDetail({item,collection,close,edit,remove,save}:{ite
     setMessage('Market value updated.');setQuote(null);
   }
 
-  const detailRows=Object.entries({
+  const rows=Object.entries({
     'Brand':item.identity?.brand,
     'Line / Series':item.identity?.series,
     'Model / Number':item.identity?.modelNumber||item.identity?.collectorNumber,
@@ -55,25 +56,29 @@ export default function ItemDetail({item,collection,close,edit,remove,save}:{ite
     ...item.customFields
   }).filter(([k,v])=>v&&k!=='__watchlist');
 
-  return <main className="ci-page">
-    <div className="ci-breadcrumb"><button onClick={close}><ArrowLeft size={15}/> Back</button><span>/</span><span>{collection?.name||'Collection'}</span><span>/</span><b>{item.name}</b></div>
-    <div className="ci-title-row"><div><h1>{item.name}</h1><p>{item.identity?.series||collection?.name||item.category} {item.identity?.modelNumber||item.identity?.collectorNumber?`• #${item.identity?.modelNumber||item.identity?.collectorNumber}`:''}</p><button className={'ci-watch'+(isWatch?' active':'')} onClick={toggleWatch}><Heart size={15} fill={isWatch?'currentColor':'none'}/>{isWatch?'Watching':'Add to Watchlist'}</button></div><div className="ci-price"><strong>{money(item.currentValue)}</strong><span className={gain>=0?'up':'down'}>{gain>=0?'+':''}{money(gain)} vs paid</span><small>Per item</small></div></div>
+  return <main className="cl-item-page">
+    <section className="cl-item-hero">
+      <div className="cl-item-hero-inner">
+        <div className="cl-item-crumbs"><button onClick={close}>Collections</button><span>›</span><span>{collection?.name||'Collection'}</span><span>›</span><b>{item.name}</b></div>
+        <div className="cl-item-title-row"><div><h1>{item.name}</h1><a>{collection?.name||item.identity?.series||item.category}</a><p>{[item.identity?.brand,item.identity?.series,item.identity?.modelNumber||item.identity?.collectorNumber].filter(Boolean).join('  •  ')}</p></div><div className="cl-item-price"><strong>{money(item.currentValue)}</strong><span className={gain>=0?'gain':'loss'}>{gain>=0?'+':''}{money(gain)} ({item.purchasePrice?`${(gain/item.purchasePrice*100).toFixed(2)}%`:'—'})</span></div></div>
+      </div>
+    </section>
+    <div className="cl-item-watch-row"><div/><button className={isWatch?'active':''} onClick={toggleWatch}><Heart size={14} fill={isWatch?'currentColor':'none'}/>{isWatch?'Watching':'Add to Watchlist'}</button></div>
 
-    <div className="ci-layout">
-      <section className="ci-media"><div className="ci-image-stage"><img src={item.image||'/art/empty.svg'} alt={item.name}/></div></section>
+    <div className="cl-item-grid">
+      <section className="cl-item-media"><img src={item.image||'/art/empty.svg'} alt={item.name}/></section>
 
-      <section className="ci-center">
-        <article className="ci-panel ci-history"><div className="ci-panel-head"><h2>Price History</h2><div className="ci-ranges">{['1M','3M','6M','1Y','MAX'].map(r=><button key={r} className={range===r?'active':''} onClick={()=>setRange(r)}>{r}</button>)}</div></div><PriceChart points={visible} fallback={item.currentValue}/><div className="ci-history-foot"><span><i className="ci-dot"/> {variantLabel(item)}</span><strong>{money(visible.at(-1)?.value??item.currentValue)}</strong></div></article>
-        <article className="ci-panel ci-details"><div className="ci-panel-head"><h2>Details</h2><button className="ci-text" onClick={edit}><Pencil size={13}/> Edit</button></div><div className="ci-detail-grid">{detailRows.map(([k,v])=><div key={k}><span>{k}</span><b>{String(v)}</b></div>)}</div>{item.identity?.description&&<p className="ci-description">{item.identity.description}</p>}{item.notes&&<p className="ci-description">{item.notes}</p>}</article>
-      </section>
+      <div className="cl-item-center">
+        <section className="cl-item-panel cl-history-panel"><div className="cl-item-panel-head"><h2>{item.grading?.graded?'Graded':'Ungraded'} Price History</h2><div className="cl-history-ranges">{['1M','3M','6M','1Y','MAX'].map(r=><button className={r===range?'active':''} onClick={()=>setRange(r)} key={r}>{r}</button>)}</div></div><ItemPriceChart points={visible} fallback={item.currentValue}/><div className="cl-chart-legend"><span><i/>{variantLabel(item)}</span></div></section>
+        <section className="cl-item-panel cl-details-panel"><div className="cl-item-panel-head"><h2>Details</h2><button onClick={edit}><Pencil size={13}/> Edit</button></div>{item.identity?.description&&<p className="cl-detail-description">{item.identity.description}</p>}<div className="cl-detail-list">{rows.map(([k,v])=><div key={k}><span>{k}</span><b>{String(v)}</b></div>)}</div>{item.notes&&<p className="cl-detail-description">{item.notes}</p>}</section>
+      </div>
 
-      <aside className="ci-side">
-        <article className="ci-panel"><div className="ci-panel-head"><h2>My Collection</h2><strong>{money(item.currentValue*item.quantity)}</strong></div><div className="ci-owned-row"><div><b>{variantLabel(item)}</b><small>{item.status==='owned'?'Owned':'Not owned'}</small></div><div className="ci-stepper"><button onClick={()=>updateQuantity(-1)} aria-label="Subtract one"><Minus size={15}/></button><span>{item.status==='owned'?item.quantity:0}</span><button onClick={()=>updateQuantity(1)} aria-label="Add one"><Plus size={15}/></button></div><strong>{money(item.currentValue*item.quantity)}</strong></div><div className="ci-summary-row"><span>Purchase price</span><b>{money(item.purchasePrice)}</b></div><div className="ci-summary-row"><span>Quantity</span><b>{item.quantity}</b></div><div className="ci-summary-row"><span>Total value</span><b>{money(item.currentValue*item.quantity)}</b></div></article>
+      <div className="cl-item-right">
+        <section className="cl-item-panel"><div className="cl-item-panel-head"><h2>My Collection</h2><strong>{money(item.currentValue*(item.status==='owned'?item.quantity:0))}</strong></div><h3>{item.grading?.graded?'Graded':'Ungraded'}</h3><div className="cl-owned-line"><div><b>{variantLabel(item)}</b><small>{item.status==='owned'?'Owned':'Not owned'}</small></div><div className="cl-stepper"><button onClick={()=>updateQuantity(-1)}><Minus size={14}/></button><span>{item.status==='owned'?item.quantity:0}</span><button onClick={()=>updateQuantity(1)}><Plus size={14}/></button></div><div><strong>{money(item.currentValue)}</strong><small className={gain>=0?'gain':'loss'}>{gain>=0?'+':''}{money(gain)}</small></div></div><div className="cl-owned-summary"><span>Purchase price <b>{money(item.purchasePrice)}</b></span><span>Total value <b>{money(item.currentValue*(item.status==='owned'?item.quantity:0))}</b></span></div></section>
 
-        <article className="ci-panel"><div className="ci-panel-head"><h2>Market</h2><span className="ci-live">LIVE</span></div><button className="ci-market-refresh" disabled={busy} onClick={marketLookup}><RefreshCw size={14}/>{busy?'Checking market…':'Refresh market price'}</button>{quote&&<div className="ci-quote"><small>{quote.source}</small><b>{quote.name}</b><strong>{money(quote.value)}</strong><span>{quote.tier}</span><button onClick={applyQuote}><Check size={14}/> Use this value</button></div>}{message&&<p className="ci-message">{message}</p>}<a href={ebay} target="_blank" rel="noreferrer" className="ci-market-link">eBay sold listings <ExternalLink size={13}/></a><a href={'https://www.pricecharting.com/search-products?'+new URLSearchParams({q:[item.name,item.identity?.series,item.identity?.edition].filter(Boolean).join(' '),type:'prices'})} target="_blank" rel="noreferrer" className="ci-market-link">PriceCharting <ExternalLink size={13}/></a></article>
-
-        <article className="ci-panel ci-danger-zone"><button onClick={edit}><Pencil size={14}/> Edit item</button><button onClick={remove}><Trash2 size={14}/> Delete</button></article>
-      </aside>
+        <section className="cl-item-panel"><div className="cl-item-panel-head"><h2>Market</h2><span className="cl-live">LIVE</span></div><button className="cl-market-refresh" disabled={busy} onClick={marketLookup}><RefreshCw size={14}/>{busy?'Checking market…':'Refresh market price'}</button>{quote&&<div className="cl-market-quote"><small>{quote.source}</small><b>{quote.name}</b><strong>{money(quote.value)}</strong><span>{quote.tier}</span><button onClick={applyQuote}><Check size={13}/> Use this value</button></div>}{message&&<p className="cl-market-message">{message}</p>}<a href={ebay} target="_blank" rel="noreferrer">eBay sold listings <ExternalLink size={12}/></a><a href={priceCharting} target="_blank" rel="noreferrer">PriceCharting <ExternalLink size={12}/></a></section>
+        <section className="cl-item-panel cl-item-actions"><button onClick={edit}><Pencil size={13}/> Edit Product</button><button onClick={remove}><Trash2 size={13}/> Delete</button></section>
+      </div>
     </div>
   </main>
 }
@@ -85,12 +90,10 @@ function filterRange(points:PricePoint[],range:string){
   return points.filter(p=>Date.parse(p.date)>=cutoff);
 }
 
-function PriceChart({points,fallback}:{points:PricePoint[];fallback:number}){
+function ItemPriceChart({points,fallback}:{points:PricePoint[];fallback:number}){
   const values=points.length?points:[{date:new Date().toISOString(),value:fallback,variant:'',source:'Saved',url:'',kind:'manual' as const}];
-  const min=Math.min(...values.map(p=>p.value)),max=Math.max(...values.map(p=>p.value));
-  const lo=Math.max(0,min-Math.max(1,(max-min)*.2)),hi=Math.max(lo+1,max+Math.max(1,(max-min)*.2));
-  const x=(i:number)=>values.length===1?720:50+i/(values.length-1)*670;
-  const y=(v:number)=>250-(v-lo)/(hi-lo)*190;
+  const min=Math.min(...values.map(p=>p.value)),max=Math.max(...values.map(p=>p.value)),pad=Math.max((max-min)*.2,max*.05,1),lo=Math.max(0,min-pad),hi=Math.max(lo+1,max+pad);
+  const x=(i:number)=>values.length===1?720:55+i/(values.length-1)*665,y=(v:number)=>245-(v-lo)/(hi-lo)*190;
   const line=values.map((p,i)=>`${i?'L':'M'}${x(i)},${y(p.value)}`).join(' ');
-  return <svg className="ci-chart" viewBox="0 0 780 300" role="img" aria-label="Item price history"><defs><linearGradient id="ci-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#ff2727" stopOpacity=".28"/><stop offset="1" stopColor="#ff2727" stopOpacity="0"/></linearGradient></defs>{[0,1,2,3,4].map(n=><line key={n} x1="50" x2="720" y1={40+n*52.5} y2={40+n*52.5} stroke="#24262d"/>)}{values.length>1?<><path d={`${line} L720,250 L50,250 Z`} fill="url(#ci-area)"/><path d={line} fill="none" stroke="#ff2727" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></>:<line x1="50" x2="720" y1={y(values[0].value)} y2={y(values[0].value)} stroke="#ff2727" strokeWidth="3"/>}{values.map((p,i)=><circle key={i} cx={x(i)} cy={y(p.value)} r="4" fill="#ff2727"><title>{new Date(p.date).toLocaleDateString()} · {money(p.value)}</title></circle>)}</svg>
+  return <svg className="cl-item-chart" viewBox="0 0 780 285" role="img" aria-label="Price history"><defs><linearGradient id="itemArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="var(--accent)" stopOpacity=".16"/><stop offset="1" stopColor="var(--accent)" stopOpacity="0"/></linearGradient></defs>{[0,1,2,3,4].map(n=><line key={n} x1="55" x2="720" y1={45+n*50} y2={45+n*50} stroke="#26282c"/>)}{values.length>1?<><path d={`${line} L720,245 L55,245 Z`} fill="url(#itemArea)"/><path d={line} fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></>:<line x1="55" x2="720" y1={y(values[0].value)} y2={y(values[0].value)} stroke="var(--accent)" strokeWidth="2.5"/>}{values.map((p,i)=><circle key={i} cx={x(i)} cy={y(p.value)} r="3" fill="var(--accent)"><title>{new Date(p.date).toLocaleDateString()} · {money(p.value)}</title></circle>)}</svg>
 }
