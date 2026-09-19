@@ -1,0 +1,475 @@
+/* Focused UI corrections from the latest reference screenshots. */
+
+/* ---------- Home chart ---------- */
+.cc-home-chart,
+.cc-home-chart .value-chart,
+.cc-home-chart .chart-canvas{
+  overflow:visible!important;
+}
+
+.cc-home-chart .value-chart{
+  isolation:isolate!important;
+  position:relative!important;
+  background:#000!important;
+}
+
+/* Soft red glow entirely fades inside the component: no hard clipped edge. */
+.cc-home-chart .value-chart:before{
+  content:"";
+  position:absolute;
+  z-index:-1;
+  pointer-events:none;
+  top:0;
+  right:0;
+  width:62%;
+  height:58%;
+  background:radial-gradient(
+    ellipse at 100% 0%,
+    rgba(116,0,0,.44) 0%,
+    rgba(82,0,0,.25) 30%,
+    rgba(50,0,0,.10) 50%,
+    rgba(0,0,0,0) 74%
+  );
+}
+
+/* Native dropdown still opens when Collecting is tapped, but there is no detached arrow. */
+.chart-scope-select{
+  appearance:none!important;
+  -webkit-appearance:none!important;
+  background-image:none!important;
+  padding:0!important;
+  margin:0!important;
+  cursor:pointer!important;
+  max-width:260px!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+
+/* Remove all axis/grid visuals from the chart. */
+.cc-home-chart .chart-canvas svg line:not([stroke="var(--accent)"]),
+.cc-home-chart .chart-canvas svg text{
+  display:none!important;
+}
+
+/* ---------- Most Valuable ---------- */
+.cc-most-card{
+  width:100%!important;
+  box-sizing:border-box!important;
+}
+
+.cc-most-view-all{
+  display:block;
+  margin:11px auto 0;
+  border:0;
+  background:transparent;
+  color:var(--accent);
+  font-size:13px;
+  font-weight:500;
+  cursor:pointer;
+}
+
+/* ---------- New Home Collections block ---------- */
+.cc-home-collections-host{
+  margin-top:18px;
+}
+
+.cc-home-collections-card{
+  border:1px solid var(--cc-border);
+  border-radius:8px;
+  background:#050506;
+  padding:18px;
+}
+
+.cc-home-collection-list{
+  display:grid;
+  gap:12px;
+}
+
+.cc-home-collection-list>button{
+  width:100%;
+  min-width:0;
+  display:grid;
+  grid-template-columns:150px minmax(0,1fr) auto;
+  align-items:center;
+  gap:18px;
+  padding:11px 14px;
+  border:1px solid #313238;
+  border-radius:8px;
+  background:#020203;
+  color:#fff;
+  text-align:left;
+  cursor:pointer;
+}
+
+.cc-home-collection-image{
+  width:150px;
+  aspect-ratio:514/325;
+  overflow:hidden;
+  border-radius:7px;
+  background:#111113;
+}
+
+.cc-home-collection-image img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  object-position:center;
+  background:transparent;
+  mix-blend-mode:lighten;
+}
+
+.cc-home-collection-name{
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+}
+
+.cc-home-collection-name b{
+  font-size:16px;
+  font-weight:500;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+}
+
+.cc-home-collection-name small{
+  margin-top:4px;
+  color:#85858b;
+  font-size:10px;
+}
+
+.cc-home-collection-value{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  min-width:150px;
+}
+
+.cc-home-collection-value strong{
+  color:#f4f4f5!important;
+  font-size:16px;
+  font-weight:500;
+}
+
+.cc-home-collection-value strong i{
+  font-style:normal;
+  font-size:9px;
+  margin-right:3px;
+}
+
+.cc-home-collection-value span{
+  margin-top:3px;
+  font-size:11px;
+}
+
+.cc-home-collections-empty{
+  padding:16px 0;
+  color:#808087;
+  font-size:12px;
+}
+
+/* ---------- Individual product ---------- */
+.cl-item-media{
+  overflow:visible!important;
+}
+
+.cl-item-media img{
+  object-fit:contain!important;
+  object-position:center!important;
+  transform:none!important;
+}
+
+/* ---------- Mobile ---------- */
+@media(max-width:640px){
+  html,body,.cc-app,.cc-main{
+    max-width:100vw!important;
+    overflow-x:hidden!important;
+  }
+
+  /* Softer, more transparent Collectr-like floating nav. */
+  .cc-nav{
+    background:rgba(20,20,22,.80)!important;
+    border-color:rgba(255,255,255,.20)!important;
+    backdrop-filter:blur(24px) saturate(145%)!important;
+    -webkit-backdrop-filter:blur(24px) saturate(145%)!important;
+    box-shadow:0 9px 30px rgba(0,0,0,.40)!important;
+  }
+
+  /* The entire top search/action row always fits inside the viewport. */
+  .cc-collection-search{
+    width:100%!important;
+    max-width:100%!important;
+    box-sizing:border-box!important;
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) 46px 46px!important;
+    align-items:center!important;
+    gap:7px!important;
+    margin-bottom:22px!important;
+    overflow:visible!important;
+  }
+
+  /* Camera is the control that made the row too wide; keep Star + Filter as requested. */
+  .cc-collection-search .cc-camera{
+    display:none!important;
+  }
+
+  .cc-collection-search>button{
+    width:46px!important;
+    height:46px!important;
+    min-width:46px!important;
+    flex:0 0 46px!important;
+    padding:0!important;
+    border-radius:50%!important;
+  }
+
+  .cc-collection-search label{
+    width:100%!important;
+    min-width:0!important;
+    height:46px!important;
+    box-sizing:border-box!important;
+    border-radius:23px!important;
+    padding:0 12px!important;
+    gap:8px!important;
+  }
+
+  .cc-collection-search label input{
+    width:100%!important;
+    min-width:0!important;
+    font-size:14px!important;
+  }
+
+  .cc-collection-search label>svg{
+    width:21px!important;
+    height:21px!important;
+    flex:0 0 21px!important;
+  }
+
+  .cc-collection-search label button{
+    width:28px!important;
+    height:28px!important;
+    flex:0 0 28px!important;
+  }
+
+  .cc-collections-page,
+  .cc-lines-page{
+    max-width:100vw!important;
+    overflow-x:hidden!important;
+  }
+
+  /* Home chart: no grid, no clipping, same proportions as supplied Collectr reference. */
+  .cc-home-page{
+    overflow:visible!important;
+  }
+
+  .cc-home-chart{
+    margin:0 -16px!important;
+    overflow:visible!important;
+  }
+
+  .cc-home-chart .value-chart{
+    padding-top:22px!important;
+    overflow:visible!important;
+  }
+
+  .cc-home-chart .value-chart:before{
+    width:70%!important;
+    height:52%!important;
+    right:0!important;
+    top:0!important;
+  }
+
+  .cc-home-chart .chart-head{
+    padding:0 28px!important;
+  }
+
+  .chart-label{
+    gap:7px!important;
+  }
+
+  .chart-scope-select{
+    max-width:190px!important;
+    font-size:20px!important;
+    padding:0!important;
+  }
+
+  .cc-home-chart .chart-canvas{
+    margin:18px 0 0!important;
+    padding:0!important;
+    overflow:visible!important;
+  }
+
+  .cc-home-chart .value-chart svg{
+    width:100%!important;
+    height:318px!important;
+    overflow:visible!important;
+  }
+
+  .cc-home-chart .chart-bottom{
+    padding:2px 14px 14px!important;
+  }
+
+  /* Match the reference Most Valuable size: four visible rows + centered View All. */
+  .cc-most-card{
+    margin-top:18px!important;
+    padding:19px 16px 17px!important;
+    border-radius:8px!important;
+  }
+
+  .cc-most-card .cc-section-head{
+    margin-bottom:10px!important;
+  }
+
+  .cc-most-card .cc-section-head h2{
+    font-size:18px!important;
+  }
+
+  .cc-most-list button{
+    min-height:64px!important;
+    padding:9px 0!important;
+  }
+
+  .cc-most-list button:nth-child(n+5){
+    display:none!important;
+  }
+
+  .cc-most-list b{
+    font-size:15px!important;
+    font-weight:500!important;
+  }
+
+  .cc-most-list small{
+    font-size:12px!important;
+  }
+
+  .cc-most-list strong{
+    font-size:15px!important;
+  }
+
+  .cc-most-view-all{
+    margin-top:13px!important;
+    font-size:15px!important;
+  }
+
+  /* Collections block directly under Most Valuable. */
+  .cc-home-collections-host{
+    margin-top:26px!important;
+  }
+
+  .cc-home-collections-card{
+    padding:0!important;
+    border:0!important;
+    background:#000!important;
+  }
+
+  .cc-home-collections-card .cc-section-head{
+    margin:0 0 16px 2px!important;
+  }
+
+  .cc-home-collections-card .cc-section-head h2{
+    font-size:22px!important;
+    font-weight:500!important;
+  }
+
+  .cc-home-collection-list{
+    gap:12px!important;
+  }
+
+  .cc-home-collection-list>button{
+    grid-template-columns:104px minmax(0,1fr) 126px!important;
+    gap:12px!important;
+    min-height:102px!important;
+    padding:10px 12px!important;
+    border-radius:8px!important;
+  }
+
+  .cc-home-collection-image{
+    width:104px!important;
+    border-radius:7px!important;
+  }
+
+  .cc-home-collection-name b{
+    font-size:15px!important;
+  }
+
+  .cc-home-collection-name small{
+    font-size:10px!important;
+  }
+
+  .cc-home-collection-value{
+    min-width:126px!important;
+  }
+
+  .cc-home-collection-value strong{
+    font-size:15px!important;
+  }
+
+  .cc-home-collection-value span{
+    font-size:11px!important;
+  }
+
+  /* Product page safe-area/title + image crop fix. */
+  .cl-item-page{
+    width:100%!important;
+    max-width:100vw!important;
+    overflow-x:hidden!important;
+    padding-top:0!important;
+  }
+
+  .cl-item-hero{
+    padding-top:calc(18px + env(safe-area-inset-top))!important;
+    overflow:visible!important;
+  }
+
+  .cl-item-hero-inner,
+  .cl-item-watch-row,
+  .cl-item-grid{
+    width:calc(100vw - 24px)!important;
+    max-width:calc(100vw - 24px)!important;
+  }
+
+  .cl-item-title-row h1{
+    overflow-wrap:anywhere!important;
+  }
+
+  .cl-item-media{
+    display:block!important;
+    width:100%!important;
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    aspect-ratio:auto!important;
+    overflow:visible!important;
+    box-sizing:border-box!important;
+    background:#050506!important;
+  }
+
+  .cl-item-media img{
+    display:block!important;
+    width:100%!important;
+    height:auto!important;
+    max-width:100%!important;
+    max-height:none!important;
+    object-fit:contain!important;
+    object-position:center!important;
+    padding:12px!important;
+    margin:0 auto!important;
+    box-sizing:border-box!important;
+  }
+}
+
+@media(max-width:390px){
+  .cc-home-collection-list>button{
+    grid-template-columns:92px minmax(0,1fr) 112px!important;
+    gap:9px!important;
+    padding:9px!important;
+  }
+
+  .cc-home-collection-image{
+    width:92px!important;
+  }
+
+  .cc-home-collection-value{
+    min-width:112px!important;
+  }
+}
