@@ -1,347 +1,447 @@
-/* Collector UI polish — desktop scale + Collectr-inspired mobile layout.
-   Loaded after collectr.css so this file is intentionally override-heavy. */
+/* Collector — Collectr-inspired polish pass
+   Keeps Collector branding/data/actions, but mirrors the supplied Collectr spacing,
+   proportions, dark palette, product-fit behavior, and mobile rhythm. */
 
 :root{
-  --accent:#ff1f2d;
-  --cl-black:#000;
-  --cl-surface:#151517;
-  --cl-surface-2:#1b1b1e;
-  --cl-border:#343439;
-  --cl-text:#f5f5f6;
-  --cl-muted:#909096;
-  --cl-green:#36c8a0;
-  --cl-red:#ff665f;
-  --content:min(1480px,calc(100vw - 88px));
+  --accent:#ff202d;
+  --collectr-black:#000000;
+  --collectr-panel:#171719;
+  --collectr-panel-2:#1b1b1e;
+  --collectr-border:#34343a;
+  --collectr-border-soft:#28282d;
+  --collectr-text:#f4f4f5;
+  --collectr-muted:#8d8d93;
+  --collectr-green:#39cfa3;
+  --collectr-red:#ff6e67;
+  --content:min(1450px,calc(100vw - 72px));
 }
 
 html,body{
-  background:#000!important;
-  color:var(--cl-text)!important;
-  font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Roboto,Helvetica,Arial,sans-serif!important;
-  font-size:15px;
+  background:var(--collectr-black)!important;
+  color:var(--collectr-text)!important;
+  font-family:Inter,"SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif!important;
   -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
 }
 
-.cl-app{background:#000!important;min-height:100dvh}
+body{overflow-x:hidden}
+button,input,select,textarea{font:inherit}
+.cl-app{min-height:100dvh!important;background:#000!important}
 .cl-content{width:var(--content)!important;max-width:none!important}
-.cl-header{height:68px!important;background:#08090b!important;border-color:#24252a!important}
-.cl-nav-inner{width:var(--content)!important;max-width:none!important;gap:28px!important}
-.cl-wordmark{font-size:23px!important;min-width:160px!important;letter-spacing:3px!important}
-.cl-wordmark span{font-size:6px!important;letter-spacing:2.7px!important;margin-top:3px!important}
+
+/* ---------- Global nav ---------- */
+.cl-header{
+  height:64px!important;
+  background:#08090a!important;
+  border-bottom:1px solid #24252a!important;
+}
+.cl-nav-inner{
+  width:var(--content)!important;
+  max-width:none!important;
+  gap:26px!important;
+}
+.cl-wordmark{
+  min-width:158px!important;
+  font-size:21px!important;
+  letter-spacing:2.8px!important;
+}
+.cl-wordmark span{font-size:6px!important;letter-spacing:2.5px!important}
 .cl-nav{justify-content:flex-start!important;gap:28px!important}
-.cl-nav button{font-size:13px!important;font-weight:700!important;padding:0 2px!important}
-.cl-header-actions{gap:12px!important}
-.cl-global-search,.cl-sync{height:36px!important}
-.cl-global-search{min-width:132px!important;padding:0 13px!important}
-.cl-sync{padding:0 13px!important}
+.cl-nav button{
+  min-height:64px!important;
+  padding:0 2px!important;
+  font-size:12px!important;
+  font-weight:700!important;
+}
+.cl-nav button:nth-child(4){display:none!important} /* remove Budget everywhere */
+.cl-header-actions{gap:10px!important}
+.cl-global-search,.cl-sync{height:34px!important}
 
-.cl-pill-tabs{margin:20px 0 20px!important}
-.cl-pill-tabs button{font-size:13px!important;padding:9px 14px!important}
+/* ---------- Shared color states ---------- */
+.gain,
+.chart-gain:not(.loss),
+.cl-product-copy small.gain,
+.cl-most-list .gain{color:var(--collectr-green)!important}
+.loss,
+.chart-gain.loss,
+.cl-product-copy small.loss,
+.cl-most-list .loss{color:var(--collectr-red)!important}
 
-/* Desktop portfolio: keep the Collectr proportions, but make the whole surface readable. */
-.cl-portfolio{width:min(1360px,calc(100vw - 84px))!important}
-.cl-portfolio-grid{grid-template-columns:minmax(0,1fr) 330px!important;gap:18px!important}
-.cl-card{border-color:#303137!important;background:#151517!important;border-radius:10px!important}
-.cl-card-title h2{font-size:16px!important}
-.cl-card-title button{font-size:11px!important}
-.cl-portfolio-chart .value-chart{padding:22px 22px 16px!important}
-.cl-portfolio-chart .value-chart svg{height:300px!important}
-.value-chart .chart-label{font-size:14px!important}
-.value-chart .chart-label b{font-size:14px!important}
-.value-chart .chart-total{font-size:30px!important}
-.value-chart .chart-total>span{font-size:12px!important}
-.value-chart .chart-gain{font-size:12px!important}
-.value-chart .chart-current{min-width:112px!important;padding:11px 13px!important}
-.value-chart .chart-current small{font-size:9px!important}
-.value-chart .chart-current b{font-size:14px!important}
-.value-chart .chart-ranges button{min-width:42px!important;height:32px!important;font-size:11px!important}
-.cl-most-list button{padding:11px 0!important}
-.cl-most-list b{font-size:13px!important}
-.cl-most-list small{font-size:10px!important}
-.cl-most-list strong{font-size:13px!important}
-.cl-holdings>div{padding:8px 0!important}
-.cl-holdings span,.cl-holdings b{font-size:11px!important}
-.cl-watch-preview{padding:19px!important}
-.cl-watch-cards{gap:12px!important}
-.cl-watch-card{padding:10px!important}
-.cl-watch-img{height:185px!important}
-.cl-watch-card b{font-size:12px!important}
-.cl-watch-card small{font-size:10px!important}
-.cl-watch-card strong{font-size:14px!important}
+/* ---------- Portfolio ---------- */
+.cl-portfolio{
+  width:min(1320px,calc(100vw - 72px))!important;
+  padding-top:16px!important;
+}
+.cl-portfolio>.cl-pill-tabs{
+  margin:0 0 16px!important;
+  padding:0!important;
+}
+.cl-portfolio>.cl-pill-tabs button{
+  font-size:12px!important;
+  min-height:34px!important;
+  padding:7px 12px!important;
+}
+.cl-portfolio>.cl-pill-tabs button:nth-child(3){display:none!important} /* remove Performance */
+.cl-portfolio-grid{
+  grid-template-columns:minmax(0,1fr) 316px!important;
+  gap:16px!important;
+}
+.cl-card{
+  background:var(--collectr-panel)!important;
+  border:1px solid #303137!important;
+  border-radius:9px!important;
+}
+.cl-portfolio-chart .value-chart{padding:19px 20px 14px!important}
+.cl-portfolio-chart .value-chart svg{height:278px!important}
+.value-chart .chart-label,
+.value-chart .chart-label b{font-size:13px!important}
+.value-chart .chart-total{
+  margin-top:4px!important;
+  font-size:28px!important;
+  line-height:1.05!important;
+  letter-spacing:-.5px!important;
+}
+.value-chart .chart-total>span{font-size:11px!important}
+.value-chart .chart-gain{font-size:11px!important}
+.value-chart .chart-current{
+  min-width:104px!important;
+  padding:10px 12px!important;
+  border-color:#3a3b41!important;
+}
+.value-chart .chart-current small{font-size:8px!important}
+.value-chart .chart-current b{font-size:13px!important}
+.value-chart .chart-ranges button{
+  height:30px!important;
+  min-width:39px!important;
+  font-size:10px!important;
+}
+.cl-card-title h2{font-size:15px!important}
+.cl-card-title button{font-size:10px!important}
+.cl-most-list button{padding:9px 0!important}
+.cl-most-list b{font-size:12px!important}
+.cl-most-list small{font-size:9px!important}
+.cl-most-list strong{font-size:12px!important}
+.cl-holdings>div{padding:7px 0!important}
+.cl-holdings span,.cl-holdings b{font-size:10px!important}
 
-/* Desktop Collection Types / Lines: match the spacious 6-across Collectr tiles. */
-.cl-type-page,.cl-set-browser,.cl-collection-page,.cl-product-page,.cl-watchlist-page{padding-top:30px!important}
-.cl-type-grid,.cl-line-grid{grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:18px 14px!important}
+/* ---------- Collection-type / Line grids ---------- */
+.cl-type-page,.cl-set-browser,.cl-collection-page,.cl-watchlist-page{
+  padding-top:26px!important;
+}
+.cl-type-grid,.cl-line-grid{
+  grid-template-columns:repeat(6,minmax(0,1fr))!important;
+  gap:18px 12px!important;
+}
 .cl-type-tile,.cl-line-tile{min-width:0!important}
 .cl-type-open{
-  height:152px!important;
-  background:#171719!important;
-  border:1px solid #393a40!important;
-  border-radius:8px!important;
-  padding:12px!important;
-}
-.cl-type-open img{
-  width:100%!important;height:100%!important;
-  object-fit:contain!important;
-  padding:4px!important;
-  background:transparent!important;
-}
-.cl-type-open span{font-size:18px!important}
-.cl-line-art{
-  height:150px!important;
-  border-radius:8px!important;
-  background:#171719!important;
-  border:1px solid #393a40!important;
+  height:140px!important;
+  padding:0!important;
   overflow:hidden!important;
-}
-.cl-line-art img{
-  width:100%!important;height:100%!important;
-  object-fit:contain!important;
-  object-position:center!important;
-  padding:8px!important;
-  background:transparent!important;
-}
-.cl-line-open h2{font-size:14px!important;line-height:1.3!important;margin-top:10px!important}
-.cl-line-open p{font-size:11px!important;line-height:1.45!important}
-.cl-date-badge{font-size:9px!important;padding:3px 6px!important;top:7px!important;right:7px!important}
-.cl-image-progress{
-  height:10px!important;
-  left:0!important;right:0!important;bottom:0!important;
-  background:#5a5a5e!important;
-}
-.cl-image-progress em{background:var(--accent)!important}
-.cl-mini-edit{font-size:10px!important;padding:6px 8px!important}
-.cl-browser-top{margin-bottom:18px!important}
-.cl-browser-top h1{font-size:29px!important}
-.cl-browser-search{height:42px!important;width:260px!important}
-.cl-browser-search input{font-size:12px!important}
-.cl-browser-controls{margin-bottom:24px!important}
-.cl-edit-btn{height:36px!important;padding:0 12px!important;font-size:11px!important}
-
-/* Collection detail follows the 30th Celebration reference. */
-.cl-collection-tabs{margin-top:4px!important}
-.cl-collection-chart{margin-bottom:16px!important}
-.cl-collection-chart .value-chart{padding:18px 20px 12px!important}
-.cl-collection-chart .value-chart svg{height:245px!important}
-.cl-search-panel{
-  padding:18px!important;
-  border-radius:9px!important;
-  background:#171719!important;
-  border:1px solid #36373c!important;
-}
-.cl-search-panel h2{font-size:16px!important;margin-bottom:12px!important}
-.cl-search-row label{height:42px!important}
-.cl-search-row input{font-size:12px!important}
-.cl-search-row>button{height:42px!important;padding:0 18px!important}
-.cl-edit-strip{margin:16px 0!important;min-height:42px!important}
-.cl-edit-strip button,.cl-edit-strip select{height:36px!important;font-size:11px!important}
-.cl-collection-summary{
-  min-height:112px!important;
-  padding:12px!important;
-  grid-template-columns:145px minmax(0,1fr)!important;
-  gap:18px!important;
-  border-radius:8px!important;
-  background:#171719!important;
+  background:var(--collectr-panel)!important;
   border:1px solid #35363b!important;
-}
-.cl-summary-art{
-  height:88px!important;
   border-radius:7px!important;
-  background:#f4f4f4!important;
-  overflow:hidden!important;
 }
-.cl-summary-art img{
-  width:100%!important;height:100%!important;
-  object-fit:contain!important;
-  padding:6px!important;
-}
-.cl-summary-copy h2{font-size:16px!important;margin-bottom:6px!important}
-.cl-summary-copy p{font-size:11px!important;line-height:1.4!important}
-.cl-summary-copy small{font-size:10px!important}
-.cl-summary-progress{height:9px!important;background:#55565b!important;border-radius:0!important;margin-top:8px!important}
-.cl-summary-progress i{background:var(--accent)!important}
-
-/* Product cards: never crop the actual collectible image. */
-.cl-product-grid{
-  grid-template-columns:repeat(6,minmax(0,1fr))!important;
-  gap:14px!important;
-}
-.cl-product-card{
-  min-height:410px!important;
-  border-radius:8px!important;
-  border:1px solid #36373c!important;
-  background:#151517!important;
-  overflow:hidden!important;
-}
-.cl-product-image{
-  height:278px!important;
-  background:#111113!important;
-  overflow:hidden!important;
-  display:grid!important;
-  place-items:center!important;
-}
-.cl-product-image img{
+.cl-type-open img,
+.cl-line-art img{
+  display:block!important;
   width:100%!important;
   height:100%!important;
+  max-width:100%!important;
+  max-height:100%!important;
   object-fit:contain!important;
   object-position:center!important;
   padding:10px!important;
   background:transparent!important;
+}
+.cl-line-art{
+  height:140px!important;
+  overflow:hidden!important;
+  background:var(--collectr-panel)!important;
+  border:1px solid #35363b!important;
+  border-radius:7px!important;
+}
+.cl-line-open h2{
+  margin:8px 2px 2px!important;
+  font-size:13px!important;
+  line-height:1.25!important;
+}
+.cl-line-open p{
+  margin:1px 2px!important;
+  font-size:10px!important;
+  line-height:1.35!important;
+}
+.cl-date-badge{
+  top:6px!important;right:6px!important;
+  padding:3px 6px!important;
+  font-size:8px!important;
+}
+.cl-image-progress{
+  left:0!important;right:0!important;bottom:0!important;
+  height:9px!important;
+  background:#57585d!important;
+}
+.cl-image-progress em{background:var(--accent)!important}
+.cl-image-progress span{
+  position:absolute!important;
+  z-index:2!important;
+  left:6px!important;
+  top:50%!important;
+  transform:translateY(-50%)!important;
+  color:#fff!important;
+  font-size:7px!important;
+  font-weight:800!important;
+}
+.cl-browser-top h1{font-size:27px!important}
+.cl-browser-search{height:40px!important;width:246px!important}
+.cl-browser-controls{margin-bottom:20px!important}
+.cl-edit-btn{height:34px!important;font-size:10px!important}
+.cl-mini-edit{font-size:9px!important}
+
+/* Blend black-backed logo art into Collectr-like dark tiles. */
+.cl-type-open img,
+.cl-line-art img{
+  mix-blend-mode:screen;
+}
+
+/* ---------- Collection detail ---------- */
+.cl-collection-tabs{margin:0 0 12px!important}
+.cl-collection-chart{margin-bottom:14px!important}
+.cl-collection-chart .value-chart{padding:15px 18px 10px!important}
+.cl-collection-chart .value-chart svg{height:220px!important}
+.cl-search-panel{
+  padding:16px!important;
+  background:var(--collectr-panel)!important;
+  border:1px solid #35363b!important;
+  border-radius:8px!important;
+}
+.cl-search-panel h2{
+  margin:0 0 10px!important;
+  font-size:15px!important;
+}
+.cl-search-row label{height:40px!important}
+.cl-search-row input{font-size:11px!important}
+.cl-search-row>button{height:40px!important}
+.cl-edit-strip{
+  min-height:40px!important;
+  margin:13px 0!important;
+}
+.cl-edit-strip button,.cl-edit-strip select{
+  height:34px!important;
+  font-size:10px!important;
+}
+.cl-collection-summary{
+  min-height:102px!important;
+  padding:10px!important;
+  grid-template-columns:132px minmax(0,1fr)!important;
+  gap:14px!important;
+  background:var(--collectr-panel)!important;
+  border:1px solid #35363b!important;
+  border-radius:7px!important;
+}
+.cl-summary-art{
+  height:80px!important;
+  overflow:hidden!important;
+  background:#f5f5f5!important;
+  border-radius:6px!important;
+}
+.cl-summary-art img{
+  width:100%!important;height:100%!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  padding:5px!important;
+}
+.cl-summary-copy h2{font-size:15px!important;margin-bottom:5px!important}
+.cl-summary-copy p{font-size:10px!important;line-height:1.4!important}
+.cl-summary-copy small{font-size:9px!important}
+.cl-summary-progress{
+  height:8px!important;
+  margin-top:6px!important;
+  background:#55565b!important;
+}
+.cl-summary-progress i{background:var(--accent)!important}
+
+/* ---------- Product cards ---------- */
+.cl-product-grid{
+  grid-template-columns:repeat(6,minmax(0,1fr))!important;
+  gap:12px!important;
+}
+.cl-product-card{
+  min-width:0!important;
+  width:auto!important;
+  max-width:none!important;
+  min-height:392px!important;
+  overflow:hidden!important;
+  background:#151517!important;
+  border:1px solid #35363a!important;
+  border-radius:7px!important;
+}
+.cl-product-open{
+  width:100%!important;
+  min-width:0!important;
+  display:block!important;
+}
+.cl-product-image{
+  height:262px!important;
+  display:grid!important;
+  place-items:center!important;
+  overflow:hidden!important;
+  background:#111113!important;
+}
+.cl-product-image img{
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  padding:9px!important;
+  background:transparent!important;
   transform:none!important;
 }
-.cl-product-copy{padding:12px 12px 40px!important}
-.cl-product-copy h3{font-size:13px!important;line-height:1.28!important;margin-bottom:7px!important}
-.cl-product-copy>a{font-size:10px!important;line-height:1.35!important}
-.cl-product-copy strong{font-size:15px!important;margin-top:13px!important}
-.cl-product-copy small{font-size:9px!important}
-.cl-product-copy span{font-size:9px!important}
+.cl-product-copy{
+  position:relative!important;
+  min-width:0!important;
+  padding:10px 10px 38px!important;
+}
+.cl-product-copy h3{
+  margin:0 0 5px!important;
+  font-size:12px!important;
+  line-height:1.25!important;
+}
+.cl-product-copy>a{
+  display:block!important;
+  min-width:0!important;
+  overflow:hidden!important;
+  white-space:nowrap!important;
+  text-overflow:ellipsis!important;
+  font-size:9px!important;
+}
+.cl-product-copy strong{
+  display:block!important;
+  margin-top:10px!important;
+  font-size:14px!important;
+}
+.cl-product-copy small,.cl-product-copy span{font-size:8px!important}
 .cl-plus{
-  width:32px!important;height:32px!important;
-  right:10px!important;bottom:10px!important;
+  width:31px!important;height:31px!important;
+  right:9px!important;bottom:9px!important;
   border:1px solid var(--accent)!important;
   color:var(--accent)!important;
-  background:#111113!important;
+  background:#101012!important;
 }
 .cl-plus:hover{background:var(--accent)!important;color:#fff!important}
 
-/* Individual item page: enlarge without cropping product photography. */
-.cl-item-hero-inner,.cl-item-watch-row,.cl-item-grid{width:min(1380px,calc(100vw - 84px))!important}
-.cl-item-title-row h1{font-size:31px!important}
-.cl-item-price strong{font-size:29px!important}
-.cl-item-grid{grid-template-columns:390px minmax(0,1fr) 340px!important;gap:16px!important}
-.cl-item-media{height:610px!important;background:#111113!important}
+/* ---------- Item detail ---------- */
+.cl-item-hero-inner,.cl-item-watch-row,.cl-item-grid{
+  width:min(1360px,calc(100vw - 72px))!important;
+}
+.cl-item-grid{
+  grid-template-columns:380px minmax(0,1fr) 330px!important;
+  gap:15px!important;
+}
+.cl-item-media{
+  height:590px!important;
+  background:#111113!important;
+  overflow:hidden!important;
+}
 .cl-item-media img{
+  display:block!important;
   width:100%!important;height:100%!important;
   max-width:100%!important;max-height:100%!important;
   object-fit:contain!important;
   object-position:center!important;
-  padding:22px!important;
+  padding:20px!important;
   background:transparent!important;
 }
-.cl-item-panel{padding:18px!important}
-.cl-item-panel-head h2{font-size:15px!important}
-.cl-item-chart{height:315px!important}
 
-/* Accessibility / hit targets */
-.cl-nav button,.cl-plus,.cl-edit-btn,.cl-mini-edit,.cl-search-row button,.cl-history-ranges button{min-height:34px}
-.cl-product-open:focus-visible,.cl-type-open:focus-visible,.cl-line-open:focus-visible{outline:2px solid var(--accent)!important;outline-offset:2px!important}
-
-/* =========================
-   Collectr-style mobile app
-   ========================= */
+/* =======================
+   MOBILE — Collectr rhythm
+   ======================= */
 @media(max-width:640px){
   :root{--content:calc(100vw - 32px)}
-  html,body{font-size:16px!important;background:#000!important}
-  body{padding-bottom:calc(86px + env(safe-area-inset-bottom))!important}
+  html,body{
+    background:#000!important;
+    font-family:"SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,Inter,"Segoe UI",sans-serif!important;
+    font-size:16px!important;
+  }
+  body{
+    min-height:100dvh!important;
+    padding-bottom:calc(92px + env(safe-area-inset-bottom))!important;
+  }
 
-  /* The desktop header disappears; its nav becomes the floating app tab bar. */
+  /* Completely remove the extra top/global search bar. */
   .cl-header{
     height:0!important;
-    border:0!important;
-    background:transparent!important;
+    min-height:0!important;
     overflow:visible!important;
-    position:relative!important;
-    z-index:100!important;
+    background:transparent!important;
+    border:0!important;
   }
-  .cl-nav-inner{width:100%!important;height:0!important;display:block!important}
-  .cl-wordmark{display:none!important}
+  .cl-nav-inner{
+    width:100%!important;
+    height:0!important;
+    display:block!important;
+  }
+  .cl-wordmark,
+  .cl-header-actions,
+  .cl-global-search,
+  .cl-sync{
+    display:none!important;
+  }
+
+  /* 3-button floating tab bar: Portfolio / Collections / Watchlist */
   .cl-nav{
     position:fixed!important;
-    z-index:110!important;
-    left:16px!important;right:16px!important;
+    z-index:200!important;
+    left:50%!important;
+    right:auto!important;
     bottom:max(12px,env(safe-area-inset-bottom))!important;
-    height:70px!important;
+    transform:translateX(-50%)!important;
+    width:min(360px,calc(100vw - 28px))!important;
+    height:72px!important;
     padding:5px!important;
     display:grid!important;
-    grid-template-columns:repeat(4,1fr)!important;
-    gap:3px!important;
-    background:rgba(22,22,24,.96)!important;
-    border:1px solid #3a3a3f!important;
-    border-radius:35px!important;
-    box-shadow:0 10px 36px rgba(0,0,0,.52)!important;
-    backdrop-filter:blur(20px)!important;
+    grid-template-columns:repeat(3,1fr)!important;
+    align-items:center!important;
+    gap:4px!important;
+    background:rgba(23,23,25,.97)!important;
+    border:1px solid #424248!important;
+    border-radius:36px!important;
+    box-shadow:0 10px 34px rgba(0,0,0,.55)!important;
+    backdrop-filter:blur(18px)!important;
   }
   .cl-nav button{
-    position:relative!important;
     display:flex!important;
     flex-direction:column!important;
     align-items:center!important;
     justify-content:center!important;
     gap:3px!important;
-    height:58px!important;
+    height:60px!important;
+    min-height:60px!important;
     padding:0!important;
-    border-radius:29px!important;
-    color:#d1d1d4!important;
+    border-radius:30px!important;
     font-size:11px!important;
-    line-height:1!important;
-    font-weight:600!important;
+    font-weight:650!important;
+    color:#d7d7da!important;
   }
+  .cl-nav button:nth-child(4){display:none!important}
   .cl-nav button:before{
     display:block!important;
-    height:25px!important;
+    height:24px!important;
+    line-height:24px!important;
     font-size:24px!important;
-    line-height:25px!important;
-    font-weight:400!important;
     color:currentColor!important;
+    font-weight:400!important;
   }
-  .cl-nav button:nth-child(1):before{content:"▥"}
+  .cl-nav button:nth-child(1):before{content:"▤"}
   .cl-nav button:nth-child(2):before{content:"▦"}
   .cl-nav button:nth-child(3):before{content:"♡"}
-  .cl-nav button:nth-child(4):before{content:"$";font-weight:800!important}
   .cl-nav button.active{
-    background:rgba(180,18,27,.72)!important;
+    background:#a81720!important;
     color:#fff!important;
   }
   .cl-nav button.active:after{display:none!important}
-
-  /* Mobile collection search bar, visible only while Collections is active. */
-  .cl-header-actions{display:none!important}
-  body:has(.cl-nav button:nth-child(2).active) .cl-header-actions{
-    display:flex!important;
-    position:fixed!important;
-    z-index:109!important;
-    left:16px!important;right:16px!important;
-    top:max(14px,env(safe-area-inset-top))!important;
-    height:58px!important;
-    align-items:center!important;
-    gap:8px!important;
-    pointer-events:auto!important;
-  }
-  body:has(.cl-nav button:nth-child(2).active) .cl-global-search{
-    display:flex!important;
-    flex:1!important;
-    min-width:0!important;
-    height:58px!important;
-    justify-content:flex-start!important;
-    padding:0 18px!important;
-    border:1px solid #34343a!important;
-    border-radius:29px!important;
-    background:#050506!important;
-    color:#f2f2f3!important;
-  }
-  body:has(.cl-nav button:nth-child(2).active) .cl-global-search svg{width:24px!important;height:24px!important}
-  body:has(.cl-nav button:nth-child(2).active) .cl-global-search span{
-    font-size:0!important;
-  }
-  body:has(.cl-nav button:nth-child(2).active) .cl-global-search span:after{
-    content:"Search your collection";
-    font-size:17px!important;
-    font-weight:600!important;
-  }
-  body:has(.cl-nav button:nth-child(2).active) .cl-header-actions>.cl-sync,
-  body:has(.cl-nav button:nth-child(2).active) .cl-header-actions>b,
-  body:has(.cl-nav button:nth-child(2).active) .cl-header-actions>button[aria-label="Notifications"]{
-    display:none!important;
-  }
-  body:has(.cl-nav button:nth-child(2).active) .cl-header-actions>button[aria-label="Customize Collector"]{
-    display:grid!important;
-    place-items:center!important;
-    width:58px!important;height:58px!important;
-    border:1px solid #34343a!important;
-    border-radius:50%!important;
-    background:#050506!important;
-    color:#fff!important;
-  }
 
   .cl-main{width:100%!important;margin:0!important}
   .cl-content{
@@ -349,146 +449,157 @@ html,body{
     max-width:none!important;
     padding-left:16px!important;
     padding-right:16px!important;
-    padding-bottom:105px!important;
+    padding-bottom:104px!important;
   }
 
-  /* Portfolio = the Collectr app Overview screen. */
-  .cl-portfolio{padding-top:max(22px,env(safe-area-inset-top))!important}
+  /* ---------- Mobile Portfolio ---------- */
+  .cl-portfolio{
+    width:100%!important;
+    padding-top:max(28px,env(safe-area-inset-top))!important;
+  }
   .cl-portfolio>.cl-pill-tabs{
     display:flex!important;
-    gap:25px!important;
-    background:transparent!important;
-    margin:0 0 22px!important;
+    gap:24px!important;
+    margin:0 0 20px!important;
     padding:0 4px!important;
+    background:transparent!important;
   }
   .cl-portfolio>.cl-pill-tabs button{
-    padding:10px 0!important;
+    min-height:40px!important;
+    padding:8px 0!important;
     border-radius:0!important;
     background:transparent!important;
-    color:#85858a!important;
     font-size:20px!important;
     font-weight:700!important;
+    color:#7f7f84!important;
     position:relative!important;
   }
-  .cl-portfolio>.cl-pill-tabs button:nth-child(2){display:none!important}
-  .cl-portfolio>.cl-pill-tabs button.active{color:#f5f5f5!important}
+  .cl-portfolio>.cl-pill-tabs button:nth-child(2),
+  .cl-portfolio>.cl-pill-tabs button:nth-child(3){
+    display:none!important;
+  }
+  .cl-portfolio>.cl-pill-tabs button.active{
+    color:#fff!important;
+  }
   .cl-portfolio>.cl-pill-tabs button.active:after{
     content:""!important;
     position:absolute!important;
     left:0!important;right:0!important;bottom:0!important;
-    height:3px!important;background:var(--accent)!important;
+    height:3px!important;
+    background:var(--accent)!important;
   }
+
   .cl-portfolio-grid{display:block!important}
   .cl-portfolio-left{display:block!important}
   .cl-portfolio-chart{
-    padding:0!important;
     margin:0!important;
+    padding:0!important;
     border:0!important;
-    background:#000!important;
     border-radius:0!important;
+    background:#000!important;
   }
   .cl-portfolio-chart .value-chart{
     padding:0!important;
     background:
-      radial-gradient(circle at 85% 7%,rgba(110,0,0,.34),transparent 42%),
+      radial-gradient(circle at 87% 3%,rgba(115,0,0,.34),transparent 40%),
       #000!important;
   }
   .cl-portfolio-chart .chart-head{padding:0 4px!important}
-  .cl-portfolio-chart .chart-label{font-size:21px!important;margin-bottom:6px!important}
-  .cl-portfolio-chart .chart-label b{font-size:21px!important}
-  .cl-portfolio-chart .chart-label span{font-size:21px!important;color:var(--accent)!important}
+  .cl-portfolio-chart .chart-label,
+  .cl-portfolio-chart .chart-label b,
+  .cl-portfolio-chart .chart-label span{
+    font-size:20px!important;
+  }
+  .cl-portfolio-chart .chart-label span{color:var(--accent)!important}
   .cl-portfolio-chart .chart-total{
+    margin-top:6px!important;
     font-size:45px!important;
-    line-height:1.04!important;
-    letter-spacing:-1.5px!important;
-    margin-top:3px!important;
+    line-height:1!important;
+    letter-spacing:-1.6px!important;
   }
   .cl-portfolio-chart .chart-total>span{display:none!important}
   .cl-portfolio-chart .chart-gain{
-    font-size:17px!important;
     margin-top:10px!important;
-    color:#ff8078!important;
+    font-size:17px!important;
+    font-weight:600!important;
   }
+  .cl-portfolio-chart .chart-gain:not(.loss){color:var(--collectr-green)!important}
+  .cl-portfolio-chart .chart-gain.loss{color:#ff7a72!important}
   .cl-portfolio-chart .chart-gain span{display:none!important}
   .cl-portfolio-chart .chart-current{display:none!important}
   .cl-portfolio-chart .chart-canvas{
-    margin:14px -16px 0!important;
+    margin:15px -16px 0!important;
     overflow:hidden!important;
   }
   .cl-portfolio-chart .value-chart svg{
-    width:calc(100% + 0px)!important;
-    height:330px!important;
+    display:block!important;
+    width:100%!important;
+    height:322px!important;
     margin:0!important;
   }
   .cl-portfolio-chart .value-chart svg text{display:none!important}
   .cl-portfolio-chart .chart-bottom{
-    justify-content:center!important;
     margin:0!important;
-    padding:4px 0 18px!important;
+    padding:5px 0 18px!important;
+    justify-content:center!important;
   }
   .cl-portfolio-chart .chart-ranges{
     width:100%!important;
     display:flex!important;
-    align-items:center!important;
     justify-content:space-around!important;
-    gap:2px!important;
+    gap:0!important;
+    padding:0!important;
     background:transparent!important;
     border:0!important;
-    padding:0!important;
   }
   .cl-portfolio-chart .chart-ranges button{
     width:48px!important;height:48px!important;min-width:48px!important;
+    padding:0!important;
     border-radius:50%!important;
     background:transparent!important;
-    color:#77777c!important;
+    color:#77777d!important;
     font-size:16px!important;
     font-weight:700!important;
   }
   .cl-portfolio-chart .chart-ranges button.active{
-    background:#eeeeef!important;
-    color:#080809!important;
+    background:#f0f0f1!important;
+    color:#09090a!important;
   }
+
   .cl-watch-preview{display:none!important}
   .cl-portfolio-rail{
     display:block!important;
-    margin-top:20px!important;
+    margin-top:22px!important;
   }
   .cl-portfolio-rail>.cl-card:first-child{display:none!important}
   .cl-portfolio-rail>.cl-card{
     padding:18px!important;
-    border-radius:7px!important;
-    border:1px solid #333338!important;
     background:#000!important;
+    border:1px solid #35353a!important;
+    border-radius:7px!important;
   }
-  .cl-portfolio-rail .cl-card-title h2{font-size:19px!important}
+  .cl-portfolio-rail .cl-card-title h2{font-size:18px!important}
   .cl-portfolio-rail .cl-card-title button{
     color:var(--accent)!important;
-    font-size:15px!important;
+    font-size:14px!important;
   }
   .cl-most-list button{padding:8px 0!important}
-  .cl-most-list b{font-size:16px!important;font-weight:650!important}
-  .cl-most-list small{font-size:13px!important;color:#79797f!important;margin-top:2px!important}
-  .cl-most-list strong{font-size:16px!important}
-  .cl-portfolio-rail:after{
-    content:"Just For You";
-    display:block;
-    margin:34px 16px 0;
-    color:#f3f3f4;
-    font-size:20px;
-    font-weight:700;
-  }
+  .cl-most-list b{font-size:15px!important;line-height:1.2!important}
+  .cl-most-list small{font-size:12px!important;color:#85858a!important}
+  .cl-most-list strong{font-size:15px!important}
 
-  /* Collections = the two-column Quick Filters page. */
+  /* ---------- Mobile Collections / Quick Filters ---------- */
   .cl-type-page{
-    padding-top:94px!important;
+    padding-top:max(28px,env(safe-area-inset-top))!important;
   }
   .cl-type-page:before{
     content:"Quick Filters";
     display:block;
-    margin:14px 18px 20px;
-    color:#f2f2f3;
-    font-size:21px;
+    margin:0 2px 22px;
+    color:#f6f6f7;
+    font-size:23px;
     font-weight:750;
+    letter-spacing:-.4px;
   }
   .cl-type-toolbar{display:none!important}
   .cl-type-grid{
@@ -496,43 +607,44 @@ html,body{
     gap:20px 14px!important;
     padding:0 4px!important;
   }
-  .cl-type-tile{display:block!important}
+  .cl-type-tile{min-width:0!important}
   .cl-type-open{
     width:100%!important;
-    height:190px!important;
+    height:186px!important;
+    padding:0!important;
+    overflow:hidden!important;
     border:0!important;
     border-radius:9px!important;
     background:#171719!important;
-    padding:14px!important;
   }
   .cl-type-open img{
-    width:100%!important;height:100%!important;
+    width:100%!important;
+    height:100%!important;
     object-fit:contain!important;
     object-position:center!important;
-    padding:6px!important;
-  }
-  .cl-type-open span{font-size:20px!important}
-  .cl-mini-edit{
-    opacity:1!important;
-    margin-top:6px!important;
-    font-size:10px!important;
-    color:#8f8f95!important;
+    padding:18px!important;
     background:transparent!important;
+    mix-blend-mode:screen!important;
   }
+  .cl-type-open span{font-size:19px!important}
+  .cl-type-tile>.cl-mini-edit{display:none!important}
 
-  /* Lines / nested collections keep the same two-column visual rhythm. */
-  .cl-set-browser{padding-top:94px!important}
+  /* ---------- Mobile Lines ---------- */
+  .cl-set-browser{
+    padding-top:max(28px,env(safe-area-inset-top))!important;
+  }
   .cl-browser-top{
     display:grid!important;
-    grid-template-columns:42px 1fr!important;
-    align-items:center!important;
+    grid-template-columns:42px minmax(0,1fr)!important;
     gap:10px!important;
+    align-items:center!important;
     margin:0 0 18px!important;
   }
   .cl-browser-top h1{
+    margin:0!important;
     font-size:24px!important;
     text-align:left!important;
-    margin:0!important;
+    line-height:1.1!important;
   }
   .cl-back-square{
     width:42px!important;height:42px!important;
@@ -545,37 +657,47 @@ html,body{
   }
   .cl-browser-controls .cl-edit-btn{
     height:34px!important;
+    padding:0 10px!important;
     font-size:10px!important;
   }
   .cl-line-grid{
     grid-template-columns:repeat(2,minmax(0,1fr))!important;
     gap:22px 12px!important;
   }
+  .cl-line-tile{min-width:0!important}
   .cl-line-art{
-    height:170px!important;
+    height:172px!important;
+    padding:0!important;
+    overflow:hidden!important;
     background:#171719!important;
     border:0!important;
     border-radius:9px!important;
   }
   .cl-line-art img{
+    width:100%!important;height:100%!important;
     object-fit:contain!important;
-    padding:8px!important;
+    object-position:center!important;
+    padding:16px!important;
+    background:transparent!important;
+    mix-blend-mode:screen!important;
   }
   .cl-line-open h2{
+    margin:9px 2px 3px!important;
     font-size:15px!important;
-    line-height:1.25!important;
-    margin:9px 3px 3px!important;
+    line-height:1.2!important;
+    text-align:center!important;
   }
   .cl-line-open p{
+    margin:2px 2px!important;
     font-size:12px!important;
-    margin:2px 3px!important;
+    line-height:1.3!important;
+    text-align:center!important;
   }
-  .cl-image-progress{height:8px!important}
-  .cl-date-badge{font-size:8px!important}
+  .cl-line-tile>.cl-mini-edit{display:none!important}
 
-  /* Inside a collection: the mobile 2-column Collectr product grid. */
+  /* ---------- Mobile Collection items ---------- */
   .cl-collection-page{
-    padding-top:max(20px,env(safe-area-inset-top))!important;
+    padding-top:max(24px,env(safe-area-inset-top))!important;
   }
   .cl-breadcrumbs{display:none!important}
   .cl-collection-tabs{
@@ -584,19 +706,20 @@ html,body{
     background:transparent!important;
   }
   .cl-collection-tabs button{
-    font-size:14px!important;
-    padding:8px 10px!important;
+    min-height:36px!important;
+    padding:7px 9px!important;
+    font-size:13px!important;
   }
   .cl-collection-chart{display:none!important}
   .cl-collection-search{
+    margin:0 0 13px!important;
     padding:0!important;
-    margin:0 0 14px!important;
     border:0!important;
     background:transparent!important;
   }
   .cl-collection-search h2{
-    font-size:19px!important;
-    margin:0 0 10px!important;
+    margin:0 0 9px!important;
+    font-size:18px!important;
   }
   .cl-collection-search .cl-search-row{
     display:flex!important;
@@ -606,10 +729,10 @@ html,body{
   .cl-collection-search .cl-search-row label{
     flex:1!important;
     height:52px!important;
-    border:1px solid #36363b!important;
-    border-radius:26px!important;
-    background:#050506!important;
     padding:0 16px!important;
+    border:1px solid #3b3b40!important;
+    border-radius:26px!important;
+    background:#020203!important;
   }
   .cl-collection-search .cl-search-row input{
     font-size:16px!important;
@@ -618,15 +741,16 @@ html,body{
   .cl-collection-search .cl-search-row>button:not(.cl-clear){display:none!important}
   .cl-collection-search .cl-clear{
     width:52px!important;height:52px!important;
+    min-width:52px!important;
     padding:0!important;
-    border:1px solid #36363b!important;
+    border:1px solid #3b3b40!important;
     border-radius:50%!important;
+    background:#020203!important;
     font-size:0!important;
-    background:#050506!important;
   }
   .cl-collection-search .cl-clear:before{
     content:"×";
-    font-size:29px;
+    font-size:28px;
     line-height:1;
     color:#fff;
   }
@@ -646,54 +770,66 @@ html,body{
     font-size:10px!important;
   }
   .cl-edit-strip>div:last-child button{display:none!important}
+
   .cl-collection-summary{
-    min-height:90px!important;
-    grid-template-columns:86px minmax(0,1fr)!important;
+    min-height:88px!important;
+    grid-template-columns:82px minmax(0,1fr)!important;
     gap:10px!important;
     padding:8px!important;
     margin:0 0 12px!important;
     background:#111113!important;
-    border-color:#303036!important;
+    border:1px solid #303036!important;
+    border-radius:7px!important;
   }
-  .cl-summary-art{
-    height:72px!important;
-    background:#f3f3f3!important;
-  }
-  .cl-summary-copy h2{font-size:14px!important;margin-bottom:3px!important}
+  .cl-summary-art{height:70px!important}
+  .cl-summary-copy h2{font-size:14px!important;margin-bottom:2px!important}
   .cl-summary-copy p{font-size:10px!important;margin:1px 0!important}
   .cl-summary-copy small{font-size:9px!important}
-  .cl-summary-progress{height:7px!important;margin-top:5px!important}
+  .cl-summary-progress{height:7px!important;margin-top:4px!important}
 
   .cl-product-grid{
     grid-template-columns:repeat(2,minmax(0,1fr))!important;
     gap:10px!important;
   }
   .cl-product-card{
-    min-height:390px!important;
+    min-width:0!important;
+    width:auto!important;
+    max-width:none!important;
+    min-height:455px!important;
     background:#050506!important;
     border:1px solid #35353a!important;
     border-radius:8px!important;
+    overflow:hidden!important;
+  }
+  .cl-product-open{
+    width:100%!important;
+    min-width:0!important;
   }
   .cl-product-image{
-    height:235px!important;
+    height:250px!important;
+    display:grid!important;
+    place-items:center!important;
+    overflow:hidden!important;
     background:#050506!important;
   }
   .cl-product-image img{
     width:100%!important;height:100%!important;
+    max-width:100%!important;max-height:100%!important;
     object-fit:contain!important;
     object-position:center!important;
-    padding:8px!important;
+    padding:7px!important;
     background:transparent!important;
+    transform:none!important;
   }
   .cl-product-copy{
-    min-height:150px!important;
-    padding:12px 12px 46px!important;
     position:relative!important;
+    min-height:195px!important;
+    padding:11px 11px 48px!important;
   }
   .cl-product-copy h3{
-    font-size:16px!important;
-    line-height:1.22!important;
     margin:0 0 6px!important;
+    font-size:15px!important;
+    line-height:1.2!important;
     display:-webkit-box!important;
     -webkit-line-clamp:2!important;
     -webkit-box-orient:vertical!important;
@@ -701,86 +837,88 @@ html,body{
   }
   .cl-product-copy>a{
     display:block!important;
-    font-size:12px!important;
-    line-height:1.35!important;
-    color:#d0d0d3!important;
-    white-space:nowrap!important;
     overflow:hidden!important;
+    white-space:nowrap!important;
     text-overflow:ellipsis!important;
+    font-size:11px!important;
+    line-height:1.3!important;
+    color:#d0d0d3!important;
   }
   .cl-product-copy strong{
     position:absolute!important;
-    right:12px!important;
-    bottom:36px!important;
-    font-size:15px!important;
+    right:11px!important;
+    bottom:61px!important;
     margin:0!important;
+    font-size:15px!important;
     text-align:right!important;
   }
   .cl-product-copy small{
     position:absolute!important;
-    right:12px!important;
-    bottom:19px!important;
-    font-size:11px!important;
+    right:11px!important;
+    bottom:43px!important;
+    font-size:10px!important;
     text-align:right!important;
   }
   .cl-product-copy span{
     position:absolute!important;
-    left:12px!important;
+    left:11px!important;
     bottom:18px!important;
     font-size:11px!important;
-    color:#d8d8da!important;
+    color:#d6d6d9!important;
   }
   .cl-plus{
-    z-index:5!important;
-    width:34px!important;height:34px!important;
+    z-index:6!important;
+    width:36px!important;height:36px!important;
     right:9px!important;bottom:8px!important;
     border:1px solid var(--accent)!important;
+    border-radius:50%!important;
     background:#070708!important;
     color:var(--accent)!important;
   }
-  /* Move price/change slightly up when the plus button occupies the corner. */
-  .cl-product-card:has(.cl-plus) .cl-product-copy strong{bottom:60px!important}
-  .cl-product-card:has(.cl-plus) .cl-product-copy small{bottom:43px!important}
 
-  /* Mobile watchlist and budget keep the same black-card system. */
-  .cl-watchlist-page,.cl-content:has(.cl-budget-grid){padding-top:max(24px,env(safe-area-inset-top))!important}
-  .cl-watch-table,.cl-budget-grid .cl-card{background:#050506!important}
-  .cl-budget-grid{grid-template-columns:1fr!important;gap:10px!important}
-
-  /* Product detail stays usable on phone and never crops its image. */
+  /* ---------- Mobile product detail ---------- */
   .cl-item-page{padding-bottom:100px!important}
   .cl-item-hero{min-height:0!important;background:#080809!important}
-  .cl-item-hero-inner,.cl-item-watch-row,.cl-item-grid{width:calc(100vw - 24px)!important}
-  .cl-item-title-row h1{font-size:25px!important}
-  .cl-item-price strong{font-size:24px!important}
-  .cl-item-grid{display:flex!important;flex-direction:column!important;gap:10px!important}
+  .cl-item-hero-inner,.cl-item-watch-row,.cl-item-grid{
+    width:calc(100vw - 24px)!important;
+  }
+  .cl-item-title-row h1{font-size:24px!important}
+  .cl-item-price strong{font-size:23px!important}
+  .cl-item-grid{
+    display:flex!important;
+    flex-direction:column!important;
+    gap:10px!important;
+  }
   .cl-item-media{
     width:100%!important;
-    height:430px!important;
+    height:420px!important;
     background:#050506!important;
     border:0!important;
   }
   .cl-item-media img{
     width:100%!important;height:100%!important;
     object-fit:contain!important;
-    padding:14px!important;
+    object-position:center!important;
+    padding:13px!important;
   }
-  .cl-item-panel{background:#0b0b0c!important;border-color:#303036!important}
-  .cl-item-chart{height:220px!important}
+  .cl-item-panel{
+    background:#0b0b0c!important;
+    border-color:#303036!important;
+  }
+  .cl-item-chart{height:215px!important}
   .cl-item-right{display:flex!important;flex-direction:column!important}
 
-  /* Safe-area / scrolling quality */
-  .cl-type-page,.cl-set-browser,.cl-collection-page,.cl-watchlist-page{scroll-margin-top:90px}
   *{scrollbar-width:none}
   *::-webkit-scrollbar{display:none}
 }
 
 @media(max-width:390px){
   .cl-type-open{height:170px!important}
-  .cl-line-art{height:150px!important}
-  .cl-product-image{height:210px!important}
-  .cl-product-card{min-height:365px!important}
-  .cl-product-copy h3{font-size:15px!important}
+  .cl-line-art{height:158px!important}
+  .cl-product-image{height:228px!important}
+  .cl-product-card{min-height:430px!important}
+  .cl-product-copy{min-height:192px!important}
+  .cl-product-copy h3{font-size:14px!important}
   .cl-portfolio-chart .chart-total{font-size:42px!important}
-  .cl-nav{left:10px!important;right:10px!important}
+  .cl-nav{width:calc(100vw - 20px)!important}
 }
