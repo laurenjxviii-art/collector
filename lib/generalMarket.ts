@@ -11,7 +11,7 @@ type SoldRow={id:string;title:string;price:number;shipping:number;date:string;co
 
 const STOP=new Set(['the','a','an','and','or','of','for','with','from','by','to','in','on','at','figure','figures','collectible','collectibles','toy','toys','official','authentic','new']);
 const BAD=['lot of','bundle','custom','replacement','repro','reproduction','empty box','box only','manual only','case only','stand only','parts only','damaged only'];
-const APIFY_ACTOR='scrapeworks~ebay-sold-price-analytics';
+const APIFY_ACTOR='caffein.dev~ebay-sold-listings';
 const PARSE_EBAY='caa8e1ad-f5a8-41c1-9bd2-54a8e19b6c35';
 const PARSE_HOBBYDB='841c19fd-5b55-4c29-8dc9-75b5fac1669d';
 
@@ -28,14 +28,24 @@ export function isGeneralCollectible(item:GeneralMarketItem){return item.identit
 export function isFunkoItem(item:GeneralMarketItem){return /\bfunko\b|\bpop!?(?:\s|$)/i.test([item.name,item.category,item.identity?.brand,item.identity?.series].filter(Boolean).join(' '))}
 
 export function generalMarketQuery(item:GeneralMarketItem){
-  const i=item.identity||{};
-  const parts=[i.brand,item.name].map(clean).filter(Boolean);
-  const series=clean(i.series);if(series&&!generalNorm(item.name).includes(generalNorm(series)))parts.push(series);
-  for(const code of [i.modelNumber,i.sku]){const v=clean(code);if(v&&!/^\d{8,14}$/.test(v)&&v.length<=32)parts.push(v)}
-  const condition=broadCondition(item.condition);if(condition==='new')parts.push('sealed');else if(/loose/i.test(item.condition))parts.push('loose');
+  const i=item.identity||{},parts:string[]=[];
+  const brand=clean(i.brand),name=clean(item.name),category=generalNorm(item.category),franchise=generalNorm(item.customFields?.Franchise);
+  if(brand)parts.push(brand);
+  // eBay figure titles usually identify the product line more consistently than internal collection names.
+  if(/hasbro/i.test(brand)&&/figure/.test(category)&&(franchise.includes('marvel')||/spider|avenger|marvel/i.test(name+' '+clean(i.series))))parts.push('Marvel Legends');
+  if(name)parts.push(name);
   const seen=new Set<string>();const out:string[]=[];
   for(const part of parts){const n=generalNorm(part);if(!n||seen.has(n))continue;seen.add(n);out.push(part)}
-  return out.join(' ').slice(0,180);
+  return out.join(' ').slice(0,160);
+}
+function generalMarketQueries(item:GeneralMarketItem){
+  const i=item.identity||{},base=generalMarketQuery(item),out:string[]=[];
+  const add=(q:string)=>{q=q.trim().replace(/\s+/g,' ').slice(0,160);if(q&&!out.some(x=>generalNorm(x)===generalNorm(q)))out.push(q)};
+  const upc=clean(i.upc);if(/^\d{8,14}$/.test(upc))add(upc);
+  const model=clean(i.modelNumber||i.sku);if(model&&model.length<=32&&!/^\d{8,14}$/.test(model))add([base,model].filter(Boolean).join(' '));
+  add(base);
+  const series=clean(i.series);if(series) add([clean(i.brand),item.name,series].filter(Boolean).join(' '));
+  return out.slice(0,4);
 }
 
 function listingScore(item:GeneralMarketItem,row:SoldRow){
@@ -68,18 +78,39 @@ export function analyzeSoldRows(item:GeneralMarketItem,rows:SoldRow[],source:str
 
 function apifyRows(raw:any[]):Map<string,SoldRow[]>{
   const by=new Map<string,SoldRow[]>();let current='';
-  for(const row of raw){if(row?.rowType==='summary'){current=clean(row.searchTerm);continue}if(row?.rowType!=='listing')continue;const q=clean(row.searchTerm)||current;if(!q)continue;const price=moneyNumber(row.soldPrice),shipping=Number.isFinite(moneyNumber(row.shipping))?moneyNumber(row.shipping):0,date=dateOnly(row.soldDate);if(!Number.isFinite(price)||price<=0||!date||!/^https?:\/\//.test(clean(row.url)))continue;const list=by.get(q)||[];list.push({id:clean(row.listingId)||clean(row.url),title:clean(row.title),price,shipping,date,condition:clean(row.condition),url:clean(row.url),searchTerm:q});by.set(q,list)}
+  for(const row of raw){
+    // Support both the original analytics actor and the more established Caffein sold-listings actor.
+    if(row?.rowType==='summary'){current=clean(row.searchTerm);continue}
+    const isOld=row?.rowType==='listing',isNew=!row?.rowType&&(row?.itemId||row?.soldPrice||row?.endedAt);if(!isOld&&!isNew)continue;
+    const q=clean(row.searchTerm)||clean(row.keyword)||clean(row.query)||current;if(!q)continue;
+    const price=moneyNumber(row.soldPrice??row.price),shipRaw=moneyNumber(row.shippingPrice??row.shippingCost??row.shipping),shipping=Number.isFinite(shipRaw)&&shipRaw>=0?shipRaw:0;
+    const date=dateOnly(row.soldDate??row.endedAt??row.date),url=clean(row.url??row.itemUrl);
+    if(!Number.isFinite(price)||price<=0||!date||!/^https?:\/\//.test(url))continue;
+    const list=by.get(q)||[];list.push({id:clean(row.listingId)||clean(row.itemId)||url,title:clean(row.title),price,shipping,date,condition:clean(row.condition),url,searchTerm:q});by.set(q,list);
+  }
   return by;
 }
-export async function apifySoldBatch(items:GeneralMarketItem[],token:string,maxResultsPerQuery=12){
-  const pairs=items.map(item=>({item,query:generalMarketQuery(item)})).filter(x=>x.query);const searchTerms=uniq(pairs.map(x=>x.query));if(!searchTerms.length)return new Map<string,GeneralQuote>();
+function apifyInput(queries:string[],maxResultsPerQuery:number){
   const actor=process.env.APIFY_EBAY_ACTOR||APIFY_ACTOR;
-  const r=await fetch(`https://api.apify.com/v2/actors/${actor}/run-sync-get-dataset-items`,{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({searchTerms,domain:'ebay.com',maxResultsPerQuery,conditionFilter:'any',buyingFormat:'any',includeListingRows:true,proxyConfiguration:{useApifyProxy:true}}),cache:'no-store',signal:AbortSignal.timeout(55000)});
-  const j=await r.json().catch(()=>null);if(!r.ok||!Array.isArray(j))throw new Error('Apify eBay sold lookup failed.');const rows=apifyRows(j),out=new Map<string,GeneralQuote>();for(const {item,query} of pairs){const quote=analyzeSoldRows(item,rows.get(query)||[],'eBay sold · Apify');if(quote)out.set(query,quote)}return out;
+  if(actor.includes('caffein.dev'))return {actor,input:{keywords:queries.slice(0,6),categoryId:'0',daysToScrape:60,count:Math.max(12,maxResultsPerQuery),ebaySite:'ebay.com',sortOrder:'endedRecently',itemCondition:'any',includeCompletedListings:true}};
+  return {actor,input:{searchTerms:queries,domain:'ebay.com',maxResultsPerQuery,conditionFilter:'any',buyingFormat:'any',includeListingRows:true,proxyConfiguration:{useApifyProxy:true}}};
+}
+export async function apifySoldBatch(items:GeneralMarketItem[],token:string,maxResultsPerQuery=12){
+  const pairs=items.map(item=>({item,primary:generalMarketQuery(item),queries:generalMarketQueries(item)})).filter(x=>x.primary&&x.queries.length);
+  if(!pairs.length)return new Map<string,GeneralQuote>();const out=new Map<string,GeneralQuote>();
+  for(const pair of pairs){
+    const {actor,input}=apifyInput(pair.queries,maxResultsPerQuery);
+    const r=await fetch(`https://api.apify.com/v2/actors/${actor}/run-sync-get-dataset-items`,{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(input),cache:'no-store',signal:AbortSignal.timeout(55000)});
+    const j=await r.json().catch(()=>null);if(!r.ok||!Array.isArray(j))throw new Error('Apify eBay sold lookup failed.');const rows=apifyRows(j);
+    const quotes=pair.queries.map(q=>analyzeSoldRows(pair.item,rows.get(q)||[],'eBay sold · Apify')).filter(Boolean) as GeneralQuote[];
+    quotes.sort((a,b)=>(b.metrics?.count||0)-(a.metrics?.count||0)||b.confidence-a.confidence);if(quotes[0])out.set(pair.primary,quotes[0]);
+  }
+  return out;
 }
 export async function startApifySoldRun(items:GeneralMarketItem[],token:string,maxResultsPerQuery=12){
-  const pairs=items.map(item=>({item,query:generalMarketQuery(item)})).filter(x=>x.query);const searchTerms=uniq(pairs.map(x=>x.query));if(!searchTerms.length)return null;const actor=process.env.APIFY_EBAY_ACTOR||APIFY_ACTOR;
-  const r=await fetch(`https://api.apify.com/v2/actors/${actor}/runs`,{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({searchTerms,domain:'ebay.com',maxResultsPerQuery,conditionFilter:'any',buyingFormat:'any',includeListingRows:true,proxyConfiguration:{useApifyProxy:true}}),cache:'no-store',signal:AbortSignal.timeout(15000)});const j=await r.json().catch(()=>null);if(!r.ok||!j?.data?.id)throw new Error('Unable to start Apify eBay sold run.');return {runId:String(j.data.id),queries:Object.fromEntries(pairs.map(x=>[String(x.item.id||x.item.name),x.query]))};
+  const pairs=items.slice(0,6).map(item=>({item,query:generalMarketQuery(item)})).filter(x=>x.query);const searchTerms=uniq(pairs.map(x=>x.query));if(!searchTerms.length)return null;
+  const {actor,input}=apifyInput(searchTerms,maxResultsPerQuery);
+  const r=await fetch(`https://api.apify.com/v2/actors/${actor}/runs`,{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(input),cache:'no-store',signal:AbortSignal.timeout(15000)});const j=await r.json().catch(()=>null);if(!r.ok||!j?.data?.id)throw new Error('Unable to start Apify eBay sold run.');return {runId:String(j.data.id),queries:Object.fromEntries(pairs.map(x=>[String(x.item.id||x.item.name),x.query]))};
 }
 export async function getApifyRun(token:string,runId:string){const r=await fetch(`https://api.apify.com/v2/actor-runs/${encodeURIComponent(runId)}`,{headers:{Authorization:'Bearer '+token},cache:'no-store',signal:AbortSignal.timeout(15000)});const j=await r.json().catch(()=>null);if(!r.ok||!j?.data)throw new Error('Unable to read Apify run.');return j.data as {status:string;defaultDatasetId?:string}}
 export async function getApifyDataset(token:string,datasetId:string){const r=await fetch(`https://api.apify.com/v2/datasets/${encodeURIComponent(datasetId)}/items?clean=true&format=json`,{headers:{Authorization:'Bearer '+token},cache:'no-store',signal:AbortSignal.timeout(20000)});const j=await r.json().catch(()=>null);if(!r.ok||!Array.isArray(j))throw new Error('Unable to read Apify sold results.');return apifyRows(j)}

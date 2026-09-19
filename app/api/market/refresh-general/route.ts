@@ -7,7 +7,7 @@ export const runtime='nodejs';
 export const maxDuration=60;
 
 const STALE_MS=28*24*60*60*1000;
-const APIFY_BATCH_SIZE=7;
+const APIFY_BATCH_SIZE=6;
 const APIFY_RESULTS_PER_QUERY=12;
 
 type WorkspaceRow={user_id:string;payload:Store;revision:number};
