@@ -29,3 +29,9 @@
   .card-selector{left:9px;top:9px;width:26px;height:26px}
   .quick-edit-chip{left:9px;top:9px}
 }
+
+/* Empty collections remain visible and editable. */
+.collections-saved-head{margin:34px 0 14px;padding-top:22px;border-top:1px solid #262626}
+.collections-saved-head h2{margin:0 0 5px;font-size:20px}
+.collections-saved-head p{margin:0;color:#8e8e95;font-size:13px;line-height:1.45}
+.saved-collections-gallery{margin-top:0}
