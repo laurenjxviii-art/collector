@@ -12,7 +12,7 @@ body{background:#000;color:#dedede}.desktop-nav{display:none}.mobile-top{display
 
 /* Unified Collector UI — same palette and typography on web + installed app. */
 :root{
-  --collector-bg:#000000;
+  --collector-bg:#0c0c0c;
   --collector-surface:#171717;
   --collector-surface-2:#101010;
   --collector-fg:#dedede;
@@ -39,7 +39,7 @@ button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .top-tools{gap:10px!important}.top-tools>button{height:38px;min-width:38px;border-radius:19px;border:1px solid #292929;background:#111!important;color:#c8c8c8!important;padding:0 10px!important}
 .top-tools>button:hover{border-color:#454545;color:#fff!important}.top-tools .sync-pill{gap:7px;padding:0 13px!important;font-size:11px}.top-tools .sync-pill svg{color:var(--collector-positive)}
 .collection-strip{display:none!important}
-main>header{background:#000!important;border-bottom:0!important;height:44px!important;padding:0 34px!important}
+main>header{background:var(--collector-bg)!important;border-bottom:0!important;height:44px!important;padding:0 34px!important}
 main>header>span{color:#666!important}.header-right .cloud-button{color:#9c9c9c!important}
 .heading h1,.collections-page h1{font-weight:700!important;letter-spacing:-.035em!important;color:#f4f4f4!important}
 
@@ -187,3 +187,22 @@ html,body,input,textarea,select{color-scheme:dark}
 /* Full-bleed 16:9 collection covers */
 .collection-cover-modal{width:min(760px,calc(100vw - 28px))}.image-picker-wide{align-items:flex-start}.image-picker-wide .cover-preview{width:min(360px,48vw);height:auto;aspect-ratio:16/9;border:0;border-radius:10px;background:#000;box-shadow:none}.image-picker-wide .cover-preview img{width:100%;height:100%;object-fit:cover;padding:0}.cover-spec{padding:10px 12px;border:1px solid #2c2c2c;border-radius:8px;background:#0b0b0b}.new-collection-tile .collection-tile-art{border:1px dashed #343434;background:#101010}.library-all-tile .collection-tile-art{border:0!important}
 @media(max-width:760px){.image-picker-wide{display:block}.image-picker-wide .cover-preview{width:100%;max-width:none;margin-bottom:12px}}
+
+
+/* v12: clearer collection navigation and a slightly lifted app background. */
+.collections-page-title-row{display:flex;align-items:flex-start;gap:14px;min-width:0}
+.collections-back,.collection-back-button{display:inline-flex!important;align-items:center;justify-content:center;gap:7px;white-space:nowrap}
+.collections-back{margin-top:3px;padding:8px 11px;border:1px solid #303030;border-radius:9px;background:#151515;color:#d0d0d0;font-size:12px;font-weight:650}
+.collections-back:hover{background:#1b1b1b;color:#fff;border-color:#444}
+.collections-page{background:transparent}
+.collection-tile-art{box-shadow:0 0 0 1px #1d1d1d,0 8px 20px #0005}
+.collection-tile:hover .collection-tile-art{box-shadow:0 0 0 1px #2a2a2a,0 10px 24px #0007}
+@media(max-width:760px){
+  body{background:var(--collector-bg)!important}
+  .mobile-top,main>header{background:var(--collector-bg)!important}
+  .collections-page-head{align-items:flex-start}
+  .collections-page-title-row{gap:10px}
+  .collections-back{padding:8px 10px}
+  .collections-back span{display:none}
+  .heading-actions .collection-back-button{order:-1}
+}
