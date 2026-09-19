@@ -101,6 +101,7 @@ export function justTcgQuote(match:{card:JustTcgCard;variant:JustTcgVariant;conf
     url:'https://justtcg.com',
     fetchedAt:new Date().toISOString(),
     warning:'JustTCG is a current TCG market-price source. It is not a list of the last 10 individual completed sales.',
+    searchQuery:[item.identity?.brand,item.name,item.identity?.series,item.identity?.collectorNumber].filter(Boolean).join(' '),
     identifiers:{
       justtcgId:String(card.uuid||card.id||''),
       justtcgVariantId:String(variant.uuid||variant.id||''),

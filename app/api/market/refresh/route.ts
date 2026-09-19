@@ -11,7 +11,7 @@ const MAX_JUSTTCG_CALLS=8;
 const JUSTTCG_MIN_INTERVAL_MS=6200;
 
 function latestJustTcg(item:Item){return [...(item.priceHistory||[])].reverse().find(p=>p.kind==='provider'&&p.source.startsWith('JustTCG'))}
-function stale(item:Item){const last=latestJustTcg(item);return !last||Date.now()-Date.parse(last.date)>STALE_MS}
+function stale(item:Item){const last=latestJustTcg(item),linked=Date.parse(item.marketLink?.lastRefresh||'');const seen=Math.max(last?Date.parse(last.date):0,Number.isFinite(linked)?linked:0);return !seen||Date.now()-seen>STALE_MS}
 function direct(item:Item){const i=item.identity||{};return Boolean(i.justtcgVariantId||i.justtcgId||i.tcgplayerId||i.scryfallId)}
 function chunks<T>(values:T[],size:number){const out:T[][]=[];for(let i=0;i<values.length;i+=size)out.push(values.slice(i,i+size));return out}
 function cardNumber(item:Item){return String(item.identity?.collectorNumber||item.customFields?.['Card #']||'').trim()}
@@ -22,13 +22,13 @@ function withMarket(item:Item,card:any,variant:any,confidence:number){
   const point={date,value,variant:variantKey(item),source,url:'https://justtcg.com',kind:'provider' as const};
   const points=[...(item.priceHistory||[])];
   const last=points.at(-1);if(!(last&&last.kind==='provider'&&last.source===source&&last.date.slice(0,10)===date.slice(0,10)&&last.value===value))points.push(point);
-  return {...item,currentValue:value,updatedAt:date,identity:{...(item.identity||{}),justtcgId:String(card.uuid||card.id||''),justtcgVariantId:String(variant.uuid||variant.id||''),...(card.tcgplayerId?{tcgplayerId:String(card.tcgplayerId)}:{}),...(card.scryfallId?{scryfallId:String(card.scryfallId)}:{})},customFields:{...item.customFields,'Market source':'JustTCG','Market updated':date,'Market match confidence':Math.round(confidence*100)+'%'},priceHistory:points.slice(-3000)};
+  const previous=latestJustTcg(item);const marketLink=item.marketLink?{...item.marketLink,lastRefresh:date}:{provider:'JustTCG',query:[item.identity?.brand,item.name,item.identity?.series,cardNumber(item)].filter(Boolean).join(' '),linkedAt:previous?.date||date,lastRefresh:date};return {...item,currentValue:value,updatedAt:date,identity:{...(item.identity||{}),justtcgId:String(card.uuid||card.id||''),justtcgVariantId:String(variant.uuid||variant.id||''),...(card.tcgplayerId?{tcgplayerId:String(card.tcgplayerId)}:{}),...(card.scryfallId?{scryfallId:String(card.scryfallId)}:{})},marketLink,customFields:{...item.customFields,'Market source':'JustTCG','Market updated':date,'Market match confidence':Math.round(confidence*100)+'%'},priceHistory:points.slice(-3000)};
 }
 function updateHistory(store:Store){const values:Record<string,number>={};for(const c of store.collections)values[c.id]=store.items.filter(i=>i.collectionId===c.id&&i.status==='owned').reduce((sum,i)=>sum+i.currentValue*i.quantity,0);const date=new Date().toISOString(),day=date.slice(0,10),history=[...(store.history||[])];if(history.at(-1)?.date.slice(0,10)===day)history[history.length-1]={date,values};else history.push({date,values});return {...store,history:history.slice(-1500)}}
 async function supabase(url:string,key:string,path:string,init:RequestInit={}){const r=await fetch(url+path,{...init,headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json',...(init.headers||{})},cache:'no-store',signal:AbortSignal.timeout(30000)});const body=await r.json().catch(()=>null);if(!r.ok)throw new Error(body?.message||body?.error||'Supabase request failed');return body}
 
 async function refreshWorkspace(payload:Store,client:JustTcgClient){
-  const candidates=payload.items.filter(item=>isTcgItem(item as RichMarketItem)&&stale(item));
+  const candidates=payload.items.filter(item=>isTcgItem(item as RichMarketItem)&&Boolean(item.marketLink||latestJustTcg(item))&&stale(item));
   if(!candidates.length)return {store:payload,updated:0,review:0};
   const updates=new Map<string,Item>();let review=0;
   const directItems=candidates.filter(direct);

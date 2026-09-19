@@ -6,7 +6,7 @@ import {GeneralQuote,analyzeSoldRows,generalMarketQuery,getApifyDataset,getApify
 export const runtime='nodejs';
 export const maxDuration=60;
 
-const STALE_MS=28*24*60*60*1000;
+const STALE_MS=7*24*60*60*1000;
 const APIFY_BATCH_SIZE=6;
 const APIFY_RESULTS_PER_QUERY=12;
 
@@ -14,17 +14,17 @@ type WorkspaceRow={user_id:string;payload:Store;revision:number};
 type JobRow={id:string;external_run_id:string;item_ids:string[];queries:Record<string,string>;started_at:string};
 
 function latestGeneral(item:Item){return [...(item.priceHistory||[])].reverse().find(p=>p.kind==='provider'&&(p.source.startsWith('eBay sold · Apify')||p.source.startsWith('eBay sold · Parse')||p.source.startsWith('hobbyDB · Parse')))}
-function stale(item:Item){const last=latestGeneral(item),checked=Date.parse(item.customFields?.['Market checked']||'');const seen=Math.max(last?Date.parse(last.date):0,Number.isFinite(checked)?checked:0);return !seen||Date.now()-seen>STALE_MS}
-function eligible(item:Item){return item.status!=='sold'&&isGeneralCollectible(item)&&stale(item)}
+function stale(item:Item){const last=latestGeneral(item),checked=Date.parse(item.customFields?.['Market checked']||''),linked=Date.parse(item.marketLink?.lastRefresh||'');const seen=Math.max(last?Date.parse(last.date):0,Number.isFinite(checked)?checked:0,Number.isFinite(linked)?linked:0);return !seen||Date.now()-seen>STALE_MS}
+function eligible(item:Item){return item.status!=='sold'&&isGeneralCollectible(item)&&Boolean(item.marketLink||latestGeneral(item))&&stale(item)}
 function updateHistory(store:Store){const values:Record<string,number>={};for(const c of store.collections)values[c.id]=store.items.filter(i=>i.collectionId===c.id&&i.status==='owned').reduce((sum,i)=>sum+i.currentValue*i.quantity,0);const date=new Date().toISOString(),day=date.slice(0,10),history=[...(store.history||[])];if(history.at(-1)?.date.slice(0,10)===day)history[history.length-1]={date,values};else history.push({date,values});return {...store,history:history.slice(-1500)}}
 async function supabase(url:string,key:string,path:string,init:RequestInit={}){const r=await fetch(url+path,{...init,headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json',...(init.headers||{})},cache:'no-store',signal:AbortSignal.timeout(20000)});const body=await r.json().catch(()=>null);if(!r.ok)throw new Error(body?.message||body?.error||'Supabase request failed');return body}
 function mergeQuote(item:Item,quote:GeneralQuote){
   if(quote.confidence<.9)return null;if(quote.metrics&&quote.metrics.count<3)return null;
   const date=new Date().toISOString();const key=variantKey(item);const incoming=quote.comparables||[];const merged=Array.from(new Map([...(item.comparables||[]),...incoming].map(c=>[c.id,c])).values()).slice(-200);
   const source=quote.source+' · '+quote.tier;const point={date,value:quote.value,variant:key,source,url:quote.url,kind:'provider' as const};const points=[...(item.priceHistory||[])];const last=points.at(-1);if(!(last&&last.kind==='provider'&&last.source===source&&last.value===quote.value&&last.date.slice(0,10)===date.slice(0,10)))points.push(point);
-  const metrics=quote.metrics;return {...item,currentValue:quote.value,updatedAt:date,identity:{...(item.identity||{}),...(quote.identifiers||{})},comparables:merged,customFields:{...item.customFields,'Market source':quote.source,'Market updated':date,'Market checked':date,'Market match confidence':Math.round(quote.confidence*100)+'%',...(metrics?{'Sold comps':String(metrics.count),'Sold comp average':String(metrics.average),'Sold comp median':String(metrics.median),'Sold comp range':`${metrics.min}–${metrics.max}`}:{})},priceHistory:points.slice(-3000)};
+  const metrics=quote.metrics,legacy=latestGeneral(item);const marketLink={provider:quote.source,query:quote.searchQuery||item.marketLink?.query||generalMarketQuery(item),linkedAt:item.marketLink?.linkedAt||legacy?.date||date,lastRefresh:date};return {...item,currentValue:quote.value,updatedAt:date,identity:{...(item.identity||{}),...(quote.identifiers||{})},marketLink,comparables:merged,customFields:{...item.customFields,'Market source':quote.source,'Market updated':date,'Market checked':date,'Market match confidence':Math.round(quote.confidence*100)+'%',...(metrics?{'Sold comps':String(metrics.count),'Sold comp average':String(metrics.average),'Sold comp median':String(metrics.median),'Sold comp range':`${metrics.min}–${metrics.max}`}:{})},priceHistory:points.slice(-3000)};
 }
-function markChecked(item:Item,source:string){const date=new Date().toISOString();return {...item,customFields:{...item.customFields,'Market checked':date,'Market review':source},updatedAt:date}}
+function markChecked(item:Item,source:string){const date=new Date().toISOString(),legacy=latestGeneral(item);const marketLink=item.marketLink?{...item.marketLink,lastRefresh:date}:legacy?{provider:legacy.source,query:generalMarketQuery(item),linkedAt:legacy.date,lastRefresh:date}:undefined;return {...item,marketLink,customFields:{...item.customFields,'Market checked':date,'Market review':source},updatedAt:date}}
 async function patchWorkspace(url:string,key:string,row:WorkspaceRow,next:Store){const payload=updateHistory(next),path='/rest/v1/collector_workspaces?'+new URLSearchParams({user_id:'eq.'+row.user_id,revision:'eq.'+String(row.revision)});await supabase(url,key,path,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({payload,revision:row.revision+1,updated_at:new Date().toISOString()})});row.payload=payload;row.revision++}
 async function markJob(url:string,key:string,id:string,state:string,error=''){await supabase(url,key,'/rest/v1/collector_market_jobs?'+new URLSearchParams({id:'eq.'+id}),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({state,completed_at:new Date().toISOString(),error:error||null})})}
 

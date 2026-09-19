@@ -18,6 +18,10 @@ On iPhone, open the hosted URL in Safari, then Share > Add to Home Screen. No Ap
 
 Market history is recorded from real provider observations or entered values, never invented. Supported optional server-side provider variables are `JUSTTCG_API_KEY`, `APIFY_TOKEN`, `PARSE_API_KEY`, and `PRICECHARTING_TOKEN`. `CRON_SECRET` and `SUPABASE_SERVICE_ROLE_KEY` enable scheduled refreshes. General collectibles use recent eBay sold comps through Apify when connected, with Parse eBay/hobbyDB fallbacks. Collector stores up to 10 matched sold comps, their average/median/range, confidence, source, and update time. Graded variants stay separate from raw items. Review manual lookup matches before applying prices.
 
+General collectibles now separate **packaging state** from cosmetic condition: Raw — Sealed, Raw — Opened with original box, and Raw — Opened without box / loose. eBay sold matching rejects clearly different packaging states. A first provider match must be confirmed manually; that confirmation stores a persistent market link. Linked general collectibles are checked by the scheduled job roughly weekly (the cron runs daily but skips fresh items), while linked JustTCG items use the faster TCG cadence. Low-confidence or too-small sold-comp samples do not silently overwrite the last good value.
+
+The Collections browser is hierarchical: **Type → Line/Game → Set/Collection → Item**. Existing data is grouped automatically from category, brand and series (for example Action Figures → Marvel Legends / ZD Toys and Trading Cards → Magic: The Gathering / Union Arena). Optional Type and Line/Game overrides can be set on a collection when automatic grouping is not what you want.
+
 lib/model.ts supplies the portable versioned data contract and widgetSnapshot for future mobile sync.
 
 

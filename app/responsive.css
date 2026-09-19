@@ -169,3 +169,17 @@ html,body,input,textarea,select{color-scheme:dark}
   .photo-preview,.logo-preview{background:#111!important;border-color:#292929!important}
   .quote{background:#080808!important;border-color:#292929!important}
 }
+
+/* v8: proportional chart rendering — never stretch SVG text, dates, axes or curves. */
+.chart-canvas{width:100%;min-height:0!important;overflow:hidden}
+.chart-canvas svg{display:block;width:100%!important;height:auto!important;min-height:0!important;max-width:1100px;margin-left:auto;margin-right:auto}
+.history-panel svg{display:block;width:100%!important;height:auto!important;min-height:0!important;aspect-ratio:640/250}
+@media(max-width:760px){
+  .chart-canvas{min-height:0!important}
+  .chart-canvas svg{height:auto!important;min-height:0!important}
+  .history-panel svg{height:auto!important;min-height:0!important}
+}
+
+/* v8: hierarchical library browser + line summary */
+.library-crumbs{display:flex;align-items:center;gap:8px;margin:-10px 0 18px;color:#777;font-size:11px}.library-crumbs button{color:#aaa;padding:5px 0}.library-crumbs button:hover{color:#fff}.library-crumbs b{color:#eee;font-weight:600}.library-filter-summary{display:grid;grid-template-columns:1.4fr repeat(3,1fr);gap:1px;background:#292929;border:1px solid #292929;border-radius:12px;overflow:hidden;margin-bottom:18px}.library-filter-summary>div{background:#080808;padding:18px}.library-filter-summary small{font-size:9px;color:#777;text-transform:uppercase;letter-spacing:.8px}.library-filter-summary strong,.library-filter-summary b{display:block;margin-top:7px;font-size:18px;color:#eee}.library-filter-summary>div:first-child strong{font-size:22px}.library-all-tile .collection-tile-art{border-color:color-mix(in srgb,var(--collector-accent) 45%,#333)}
+@media(max-width:760px){.library-filter-summary{grid-template-columns:1fr 1fr}.library-filter-summary>div{padding:13px}.library-filter-summary>div:first-child{grid-column:1/-1}.library-filter-summary strong,.library-filter-summary b{font-size:15px}.library-filter-summary>div:first-child strong{font-size:19px}.library-crumbs{margin:0 4px 14px;overflow-x:auto;white-space:nowrap}}
