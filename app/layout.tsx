@@ -3,7 +3,7 @@ import './polish.css';
 import './cover-polish.css';
 import './experience.css';
 import './fixes.css';
-import UiEnhancer from './UiEnhancer';
+import './brand.css';
 import type {Metadata} from 'next';
 
 export const metadata:Metadata={
@@ -24,5 +24,5 @@ export const viewport={
 };
 
 export default function Layout({children}:{children:React.ReactNode}){
-  return <html lang="en"><body>{children}<UiEnhancer/></body></html>
+  return <html lang="en"><body>{children}</body></html>
 }

@@ -2,72 +2,34 @@
 
 import {useMemo,useState} from 'react';
 import {
-  Bell,Camera,ChevronLeft,ChevronRight,Cloud,Heart,Home as HomeIcon,Landmark,Library,
-  Package,Pencil,PieChart,Plus,Search,Settings,SlidersHorizontal,Star,TrendingDown,
-  TrendingUp,UserCircle,X
+  Bell,ChevronLeft,Cloud,Heart,Home as HomeIcon,Landmark,Library,
+  Package,Pencil,PieChart,Plus,Search,Settings,SlidersHorizontal,Star,
+  TrendingDown,TrendingUp,UserCircle,X
 } from 'lucide-react';
-import {Collection,Item,LibraryGroup,Store,money,libraryTypeGroupKey,libraryLineGroupKey} from '../lib/model';
+import {
+  Collection,Item,Store,money,itemLibraryType
+} from '../lib/model';
 import {useWorkspace} from '../lib/useWorkspace';
 import CloudPanel from './CloudPanel';
 import ItemDetail from './ItemDetail';
 import ValueChart from './ValueChart';
 
 const RED='#ff1f2d';
+const UNLABELED='unlabeled-system';
+
 type MainView='home'|'collections'|'portfolio'|'finance'|'profile';
-type Trail={type?:string;line?:string;collection?:string};
-type CollectionMeta=Collection&{targetCount?:number;releaseDate?:string};
+type BrandStep={brand?:string;category?:string};
+type BrandGroup='All Brands'|'TCG Brands'|'Sports Card Brands'|'Collectible Brands'|'Comic Brands'|'Model & Building Brands'|'Other Brands';
 
-type ScopeOption={id:string;label:string};
-
-function typeEntries(data:Store){
-  return Object.entries(data.libraryGroups||{}).filter(([k])=>k.startsWith('type::')).map(([k,g])=>({id:k.slice(6),group:g}));
-}
-function lineEntries(data:Store,type:string){
-  const prefix=`line::${type}::`;
-  return Object.entries(data.libraryGroups||{}).filter(([k])=>k.startsWith(prefix)).map(([k,g])=>({id:k.slice(prefix.length),group:g}));
-}
-function groupName(data:Store,level:'type'|'line',type:string,line=''){
-  const key=level==='type'?libraryTypeGroupKey(type):libraryLineGroupKey(type,line);
-  return data.libraryGroups?.[key]?.name||'Untitled';
-}
-function itemsForCollections(data:Store,collections:Collection[]){
-  const ids=new Set(collections.map(c=>c.id));
-  return data.items.filter(i=>ids.has(i.collectionId));
-}
 function owned(items:Item[]){return items.filter(i=>i.status==='owned')}
 function totalValue(items:Item[]){return owned(items).reduce((sum,i)=>sum+i.currentValue*i.quantity,0)}
 function totalCost(items:Item[]){return owned(items).reduce((sum,i)=>sum+i.purchasePrice*i.quantity,0)}
-function uniqueOwned(items:Item[]){return new Set(owned(items).map(i=>i.identity?.collectorNumber||i.identity?.upc||i.id)).size}
-function watched(item:Item){return item.status==='wishlist'||item.customFields?.__watchlist==='true'}
-function collectionImage(c:Collection){return c.coverImage||c.coverLogo||c.logo||''}
-function groupImage(g?:LibraryGroup){return g?.coverImage||g?.coverLogo||''}
-function releaseDate(c:Collection,items:Item[]=[]){
-  const meta=c as CollectionMeta;
-  if(meta.releaseDate?.trim())return meta.releaseDate.trim();
-  const keys=['Released Date','Release Date','Release date','Date Released','Set Release Date','Released'];
-  for(const item of items){for(const key of keys){const v=item.customFields?.[key];if(v?.trim())return v.trim()}}
-  const year=items.map(i=>i.identity?.year).find(Boolean);
-  return c.name.match(/\b(20\d{2})\b/)?.[1]||year||'—';
-}
-function setTarget(collection:Collection,lineName:string,items:Item[]=[]){
-  const meta=collection as CollectionMeta;
-  if(Number(meta.targetCount)>0)return Number(meta.targetCount);
-  const custom=Number(collection.name.match(/\[(\d+)\s*(?:cards?|items?)\]/i)?.[1]||0);
-  if(custom>0)return custom;
-  const totalKeys=['Set Total','Total Cards','Cards in Set','Checklist Total','Total in Set','Total Items'];
-  for(const item of items){for(const key of totalKeys){const n=Number((item.customFields?.[key]||'').replace(/[^0-9]/g,''));if(n>0)return n}}
-  const itemHints=items.map(i=>[i.identity?.setCode,i.identity?.series,i.identity?.description,i.identity?.collectorNumber].filter(Boolean).join(' ')).join(' ');
-  const s=`${collection.name} ${lineName} ${itemHints}`.toLowerCase();
-  if(/jujutsu|jjk/.test(s)&&/(vol\.?\s*2|volume\s*2|jjk-2|uex02bt|uex02)/.test(s))return 90;
-  if(/jujutsu|jjk/.test(s)&&/(vol\.?\s*1|volume\s*1|jjk-1|ue03bt|ue03)/.test(s))return 106;
-  return 0;
-}
-function pct(have:number,target:number){return target?Math.min(100,(have/target)*100):0}
 function recentChange(i:Item){
   const points=(i.priceHistory||[]).filter(p=>p.kind!=='sale').toSorted((a,b)=>a.date.localeCompare(b.date));
   if(points.length<2)return 0;
   return points.at(-1)!.value-points[Math.max(0,points.length-8)].value;
 }
+function watched(item:Item){return item.status==='wishlist'||item.customFields?.__watchlist==='true'}
 function monthKey(d=new Date()){return d.toISOString().slice(0,7)}
 function itemSpend(item:Item){return item.purchasePrice*Math.max(1,item.quantity)}
 function median(values:number[]){
@@ -82,21 +44,133 @@ function valueScore(item:Item){
   const momentum=item.currentValue>0?recentChange(item)/item.currentValue:0;
   return Math.round(Math.max(1,Math.min(99,50+discount*60+momentum*35)));
 }
+function norm(v:unknown){
+  return String(v||'').toLowerCase().replace(/[’']/g,"'").replace(/[^a-z0-9]+/g,' ').trim();
+}
+function itemBrand(item:Item){
+  return (item.identity?.brand||item.customFields?.Brand||'Unlabeled Brand').trim()||'Unlabeled Brand';
+}
+function displayBrand(brand:string){
+  if(brand==='McFarlane')return 'McFarlane Toys';
+  if(brand==='POP MART')return 'Pop Mart';
+  return brand;
+}
+function brandGroup(item:Item):BrandGroup{
+  const brand=itemBrand(item);
+  const type=itemLibraryType(item);
+  if(type==='Trading Cards'){
+    if(['Topps','Panini','Bowman','Skybox'].includes(brand)||/basketball|football|baseball|hockey/i.test(item.category))return 'Sports Card Brands';
+    return 'TCG Brands';
+  }
+  if(type==='Comics'||brand==='Marvel Comics')return 'Comic Brands';
+  if(type==='LEGO & Models'||['LEGO','BLDR','Blokees'].includes(brand))return 'Model & Building Brands';
+  if(['Action Figures','Designer & Vinyl Figures','Other Collectibles'].includes(type)||['Funko','Hasbro','McFarlane','ZD Toys','Jazwares','Bandai','POP MART','CultureFly','Royal Bobbles','Pop Creations'].includes(brand))return 'Collectible Brands';
+  return 'Other Brands';
+}
+function isCardBrand(brand:string){
+  return ['Magic: The Gathering','Union Arena','Pokémon','Topps','Panini','Bowman','Skybox'].includes(brand);
+}
+function categoryForItem(item:Item,brand:string){
+  const series=(item.identity?.series||'').trim();
+  const set=(item.customFields?.Set||'').trim();
+  if(isCardBrand(brand))return series||set||item.category||'Other';
+
+  if(brand==='Marvel Comics')return series||'Marvel Comics';
+
+  const text=norm([
+    item.name,series,item.customFields?.['Source / Title'],item.customFields?.Franchise
+  ].filter(Boolean).join(' '));
+
+  if(/doctor strange/.test(text))return 'Doctor Strange';
+  if(/miles morales/.test(text))return 'Spider-Man';
+  if(/spider man|spiderman|iron spider/.test(text))return 'Spider-Man';
+  if(/venom|eddie brock/.test(text))return 'Venom';
+  if(/ghost face|scream/.test(text))return 'Scream';
+  if(/jujutsu kaisen|sukuna|gojo|megumi|itadori/.test(text))return 'Jujutsu Kaisen';
+  if(/wicked|glinda/.test(text))return 'Wicked';
+  if(/sanrio|cinnamoroll/.test(text))return 'Sanrio';
+  if(/new york knicks|nba/.test(text))return 'NBA';
+  if(/new york jets|nfl/.test(text))return 'NFL';
+  if(/mlb|yankees/.test(text))return 'MLB';
+
+  const franchise=(item.customFields?.Franchise||'').trim();
+  if(franchise&&!['Marvel','Marvel Universe'].includes(franchise))return franchise;
+  return series||franchise||item.category||'Other';
+}
+function itemKind(item:Item){
+  const type=itemLibraryType(item);
+  const brand=itemBrand(item);
+  if(type==='Trading Cards'){
+    if(['Topps','Panini','Bowman','Skybox'].includes(brand)||/basketball|football|baseball|hockey/i.test(item.category))return 'Sports Cards';
+    return 'Trading Cards';
+  }
+  if(type==='Comics')return 'Comics';
+  if(type==='Action Figures')return 'Action Figures';
+  if(type==='Designer & Vinyl Figures')return 'Collectible Figures';
+  if(type==='LEGO & Models')return 'Models & Building';
+  if(type==='Skateboards')return 'Skateboards';
+  if(type==='Art & Decor')return 'Art & Decor';
+  if(type==='Games')return 'Games';
+  if(brand==='Squier')return 'Music Gear';
+  return 'Other Collectibles';
+}
+function groupLogo(data:Store,brand:string,items:Item[]){
+  const groups=Object.values(data.libraryGroups||{});
+  const aliases=[displayBrand(brand),brand];
+  if(brand==='Funko')aliases.push('Funko Pop!');
+  if(brand==='Hasbro')aliases.push('Marvel Legends');
+  if(brand==='McFarlane')aliases.push('McFarlane Toys');
+  if(brand==='Magic: The Gathering')aliases.push('Magic The Gathering');
+  if(brand==='Panini')aliases.push('Panini Prizm');
+  if(brand==='Bowman')aliases.push('Bowman Chrome University');
+  if(brand==='Skybox')aliases.push('Skybox Premium');
+  if(brand==='Squier')aliases.push('Fender');
+
+  const direct=groups.find(g=>aliases.some(a=>norm(g.name)===norm(a)));
+  const directImage=direct?.coverImage||direct?.coverLogo;
+  if(directImage)return directImage;
+
+  for(const item of items){
+    const typeId=item.customFields?.__legacyLibraryType;
+    const lineId=item.customFields?.__legacyLibraryLine;
+    if(!typeId||!lineId)continue;
+    const g=data.libraryGroups?.[`line::${typeId}::${lineId}`];
+    const img=g?.coverImage||g?.coverLogo;
+    if(img)return img;
+  }
+  return '';
+}
+function legacyCollectionCover(data:Store,items:Item[]){
+  for(const item of items){
+    const id=item.customFields?.__legacyCollectionId;
+    const c=id?data.collections.find(x=>x.id===id):undefined;
+    const img=c?.coverImage||c?.coverLogo||c?.logo;
+    if(img)return img;
+  }
+  return items.find(i=>i.image)?.image||'';
+}
+function targetForCategory(brand:string,category:string,items:Item[]){
+  for(const item of items){
+    for(const key of ['Set Total','Total Cards','Cards in Set','Checklist Total','Total in Set','Total Items']){
+      const n=Number((item.customFields?.[key]||'').replace(/[^0-9]/g,''));
+      if(n>0)return n;
+    }
+  }
+  const s=norm(`${brand} ${category} ${items.map(i=>`${i.identity?.setCode||''} ${i.identity?.series||''}`).join(' ')}`);
+  if(/union arena/.test(s)&&/vol 2|uex02/.test(s))return 90;
+  if(/union arena/.test(s)&&/jujutsu kaisen|ue03/.test(s))return 106;
+  return 0;
+}
 
 export default function Home(){
   const cloud=useWorkspace();
   const {data,ready}=cloud;
   const [view,setView]=useState<MainView>('home');
-  const [trail,setTrail]=useState<Trail>({});
   const [detail,setDetail]=useState<Item|null>(null);
-  const [query,setQuery]=useState('');
   const [cloudOpen,setCloudOpen]=useState(false);
   const [settingsOpen,setSettingsOpen]=useState(false);
   const [editingItem,setEditingItem]=useState<Item|null>(null);
-  const [editingCollection,setEditingCollection]=useState<Collection|null>(null);
-  const [editingGroup,setEditingGroup]=useState<{level:'type'|'line';type:string;line?:string}|null>(null);
   const prefs=(data.preferences||{accentColor:RED,density:'comfortable' as const,cardSize:'standard' as const,reducedMotion:false}) as NonNullable<Store['preferences']>&{monthlyCollectingBudget?:number};
-  const currentCollection=trail.collection?data.collections.find(c=>c.id===trail.collection):undefined;
 
   function update(next:Store){cloud.update(next)}
   function saveItem(item:Item){
@@ -112,7 +186,7 @@ export default function Home(){
   function increment(item:Item){
     saveItem({...item,status:'owned',quantity:item.status==='owned'?item.quantity+1:1,updatedAt:new Date().toISOString()});
   }
-  function go(v:MainView){setView(v);setTrail({});setDetail(null);setQuery('')}
+  function go(v:MainView){setView(v);setDetail(null)}
   function downloadBackup(){
     const a=document.createElement('a');
     a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
@@ -122,54 +196,172 @@ export default function Home(){
   if(!ready)return <div className="cl-loading">Loading Collector…</div>;
 
   const chrome=<TopNav view={view} go={go} cloud={cloud.status} onCloud={()=>setCloudOpen(true)} onSettings={()=>setSettingsOpen(true)}/>;
+
   if(detail){
     const live=data.items.find(i=>i.id===detail.id)||detail;
     return <div className="cc-app" style={{'--accent':prefs.accentColor||RED} as React.CSSProperties}>
       {chrome}
-      <ItemDetail item={live} collection={data.collections.find(c=>c.id===live.collectionId)} close={()=>setDetail(null)} edit={()=>{setEditingItem(live);setDetail(null)}} remove={()=>removeItem(live)} save={saveItem}/>
+      <ItemDetail
+        item={live}
+        collection={data.collections.find(c=>c.id===live.collectionId)}
+        close={()=>setDetail(null)}
+        edit={()=>{setEditingItem(live);setDetail(null)}}
+        remove={()=>removeItem(live)}
+        save={saveItem}
+      />
       {cloudOpen&&<CloudPanel {...cloud} close={()=>setCloudOpen(false)} backup={downloadBackup} recovery={()=>{}}/>}
       {settingsOpen&&<SettingsModal data={data} close={()=>setSettingsOpen(false)} save={next=>{update(next);setSettingsOpen(false)}}/>}
-      {editingItem&&<ItemEditor item={editingItem} collections={data.collections} close={()=>setEditingItem(null)} save={saveItem}/>} 
+      {editingItem&&<ItemEditor item={editingItem} collections={data.collections} close={()=>setEditingItem(null)} save={saveItem}/>}
     </div>
   }
 
   return <div className={`cc-app density-${prefs.density} cards-${prefs.cardSize}`} style={{'--accent':prefs.accentColor||RED} as React.CSSProperties}>
     {chrome}
     <main className="cc-main">
-      {view==='home'&&<HomeDashboard data={data} openItem={setDetail}/>} 
-      {view==='collections'&&<CollectionsView data={data} trail={trail} setTrail={setTrail} query={query} setQuery={setQuery} openItem={setDetail} addItem={()=>setEditingItem(blankItem(currentCollection?.id||''))} editCollection={setEditingCollection} editGroup={setEditingGroup} createGroup={(level,type)=>setEditingGroup(level==='type'?{level:'type',type:crypto.randomUUID()}:{level:'line',type:type!,line:crypto.randomUUID()})} createCollection={(type,line)=>setEditingCollection({id:crypto.randomUUID(),name:'New Collection',icon:'Layers',color:RED,libraryType:type,libraryLine:line})} increment={increment}/>} 
-      {view==='portfolio'&&<PortfolioProducts data={data} openItem={setDetail} increment={increment}/>} 
-      {view==='finance'&&<Finance data={data} update={update} openItem={setDetail}/>} 
-      {view==='profile'&&<ProfilePage data={data} update={update} onCloud={()=>setCloudOpen(true)} onSettings={()=>setSettingsOpen(true)}/>} 
+      {view==='home'&&<HomeDashboard data={data} openItem={setDetail} goCollections={()=>go('collections')}/>}
+      {view==='collections'&&<BrandCollections data={data} openItem={setDetail} increment={increment} addItem={()=>setEditingItem(blankItem(UNLABELED))}/>}
+      {view==='portfolio'&&<PortfolioProducts data={data} openItem={setDetail} increment={increment}/>}
+      {view==='finance'&&<Finance data={data} update={update} openItem={setDetail}/>}
+      {view==='profile'&&<ProfilePage data={data} update={update} onCloud={()=>setCloudOpen(true)} onSettings={()=>setSettingsOpen(true)}/>}
     </main>
     {cloudOpen&&<CloudPanel {...cloud} close={()=>setCloudOpen(false)} backup={downloadBackup} recovery={()=>{}}/>}
     {settingsOpen&&<SettingsModal data={data} close={()=>setSettingsOpen(false)} save={next=>{update(next);setSettingsOpen(false)}}/>}
-    {editingItem&&<ItemEditor item={editingItem} collections={data.collections} close={()=>setEditingItem(null)} save={saveItem}/>} 
-    {editingCollection&&<CollectionEditor collection={editingCollection} close={()=>setEditingCollection(null)} save={c=>{const exists=data.collections.some(x=>x.id===c.id);update({...data,collections:exists?data.collections.map(x=>x.id===c.id?c:x):[...data.collections,c]});setEditingCollection(null)}}/>}
-    {editingGroup&&<GroupEditor target={editingGroup} data={data} close={()=>setEditingGroup(null)} save={(key,g)=>{update({...data,libraryGroups:{...(data.libraryGroups||{}),[key]:g}});setEditingGroup(null)}}/>}
+    {editingItem&&<ItemEditor item={editingItem} collections={data.collections} close={()=>setEditingItem(null)} save={saveItem}/>}
   </div>
 }
 
 function TopNav({view,go,cloud,onCloud,onSettings}:{view:MainView;go:(v:MainView)=>void;cloud:string;onCloud:()=>void;onSettings:()=>void}){
   const tabs:[MainView,string,React.ReactNode][]=[
-    ['home','Home',<HomeIcon key="h" size={21}/>],['collections','Collections',<Library key="c" size={21}/>],['portfolio','Portfolio',<PieChart key="p" size={21}/>],['finance','Finance',<Landmark key="f" size={21}/>],['profile','Profile',<UserCircle key="u" size={21}/>]
+    ['home','Home',<HomeIcon key="h" size={21}/>],
+    ['collections','Collections',<Library key="c" size={21}/>],
+    ['portfolio','Portfolio',<PieChart key="p" size={21}/>],
+    ['finance','Finance',<Landmark key="f" size={21}/>],
+    ['profile','Profile',<UserCircle key="u" size={21}/>]
   ];
   return <header className="cc-header"><div className="cc-nav-inner">
     <button className="cc-wordmark" onClick={()=>go('home')} aria-label="Collector home">COLLECTOR<span>COLLECT · TRACK · VALUE</span></button>
     <nav className="cc-nav" aria-label="Main navigation">{tabs.map(([id,label,icon])=><button key={id} className={view===id?'active':''} onClick={()=>go(id)}><span className="cc-nav-icon">{icon}</span><span>{label}</span></button>)}</nav>
-    <div className="cc-header-actions"><button className="cc-sync" onClick={onCloud}><Cloud size={14}/><span>{cloud}</span></button><b>USD</b><button aria-label="Notifications"><Bell size={17}/></button><button aria-label="Customize Collector" onClick={onSettings}><Settings size={17}/></button></div>
+    <div className="cc-header-actions">
+      <button className="cc-sync" onClick={onCloud}><Cloud size={14}/><span>{cloud}</span></button><b>USD</b>
+      <button aria-label="Notifications"><Bell size={17}/></button>
+      <button aria-label="Customize Collector" onClick={onSettings}><Settings size={17}/></button>
+    </div>
   </div></header>
 }
 
-function HomeDashboard({data,openItem}:{data:Store;openItem:(i:Item)=>void}){
-  const [scope,setScope]=useState('all');
-  const options:ScopeOption[]=[{id:'all',label:'Collecting'},...data.collections.map(c=>({id:c.id,label:c.name}))];
-  const scoped=scope==='all'?data.items:data.items.filter(i=>i.collectionId===scope);
-  const value=totalValue(scoped),cost=totalCost(scoped);
-  const top=[...owned(scoped)].sort((a,b)=>b.currentValue*b.quantity-a.currentValue*a.quantity).slice(0,5);
+function HomeDashboard({data,openItem,goCollections}:{data:Store;openItem:(i:Item)=>void;goCollections:()=>void}){
+  const value=totalValue(data.items),cost=totalCost(data.items);
+  const top=[...owned(data.items)].sort((a,b)=>b.currentValue*b.quantity-a.currentValue*a.quantity).slice(0,4);
+  const brands=brandEntries(data).slice(0,6);
   return <div className="cc-content cc-home-page">
-    <section className="cc-home-chart"><ValueChart data={data} collectionId={scope} value={value} cost={cost} scopeId={scope} scopeOptions={options} onScopeChange={setScope}/></section>
-    <section className="cc-most-card"><div className="cc-section-head"><h2>Most Valuable</h2></div><div className="cc-most-list">{top.map(i=><button key={i.id} onClick={()=>openItem(i)}><span><b>{i.name}</b><small>{i.identity?.series||i.category}</small></span><strong>{money(i.currentValue*i.quantity)}</strong></button>)}</div></section>
+    <section className="cc-home-chart"><ValueChart data={data} collectionId="all" value={value} cost={cost}/></section>
+    <section className="cc-most-card">
+      <div className="cc-section-head"><h2>Most Valuable</h2></div>
+      <div className="cc-most-list">{top.map(i=><button key={i.id} onClick={()=>openItem(i)}><span><b>{i.name}</b><small>{i.identity?.series||i.category}</small></span><strong>{money(i.currentValue*i.quantity)}</strong></button>)}</div>
+      <button className="cc-most-view-all" onClick={()=>{}}>View All</button>
+    </section>
+    <section className="brand-home-list">
+      <div className="cc-section-head"><h2>Collections</h2></div>
+      {brands.map(b=><button key={b.brand} onClick={goCollections}>
+        <div className="brand-home-logo">{b.logo?<img src={b.logo} alt=""/>:<span>{displayBrand(b.brand)}</span>}</div>
+        <div className="brand-home-name"><b>{displayBrand(b.brand)}</b><small>{b.items.length} items</small></div>
+        <div className="brand-home-value"><strong>{money(totalValue(b.items))}</strong></div>
+      </button>)}
+    </section>
+  </div>
+}
+
+function brandEntries(data:Store){
+  const map=new Map<string,Item[]>();
+  for(const item of data.items){
+    const brand=itemBrand(item);
+    const list=map.get(brand)||[];
+    list.push(item);map.set(brand,list);
+  }
+  return [...map.entries()].map(([brand,items])=>({
+    brand,items,group:brandGroup(items[0]),logo:groupLogo(data,brand,items)
+  })).sort((a,b)=>totalValue(b.items)-totalValue(a.items));
+}
+
+function BrandCollections({data,openItem,increment,addItem}:{data:Store;openItem:(i:Item)=>void;increment:(i:Item)=>void;addItem:()=>void}){
+  const [step,setStep]=useState<BrandStep>({});
+  const [query,setQuery]=useState('');
+  const [group,setGroup]=useState<BrandGroup>('All Brands');
+  const [filterOpen,setFilterOpen]=useState(false);
+  const [favoritesOnly,setFavoritesOnly]=useState(false);
+  const [kind,setKind]=useState('All');
+
+  const brands=brandEntries(data);
+  const brand=step.brand;
+  const brandItems=brand?data.items.filter(i=>itemBrand(i)===brand):[];
+  const category=step.category;
+  const categoryItems=brand&&category?brandItems.filter(i=>categoryForItem(i,brand)===category):[];
+
+  if(!brand){
+    const shown=brands.filter(b=>{
+      const matchesGroup=group==='All Brands'||b.group===group;
+      const matchesQuery=displayBrand(b.brand).toLowerCase().includes(query.toLowerCase());
+      const matchesFav=!favoritesOnly||b.items.some(watched);
+      return matchesGroup&&matchesQuery&&matchesFav;
+    });
+    const groups:BrandGroup[]=['All Brands','TCG Brands','Sports Card Brands','Collectible Brands','Comic Brands','Model & Building Brands','Other Brands'];
+    return <div className="cc-content brand-page">
+      <div className="brand-topbar">
+        <label><Search size={22}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search brands"/>{query&&<button onClick={()=>setQuery('')}><X size={20}/></button>}</label>
+        <button className={favoritesOnly?'active':''} onClick={()=>setFavoritesOnly(v=>!v)} aria-label="Watched brands"><Star size={22} fill={favoritesOnly?'currentColor':'none'}/></button>
+        <div className="brand-filter-wrap">
+          <button className={filterOpen?'active':''} onClick={()=>setFilterOpen(v=>!v)} aria-label="Filter brands"><SlidersHorizontal size={22}/></button>
+          {filterOpen&&<div className="brand-filter-menu">{groups.map(g=><button key={g} className={group===g?'active':''} onClick={()=>{setGroup(g);setFilterOpen(false)}}>{g}</button>)}</div>}
+        </div>
+      </div>
+      <div className="brand-filter-chip">{group}</div>
+      <div className="brand-grid">{shown.map(b=><button key={b.brand} className="brand-tile" aria-label={displayBrand(b.brand)} title={displayBrand(b.brand)} onClick={()=>{setStep({brand:b.brand});setQuery('')}}>
+        {b.logo?<img src={b.logo} alt=""/>:<span>{displayBrand(b.brand)}</span>}
+      </button>)}</div>
+      {!shown.length&&<div className="brand-empty">No brands match this filter.</div>}
+    </div>
+  }
+
+  if(!category){
+    const map=new Map<string,Item[]>();
+    for(const item of brandItems){
+      const cat=categoryForItem(item,brand);
+      const list=map.get(cat)||[];list.push(item);map.set(cat,list);
+    }
+    const cats=[...map.entries()].map(([name,items])=>({
+      name,items,value:totalValue(items),cover:legacyCollectionCover(data,items),
+      target:targetForCategory(brand,name,items)
+    })).filter(c=>c.name.toLowerCase().includes(query.toLowerCase())).sort((a,b)=>b.value-a.value);
+
+    return <div className="cc-content brand-page">
+      <div className="brand-page-head"><button onClick={()=>{setStep({});setQuery('')}}><ChevronLeft size={20}/></button><div><small>{displayBrand(brand)}</small><h1>Categories</h1></div></div>
+      <div className="brand-sub-search"><Search size={19}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder={`Search ${displayBrand(brand)}`}/>{query&&<button onClick={()=>setQuery('')}><X size={18}/></button>}</div>
+      <div className="brand-category-grid">{cats.map(c=>{
+        const ownedCount=new Set(owned(c.items).map(i=>i.identity?.collectorNumber||i.identity?.upc||i.id)).size;
+        const progress=c.target?Math.min(100,ownedCount/c.target*100):0;
+        return <button key={c.name} className="brand-category-card" onClick={()=>{setStep({brand,category:c.name});setQuery('');setKind('All')}}>
+          <div className="brand-category-cover">{c.cover?<img src={c.cover} alt=""/>:<span>{c.name}</span>}{c.target>0&&<i><em style={{width:`${progress}%`}}/></i>}</div>
+          <div className="brand-category-copy"><h2>{c.name}</h2><p>{c.target?`Progress: ${ownedCount} / ${c.target}`:`Items: ${owned(c.items).reduce((n,i)=>n+i.quantity,0)}`}</p><p>Total value: {money(c.value)}</p></div>
+        </button>
+      })}</div>
+    </div>
+  }
+
+  const kinds=['All',...Array.from(new Set(categoryItems.map(itemKind))).sort()];
+  const shown=categoryItems.filter(i=>{
+    const matchesQuery=`${i.name} ${i.identity?.series||''} ${i.category} ${i.customFields?.Franchise||''}`.toLowerCase().includes(query.toLowerCase());
+    return matchesQuery&&(kind==='All'||itemKind(i)===kind);
+  }).sort((a,b)=>b.currentValue*b.quantity-a.currentValue*a.quantity);
+
+  return <div className="cc-content brand-page">
+    <div className="brand-page-head"><button onClick={()=>{setStep({brand});setQuery('')}}><ChevronLeft size={20}/></button><div><small>{displayBrand(brand)}</small><h1>{category}</h1></div></div>
+    <div className="brand-product-tools">
+      <div className="brand-sub-search"><Search size={19}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search products"/>{query&&<button onClick={()=>setQuery('')}><X size={18}/></button>}</div>
+      <button className="brand-add" onClick={addItem}><Plus size={17}/> Add Item</button>
+    </div>
+    <div className="brand-kind-filters">{kinds.map(k=><button key={k} className={kind===k?'active':''} onClick={()=>setKind(k)}>{k}</button>)}</div>
+    <div className="cc-product-grid">{shown.map(i=><ProductCard key={i.id} item={i} open={()=>openItem(i)} add={()=>increment(i)}/>)}</div>
+    {!shown.length&&<div className="brand-empty">No products match these filters.</div>}
   </div>
 }
 
@@ -178,45 +370,10 @@ function PortfolioProducts({data,openItem,increment}:{data:Store;openItem:(i:Ite
   const [sort,setSort]=useState<'value'|'name'|'recent'>('value');
   const items=owned(data.items).filter(i=>`${i.name} ${i.identity?.series||''} ${i.category}`.toLowerCase().includes(q.toLowerCase())).sort((a,b)=>sort==='name'?a.name.localeCompare(b.name):sort==='recent'?b.updatedAt.localeCompare(a.updatedAt):b.currentValue*b.quantity-a.currentValue*a.quantity);
   return <div className="cc-content cc-portfolio-page">
-    <CollectionSearch value={q} onChange={setQ}/>
+    <div className="brand-sub-search"><Search size={19}/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search your collection"/>{q&&<button onClick={()=>setQ('')}><X size={18}/></button>}</div>
     <section className="cc-portfolio-hero"><div><span>Portfolio: <b>Collecting</b></span><strong>{money(totalValue(data.items))}</strong><small>{owned(data.items).reduce((n,i)=>n+i.quantity,0)} items owned</small></div><select value={sort} onChange={e=>setSort(e.target.value as typeof sort)}><option value="value">Sort: Value</option><option value="recent">Sort: Recent</option><option value="name">Sort: Name</option></select></section>
     <div className="cc-product-grid">{items.map(i=><ProductCard key={i.id} item={i} open={()=>openItem(i)} add={()=>increment(i)}/>)}</div>
   </div>
-}
-
-function CollectionSearch({value,onChange}:{value:string;onChange:(v:string)=>void}){
-  return <div className="cc-collection-search"><button className="cc-camera" aria-label="Camera search"><Camera size={22}/></button><label><Search size={23}/><input value={value} onChange={e=>onChange(e.target.value)} placeholder="Search your collection"/>{value&&<button type="button" onClick={()=>onChange('')} aria-label="Clear search"><X size={22}/></button>}</label><button aria-label="Favorites"><Star size={22}/></button><button aria-label="Filters"><SlidersHorizontal size={22}/></button></div>
-}
-
-function CollectionsView({data,trail,setTrail,query,setQuery,openItem,addItem,editCollection,editGroup,createGroup,createCollection,increment}:{data:Store;trail:Trail;setTrail:(t:Trail)=>void;query:string;setQuery:(s:string)=>void;openItem:(i:Item)=>void;addItem:()=>void;editCollection:(c:Collection)=>void;editGroup:(g:{level:'type'|'line';type:string;line?:string})=>void;createGroup:(level:'type'|'line',type?:string)=>void;createCollection:(type:string,line:string)=>void;increment:(i:Item)=>void}){
-  const types=typeEntries(data);
-  const lines=trail.type?lineEntries(data,trail.type):[];
-  const collections=trail.type&&trail.line?data.collections.filter(c=>c.libraryType===trail.type&&c.libraryLine===trail.line):[];
-  const current=trail.collection?data.collections.find(c=>c.id===trail.collection):undefined;
-  if(current)return <CollectionDetail data={data} collection={current} type={trail.type!} line={trail.line!} query={query} setQuery={setQuery} back={()=>setTrail({type:trail.type,line:trail.line})} openItem={openItem} edit={()=>editCollection(current)} addItem={addItem} increment={increment}/>;
-
-  if(!trail.type){
-    const shown=types.filter(t=>(t.group.name||'').toLowerCase().includes(query.toLowerCase()));
-    return <div className="cc-content cc-collections-page"><CollectionSearch value={query} onChange={setQuery}/><h1>Quick Filters</h1><div className="cc-type-toolbar"><button onClick={()=>createGroup('type')}><Plus size={15}/> New Collection Type</button></div><div className="cc-cover-grid">{shown.map(t=>{const img=groupImage(t.group);return <article className="cc-cover-tile" key={t.id}><button className="cc-cover" onClick={()=>{setQuery('');setTrail({type:t.id})}}>{img?<img src={img} alt={t.group.name||''}/>:<span>{t.group.name||'Untitled'}</span>}</button><div className="cc-cover-meta"><b>{t.group.name||'Untitled'}</b><button onClick={()=>editGroup({level:'type',type:t.id})}><Pencil size={12}/> Edit</button></div></article>})}</div></div>
-  }
-
-  if(trail.type&&!trail.line){
-    const typeName=groupName(data,'type',trail.type);
-    return <div className="cc-content cc-lines-page"><div className="cc-page-head"><button className="cc-back" onClick={()=>setTrail({})}><ChevronLeft/></button><h1>{typeName} Lines</h1></div><CollectionSearch value={query} onChange={setQuery}/><div className="cc-inline-actions"><button onClick={()=>editGroup({level:'type',type:trail.type!})}><Pencil size={13}/> Edit {typeName}</button><button onClick={()=>createGroup('line',trail.type)}><Plus size={13}/> New Line</button></div><div className="cc-cover-grid">{lines.filter(l=>(l.group.name||'').toLowerCase().includes(query.toLowerCase())).map(l=>{const cols=data.collections.filter(c=>c.libraryType===trail.type&&c.libraryLine===l.id),items=itemsForCollections(data,cols),img=groupImage(l.group);return <article className="cc-cover-tile" key={l.id}><button className="cc-cover" onClick={()=>{setQuery('');setTrail({type:trail.type,line:l.id})}}>{img?<img src={img} alt=""/>:<span>{l.group.name||'Line'}</span>}</button><div className="cc-cover-copy"><h2>{l.group.name||'Untitled Line'}</h2><p>{cols.length} collections</p><p>Total value: {money(totalValue(items))}</p></div><button className="cc-mini-edit" onClick={()=>editGroup({level:'line',type:trail.type!,line:l.id})}><Pencil size={12}/> Edit</button></article>})}</div></div>
-  }
-
-  const lineName=groupName(data,'line',trail.type!,trail.line!);
-  return <div className="cc-content cc-lines-page"><div className="cc-page-head"><button className="cc-back" onClick={()=>setTrail({type:trail.type})}><ChevronLeft/></button><h1>{lineName} Collections</h1></div><CollectionSearch value={query} onChange={setQuery}/><div className="cc-inline-actions"><button onClick={()=>editGroup({level:'line',type:trail.type!,line:trail.line})}><Pencil size={13}/> Edit {lineName}</button><button onClick={()=>createCollection(trail.type!,trail.line!)}><Plus size={13}/> New Collection</button></div><div className="cc-cover-grid">{collections.filter(c=>c.name.toLowerCase().includes(query.toLowerCase())).map(c=>{const items=data.items.filter(i=>i.collectionId===c.id),target=setTarget(c,lineName,items),have=uniqueOwned(items),percent=pct(have,target),img=collectionImage(c);return <article className="cc-cover-tile" key={c.id}><button className="cc-cover cc-collection-cover" onClick={()=>{setQuery('');setTrail({type:trail.type,line:trail.line,collection:c.id})}}>{img?<img src={img} alt=""/>:<span>{c.name}</span>}<small className="cc-date">{releaseDate(c,items)}</small>{target>0&&<i className="cc-cover-progress"><em style={{width:`${percent}%`}}/><span>{percent.toFixed(0)}%</span></i>}</button><div className="cc-cover-copy"><h2>{c.name}</h2><p>{target?`Progress: ${have} / ${target}`:`Items: ${owned(items).reduce((n,i)=>n+i.quantity,0)}`}</p><p>Total value: {money(totalValue(items))}</p></div><button className="cc-mini-edit" onClick={()=>editCollection(c)}><Pencil size={12}/> Edit</button></article>})}</div></div>
-}
-
-function CollectionDetail({data,collection,type,line,query,setQuery,back,openItem,edit,addItem,increment}:{data:Store;collection:Collection;type:string;line:string;query:string;setQuery:(s:string)=>void;back:()=>void;openItem:(i:Item)=>void;edit:()=>void;addItem:()=>void;increment:(i:Item)=>void}){
-  const [tab,setTab]=useState<'overview'|'products'>('overview');
-  const [sort,setSort]=useState<'best'|'name'|'value'>('best');
-  const items=data.items.filter(i=>i.collectionId===collection.id);
-  const shown=items.filter(i=>`${i.name} ${i.identity?.series||''} ${i.identity?.collectorNumber||''} ${i.identity?.upc||''}`.toLowerCase().includes(query.toLowerCase())).sort((a,b)=>sort==='name'?a.name.localeCompare(b.name):sort==='value'?b.currentValue-a.currentValue:b.updatedAt.localeCompare(a.updatedAt));
-  const lineName=groupName(data,'line',type,line);
-  const have=uniqueOwned(items),target=setTarget(collection,lineName,items),percent=pct(have,target),value=totalValue(items),cost=totalCost(items),img=collectionImage(collection),released=releaseDate(collection,items);
-  return <div className="cc-content cc-collection-detail"><div className="cc-page-head"><button className="cc-back" onClick={back}><ChevronLeft/></button><h1>{collection.name}</h1></div><div className="cc-tabs"><button className={tab==='overview'?'active':''} onClick={()=>setTab('overview')}>Overview</button><button className={tab==='products'?'active':''} onClick={()=>setTab('products')}>Products</button></div>{tab==='overview'&&<section className="cc-collection-chart"><ValueChart data={data} collectionId={collection.id} value={value} cost={cost}/></section>}<CollectionSearch value={query} onChange={setQuery}/><div className="cc-inline-actions cc-detail-actions"><div><button onClick={edit}><Pencil size={13}/> Edit Collection</button><button onClick={addItem}><Plus size={13}/> Add Item</button></div><select value={sort} onChange={e=>setSort(e.target.value as typeof sort)}><option value="best">Sort: Best Match</option><option value="value">Sort: Value</option><option value="name">Sort: Name</option></select></div><section className="cc-summary"><div className="cc-summary-art">{img?<img src={img} alt=""/>:<Package size={34}/>}</div><div><h2>{collection.name}</h2><p>{target?`Progress: ${have} / ${target}`:`Items owned: ${owned(items).reduce((n,i)=>n+i.quantity,0)}`}</p><p>Total Value: {money(value)}</p><p>Released Date: {released}</p>{target>0&&<><i><em style={{width:`${percent}%`}}/></i><small>{percent.toFixed(1)}% complete</small></>}</div></section><div className="cc-product-grid">{shown.map(i=><ProductCard key={i.id} item={i} open={()=>openItem(i)} add={()=>increment(i)}/>)}</div></div>
 }
 
 function ProductCard({item,open,add}:{item:Item;open:()=>void;add:()=>void}){
@@ -255,18 +412,7 @@ function ImageInput({value,onChange}:{value:string;onChange:(v:string)=>void}){
 function ItemEditor({item,collections,close,save}:{item:Item;collections:Collection[];close:()=>void;save:(i:Item)=>void}){
   const [draft,setDraft]=useState(item);
   const setIdentity=(key:string,value:string)=>setDraft({...draft,identity:{...(draft.identity||{}),[key]:value}});
-  return <div className="overlay"><form className="modal cl-editor-modal" onSubmit={e=>{e.preventDefault();save({...draft,updatedAt:new Date().toISOString()})}}><div className="modal-header"><div><small>{item.name?'EDIT PRODUCT':'ADD PRODUCT'}</small><h2>{item.name||'New Product'}</h2></div><button type="button" onClick={close}><X/></button></div><div className="cl-editor-body"><ImageInput value={draft.image} onChange={image=>setDraft({...draft,image})}/><div className="cl-form-grid"><label className="wide">Product name<input required value={draft.name} onChange={e=>setDraft({...draft,name:e.target.value})}/></label><label>Collection<select value={draft.collectionId} onChange={e=>setDraft({...draft,collectionId:e.target.value})}><option value="">No collection</option>{collections.map(c=><option value={c.id} key={c.id}>{c.name}</option>)}</select></label><label>Status<select value={draft.status} onChange={e=>setDraft({...draft,status:e.target.value as Item['status']})}><option value="owned">Owned</option><option value="wishlist">Wishlist</option><option value="sold">Sold</option></select></label><label>Category<input value={draft.category} onChange={e=>setDraft({...draft,category:e.target.value})}/></label><label>Condition<input value={draft.condition} onChange={e=>setDraft({...draft,condition:e.target.value})}/></label><label>Purchase price<input type="number" min="0" step="0.01" value={draft.purchasePrice} onChange={e=>setDraft({...draft,purchasePrice:Number(e.target.value)})}/></label><label>Current value<input type="number" min="0" step="0.01" value={draft.currentValue} onChange={e=>setDraft({...draft,currentValue:Number(e.target.value)})}/></label><label>Quantity<input type="number" min="1" step="1" value={draft.quantity} onChange={e=>setDraft({...draft,quantity:Math.max(1,Number(e.target.value)||1)})}/></label><label>Purchase date<input type="date" value={draft.purchaseDate} onChange={e=>setDraft({...draft,purchaseDate:e.target.value})}/></label><label>Brand<input value={draft.identity?.brand||''} onChange={e=>setIdentity('brand',e.target.value)}/></label><label>Line / Series<input value={draft.identity?.series||''} onChange={e=>setIdentity('series',e.target.value)}/></label><label>Model / Number<input value={draft.identity?.modelNumber||draft.identity?.collectorNumber||''} onChange={e=>setIdentity('modelNumber',e.target.value)}/></label><label>UPC / Barcode<input value={draft.identity?.upc||''} onChange={e=>setIdentity('upc',e.target.value)}/></label><label>SKU<input value={draft.identity?.sku||''} onChange={e=>setIdentity('sku',e.target.value)}/></label><label>Edition / Variant<input value={draft.identity?.edition||''} onChange={e=>setIdentity('edition',e.target.value)}/></label><label>Year<input value={draft.identity?.year||''} onChange={e=>setIdentity('year',e.target.value)}/></label><label>Location<input value={draft.location} onChange={e=>setDraft({...draft,location:e.target.value})}/></label><label className="wide">Description<textarea rows={3} value={draft.identity?.description||''} onChange={e=>setIdentity('description',e.target.value)}/></label><label className="wide">Notes<textarea rows={4} value={draft.notes} onChange={e=>setDraft({...draft,notes:e.target.value})}/></label></div></div><div className="modal-actions"><button type="button" className="secondary" onClick={close}>Cancel</button><button className="primary">Save Product</button></div></form></div>
-}
-
-function CollectionEditor({collection,close,save}:{collection:Collection;close:()=>void;save:(c:Collection)=>void}){
-  const [draft,setDraft]=useState<CollectionMeta>(collection as CollectionMeta);
-  return <div className="overlay"><form className="modal cl-editor-modal small" onSubmit={e=>{e.preventDefault();save(draft)}}><div className="modal-header"><div><small>COLLECTION</small><h2>Edit Collection</h2></div><button type="button" onClick={close}><X/></button></div><div className="cl-editor-body"><ImageInput value={draft.coverImage||draft.coverLogo||''} onChange={coverImage=>setDraft({...draft,coverImage,coverLogo:undefined})}/><div className="cl-form-grid"><label className="wide">Name<input required value={draft.name} onChange={e=>setDraft({...draft,name:e.target.value})}/></label><label>Highlight<input type="color" value={draft.color||RED} onChange={e=>setDraft({...draft,color:e.target.value})}/></label><label>Released date<input type="date" value={draft.releaseDate||''} onChange={e=>setDraft({...draft,releaseDate:e.target.value})}/></label><label>Total possible items<input type="number" min="0" step="1" value={draft.targetCount||''} placeholder="Leave blank if not measurable" onChange={e=>setDraft({...draft,targetCount:Number(e.target.value)||undefined})}/></label></div></div><div className="modal-actions"><button type="button" className="secondary" onClick={close}>Cancel</button><button className="primary">Save</button></div></form></div>
-}
-
-function GroupEditor({target,data,close,save}:{target:{level:'type'|'line';type:string;line?:string};data:Store;close:()=>void;save:(key:string,g:LibraryGroup)=>void}){
-  const key=target.level==='type'?libraryTypeGroupKey(target.type):libraryLineGroupKey(target.type,target.line||'');
-  const [draft,setDraft]=useState<LibraryGroup>(data.libraryGroups?.[key]||{name:'',color:RED});
-  return <div className="overlay"><form className="modal cl-editor-modal small" onSubmit={e=>{e.preventDefault();save(key,draft)}}><div className="modal-header"><div><small>{target.level.toUpperCase()}</small><h2>{data.libraryGroups?.[key]?'Edit':'Create'} {target.level==='type'?'Collection Type':'Line'}</h2></div><button type="button" onClick={close}><X/></button></div><div className="cl-editor-body"><ImageInput value={draft.coverImage||draft.coverLogo||''} onChange={coverImage=>setDraft({...draft,coverImage,coverLogo:undefined})}/><div className="cl-form-grid"><label className="wide">Name<input required value={draft.name||''} onChange={e=>setDraft({...draft,name:e.target.value})}/></label><label>Highlight<input type="color" value={draft.color||RED} onChange={e=>setDraft({...draft,color:e.target.value})}/></label></div></div><div className="modal-actions"><button type="button" className="secondary" onClick={close}>Cancel</button><button className="primary">Save</button></div></form></div>
+  return <div className="overlay"><form className="modal cl-editor-modal" onSubmit={e=>{e.preventDefault();save({...draft,collectionId:draft.collectionId||UNLABELED,updatedAt:new Date().toISOString()})}}><div className="modal-header"><div><small>{item.name?'EDIT PRODUCT':'ADD PRODUCT'}</small><h2>{item.name||'New Product'}</h2></div><button type="button" onClick={close}><X/></button></div><div className="cl-editor-body"><ImageInput value={draft.image} onChange={image=>setDraft({...draft,image})}/><div className="cl-form-grid"><label className="wide">Product name<input required value={draft.name} onChange={e=>setDraft({...draft,name:e.target.value})}/></label><label>Brand<input value={draft.identity?.brand||''} onChange={e=>setIdentity('brand',e.target.value)}/></label><label>Line / Series<input value={draft.identity?.series||''} onChange={e=>setIdentity('series',e.target.value)}/></label><label>Status<select value={draft.status} onChange={e=>setDraft({...draft,status:e.target.value as Item['status']})}><option value="owned">Owned</option><option value="wishlist">Wishlist</option><option value="sold">Sold</option></select></label><label>Category / Item Type<input value={draft.category} onChange={e=>setDraft({...draft,category:e.target.value})}/></label><label>Franchise<input value={draft.customFields?.Franchise||''} onChange={e=>setDraft({...draft,customFields:{...(draft.customFields||{}),Franchise:e.target.value}})}/></label><label>Condition<input value={draft.condition} onChange={e=>setDraft({...draft,condition:e.target.value})}/></label><label>Purchase price<input type="number" min="0" step="0.01" value={draft.purchasePrice} onChange={e=>setDraft({...draft,purchasePrice:Number(e.target.value)})}/></label><label>Current value<input type="number" min="0" step="0.01" value={draft.currentValue} onChange={e=>setDraft({...draft,currentValue:Number(e.target.value)})}/></label><label>Quantity<input type="number" min="1" step="1" value={draft.quantity} onChange={e=>setDraft({...draft,quantity:Math.max(1,Number(e.target.value)||1)})}/></label><label>Purchase date<input type="date" value={draft.purchaseDate} onChange={e=>setDraft({...draft,purchaseDate:e.target.value})}/></label><label>Model / Number<input value={draft.identity?.modelNumber||draft.identity?.collectorNumber||''} onChange={e=>setIdentity('modelNumber',e.target.value)}/></label><label>UPC / Barcode<input value={draft.identity?.upc||''} onChange={e=>setIdentity('upc',e.target.value)}/></label><label>SKU<input value={draft.identity?.sku||''} onChange={e=>setIdentity('sku',e.target.value)}/></label><label>Edition / Variant<input value={draft.identity?.edition||''} onChange={e=>setIdentity('edition',e.target.value)}/></label><label>Year<input value={draft.identity?.year||''} onChange={e=>setIdentity('year',e.target.value)}/></label><label>Location<input value={draft.location} onChange={e=>setDraft({...draft,location:e.target.value})}/></label><label className="wide">Description<textarea rows={3} value={draft.identity?.description||''} onChange={e=>setIdentity('description',e.target.value)}/></label><label className="wide">Notes<textarea rows={4} value={draft.notes} onChange={e=>setDraft({...draft,notes:e.target.value})}/></label></div></div><div className="modal-actions"><button type="button" className="secondary" onClick={close}>Cancel</button><button className="primary">Save Product</button></div></form></div>
 }
 
 function SettingsModal({data,close,save}:{data:Store;close:()=>void;save:(d:Store)=>void}){
