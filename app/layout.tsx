@@ -1,17 +1,9 @@
-import './collectr.css';
-import './polish.css';
-import './cover-polish.css';
-import './experience.css';
-import './fixes.css';
-import './brand.css';
-import './mobile-reference.css';
-import './nav-hotfix.css';
-import './collection-edit.css';
+import './collector-reset.css';
 import type {Metadata} from 'next';
 
 export const metadata:Metadata={
   title:'Collector',
-  description:'Collection manager.',
+  description:'Universal collection manager.',
   manifest:'/manifest.webmanifest',
   appleWebApp:{capable:true,title:'Collector',statusBarStyle:'black-translucent'},
   icons:{icon:'/icons/icon-192.png',apple:'/icons/apple-touch-icon.png'}
@@ -22,7 +14,7 @@ export const viewport={
   initialScale:1,
   maximumScale:1,
   viewportFit:'cover',
-  themeColor:'#000000',
+  themeColor:'#08090a',
   colorScheme:'dark' as const
 };
 
