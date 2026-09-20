@@ -6,6 +6,7 @@ import {
   Plus,Search,SlidersHorizontal,Star,Upload,UserCircle,X
 } from 'lucide-react';
 import {useWorkspace} from '../lib/useWorkspace';
+import MobileCollector from './MobileCollector';
 
 type MainView='explore'|'sets'|'shop'|'portfolio'|'showcase';
 type PortfolioTab='overview'|'products'|'performance';
@@ -29,7 +30,9 @@ export default function Page(){
     return <div className="min-h-screen grid place-items-center bg-background text-foreground">Loading Collector…</div>;
   }
 
-  return <div className="min-h-screen bg-background text-foreground source-clone-root">
+  return <>
+    <MobileCollector status={cloud.status} profileName={cloud.data.profile?.name||'XVIIITCG'}/>
+    <div className="min-h-screen bg-background text-foreground source-clone-root desktop-source-shell">
     <header className="sticky top-0 z-50 transition-all duration-150 bg-background/95 backdrop-blur-sm">
       <div className="px-2 mx-auto md:px-6 xl:px-8 max-w-(--breakpoint-2xl)">
         <div className="relative flex items-center gap-3 sm:h-20 h-16">
@@ -78,7 +81,8 @@ export default function Page(){
     {view==='portfolio'?<Portfolio tab={tab} setTab={setTab}/>:<GenericPage view={view}/>} 
 
     {commandOpen&&<CommandPalette close={()=>setCommandOpen(false)} setView={(v)=>{setView(v);setCommandOpen(false)}}/>}
-  </div>
+    </div>
+  </>
 }
 
 function Portfolio({tab,setTab}:{tab:PortfolioTab;setTab:(t:PortfolioTab)=>void}){

@@ -2,6 +2,7 @@ import './collectr-source.css';
 import './collectr-carousel.css';
 import './collectr-gallery.css';
 import './clone-overrides.css';
+import './mobile-collectr.css';
 import type {Metadata} from 'next';
 
 export const metadata:Metadata={
