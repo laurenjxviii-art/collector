@@ -7,6 +7,8 @@ import {
   ShoppingBag,SlidersHorizontal,Star,Store as StoreIcon,Upload,UserCircle,Users,X
 } from 'lucide-react';
 import type {Item,Store as StoreData} from '../lib/model';
+import type {CloudConfig,Session} from '../lib/cloud';
+import {CommunityProfile,CommunitySocial,CommunityWishlist,MobileCommunitySync} from './MobileCommunity';
 import {itemLibraryLine,money} from '../lib/model';
 import {marketQuery,variantKey} from '../lib/market';
 
@@ -15,7 +17,7 @@ type SearchScreen='root'|'sets'|'set';
 type Sheet='portfolio'|'filters'|'sort'|'picker'|'edit'|'create'|'progress'|null;
 type RangeKey='1D'|'7D'|'1M'|'3M'|'6M'|'MAX';
 
-type Props={status:string;profileName:string;data:StoreData;update:(next:StoreData)=>void};
+type Props={status:string;profileName:string;data:StoreData;update:(next:StoreData)=>void;config:CloudConfig|null;session:Session|null};
 type CategoryGroup={key:string;rawName:string;name:string;items:Item[];cover:string};
 type SetGroup={key:string;rawName:string;name:string;items:Item[];cover:string;collectionId?:string};
 type EditTarget=
@@ -57,7 +59,7 @@ function itemChange(item:Item){
 function fmtChange(delta:number,pct:number){const sign=delta>=0?'+':'';return `${sign}${money(delta)} (${sign}${pct.toFixed(2)}%)`}
 function rangeMs(range:RangeKey){return range==='1D'?864e5:range==='7D'?6048e5:range==='1M'?2592e6:range==='3M'?7776e6:range==='6M'?15552e6:Infinity}
 
-export default function MobileCollector({status,profileName,data,update}:Props){
+export default function MobileCollector({status,profileName,data,update,config,session}:Props){
   const [view,setView]=useState<MobileView>('home');
   const [searchScreen,setSearchScreen]=useState<SearchScreen>('root');
   const [sheet,setSheet]=useState<Sheet>(null);
@@ -71,7 +73,6 @@ export default function MobileCollector({status,profileName,data,update}:Props){
   const [watchOnly,setWatchOnly]=useState(false);
   const [selected,setSelected]=useState<string[]>([]);
   const [selectMode,setSelectMode]=useState(false);
-  const [profileTab,setProfileTab]=useState<'stats'|'settings'|'support'>('stats');
   const [editMode,setEditMode]=useState(false);
   const [editTarget,setEditTarget]=useState<EditTarget|null>(null);
   const [createKind,setCreateKind]=useState<CreateKind>('product');
@@ -129,6 +130,7 @@ export default function MobileCollector({status,profileName,data,update}:Props){
 
   if(detail){
     return <div className="mobile-collector-shell mobile-app-active">
+      <MobileCommunitySync config={config} session={session} data={data} fallbackName={profileName}/>
       <main className="mc-screen-wrap mc-detail-scroll">
         <MobileProductDetail item={detail} data={data} update={update} close={()=>setDetailId(null)} onAdd={()=>addOne(detail.id)} onSetQty={(n)=>setOwnedQty(detail.id,n)} openEdit={()=>openEdit({kind:'product',itemId:detail.id})} notify={notify}/>
       </main>
@@ -139,13 +141,14 @@ export default function MobileCollector({status,profileName,data,update}:Props){
   }
 
   return <div className="mobile-collector-shell mobile-app-active">
+    <MobileCommunitySync config={config} session={session} data={data} fallbackName={profileName}/>
     <main className="mc-screen-wrap">
       {view==='home'&&<MobileHome data={data} items={portfolioItems} value={portfolioValue} tab={homeTab} setTab={setHomeTab} portfolioName={portfolioName} portfolioId={portfolioId} choosePortfolio={()=>setSheet('portfolio')}/>} 
       {view==='search'&&<MobileSearchFlow data={data} update={update} categories={categories} sets={setGroups} screen={searchScreen} setScreen={setSearchScreen} query={query} setQuery={setQuery} selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} selectedSet={activeSet} setSelectedSet={setSelectedSet} openCard={setDetailId} openFilters={()=>setSheet('filters')} openSort={()=>setSheet('sort')} openProgress={()=>setSheet('progress')} editMode={editMode} toggleEdit={()=>setEditMode(v=>!v)} openEdit={openEdit} addCategory={()=>openCreate('category')} addCollection={()=>openCreate('collection')} addToCollection={()=>{setPickerSelected([]);setSheet('picker')}} onAdd={addOne}/>} 
-      {view==='shop'&&<MobileShop items={data.items.slice(0,8)} data={data} openCard={setDetailId} onAdd={addOne} editMode={editMode} toggleEdit={()=>setEditMode(v=>!v)} openEdit={openEdit}/>} 
-      {view==='social'&&<MobileSocial editMode={editMode} toggleEdit={()=>setEditMode(v=>!v)}/>} 
+      {view==='shop'&&<CommunityWishlist data={data} openProduct={setDetailId} onAdd={addOne} editMode={editMode} toggleEdit={()=>setEditMode(v=>!v)} openEdit={openEdit} notify={notify}/>} 
+      {view==='social'&&<CommunitySocial config={config} session={session} data={data} fallbackName={profileName} notify={notify}/>} 
       {view==='portfolio'&&<MobilePortfolio items={portfolioItems} value={portfolioValue} portfolioName={portfolioName} query={query} setQuery={setQuery} openCard={setDetailId} openFilters={()=>setSheet('filters')} openSort={()=>setSheet('sort')} selectMode={selectMode} setSelectMode={setSelectMode} selected={selected} setSelected={setSelected} onAdd={addOne} editMode={editMode} toggleEdit={()=>setEditMode(v=>!v)} openEdit={openEdit} data={data} importData={(file)=>importFile(file,data,update,notify)} exportData={()=>exportStore(data)} sort={sort}/>} 
-      {view==='profile'&&<MobileProfile name={profileName} status={status} tab={profileTab} setTab={setProfileTab} portfolioName={portfolioName} items={portfolioItems} value={portfolioValue} editMode={editMode} toggleEdit={()=>setEditMode(v=>!v)} addAnother={()=>openCreate('collection')}/>} 
+      {view==='profile'&&<CommunityProfile config={config} session={session} data={data} fallbackName={profileName} notify={notify}/>} 
     </main>
 
     <MobileBottomNav view={view} setView={setViewAndReset}/>
@@ -320,7 +323,7 @@ function BottomSheet({title,close,children,tall=false}:{title:string;close:()=>v
 function FilterBlock({title,copy,children}:{title:string;copy:string;children?:React.ReactNode}){return <section className="mc-filter-block"><h4>{title}</h4><p>{copy}</p><div>{children}</div></section>}
 function SheetCheck({label,checked,setChecked}:{label:string;checked:boolean;setChecked:(v:boolean)=>void}){return <button className="mc-sheet-check" onClick={()=>setChecked(!checked)}><span>{label}</span><i className={checked?'checked':''}>{checked?'✓':''}</i></button>}
 
-function MobileBottomNav({view,setView}:{view:MobileView;setView:(v:MobileView)=>void}){const tabs:[MobileView,string,React.ReactNode][]=[['home','Home',<Home key="h"/>],['search','Search',<Search key="s"/>],['shop','Shop',<StoreIcon key="sh"/>],['social','Social',<Users key="so"/>],['portfolio','Portfolio',<Package key="p"/>],['profile','Profile',<UserCircle key="u"/>]];return <nav className="mc-bottom-nav">{tabs.map(([id,label,icon])=><button key={id} className={view===id?'active':''} onClick={()=>setView(id)}>{icon}<span>{label}</span></button>)}</nav>}
+function MobileBottomNav({view,setView}:{view:MobileView;setView:(v:MobileView)=>void}){const tabs:[MobileView,string,React.ReactNode][]=[['home','Home',<Home key="h"/>],['search','Search',<Search key="s"/>],['shop','Wishlist',<Heart key="sh"/>],['social','Social',<Users key="so"/>],['portfolio','Portfolio',<Package key="p"/>],['profile','Profile',<UserCircle key="u"/>]];return <nav className="mc-bottom-nav">{tabs.map(([id,label,icon])=><button key={id} className={view===id?'active':''} onClick={()=>setView(id)}>{icon}<span>{label}</span></button>)}</nav>}
 
 function getProgress(data:StoreData,target:SetGroup){const meta=(data.libraryGroups?.[target.key]||{}) as any;const enabled=Boolean(meta.progressEnabled),targetCount=Math.max(1,Number(meta.progressTarget)||Math.max(target.items.length,1)),owned=target.items.filter(i=>ownedQty(i)>0).length,percent=Math.min(100,Math.round(owned/targetCount*100));return {enabled,target:targetCount,owned,percent}}
 function coverStyle(url:string){return url?{backgroundImage:`linear-gradient(rgba(0,0,0,.22),rgba(0,0,0,.45)),url(${url})`,backgroundSize:'cover',backgroundPosition:'center'}:undefined}

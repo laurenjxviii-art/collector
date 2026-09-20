@@ -31,7 +31,7 @@ export default function Page(){
   }
 
   return <>
-    <MobileCollector status={cloud.status} profileName={cloud.data.profile?.name||'XVIIITCG'} data={cloud.data} update={cloud.update}/>
+    <MobileCollector status={cloud.status} profileName={cloud.data.profile?.name||'XVIIITCG'} data={cloud.data} update={cloud.update} config={cloud.config} session={cloud.session}/>
     <div className="min-h-screen bg-background text-foreground source-clone-root desktop-source-shell">
     <header className="sticky top-0 z-50 transition-all duration-150 bg-background/95 backdrop-blur-sm">
       <div className="px-2 mx-auto md:px-6 xl:px-8 max-w-(--breakpoint-2xl)">
