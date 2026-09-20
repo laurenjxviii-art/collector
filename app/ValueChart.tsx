@@ -1,4 +1,5 @@
 'use client';
+
 import {useEffect,useMemo,useState} from 'react';
 import {Store,money} from '../lib/model';
 
@@ -18,6 +19,7 @@ export default function ValueChart({
   const [range,setRange]=useState('1M');
   const [hover,setHover]=useState<number|null>(null);
   const [compact,setCompact]=useState(false);
+  const [scopeOpen,setScopeOpen]=useState(false);
 
   useEffect(()=>{
     const media=window.matchMedia('(max-width:760px)');
@@ -69,6 +71,7 @@ export default function ValueChart({
   const singleY=value===0?bottom-12:plotY(value);
   const label=collectionId==='all'?'Portfolio':collection?.name||'Collection';
   const sublabel=collectionId==='all'?'Collecting':'Overview';
+  const currentScope=scopeOptions?.find(o=>o.id===(scopeId||collectionId))?.label||sublabel;
 
   return <section className="value-chart">
     <div className="chart-head">
@@ -76,14 +79,19 @@ export default function ValueChart({
         <div className="chart-label">
           <b>{scopeOptions?'Portfolio:':label}</b>
           {scopeOptions&&onScopeChange
-            ?<select
-                className="chart-scope-select"
-                value={scopeId||collectionId}
-                aria-label="Chart collection"
-                onChange={e=>onScopeChange(e.target.value)}
-              >
-                {scopeOptions.map(o=><option value={o.id} key={o.id}>{o.label}</option>)}
-              </select>
+            ?<div className="chart-scope">
+                <button className="chart-scope-button" type="button" onClick={()=>setScopeOpen(v=>!v)}>
+                  {currentScope}
+                </button>
+                {scopeOpen&&<div className="chart-scope-menu">
+                  {scopeOptions.map(o=><button
+                    type="button"
+                    className={o.id===(scopeId||collectionId)?'active':''}
+                    key={o.id}
+                    onClick={()=>{onScopeChange(o.id);setScopeOpen(false)}}
+                  >{o.label}</button>)}
+                </div>}
+              </div>
             :<span>{sublabel}</span>}
         </div>
         <div className="chart-total">
@@ -111,7 +119,7 @@ export default function ValueChart({
       >
         <defs>
           <linearGradient id={`red-area-${collectionId}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--accent)" stopOpacity=".27"/>
+            <stop offset="0%" stopColor="var(--accent)" stopOpacity=".28"/>
             <stop offset="72%" stopColor="var(--accent)" stopOpacity=".07"/>
             <stop offset="100%" stopColor="var(--accent)" stopOpacity="0"/>
           </linearGradient>

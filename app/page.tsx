@@ -16,6 +16,7 @@ const UNLABELED_COLLECTION='unlabeled-system';
 const SYS_BRAND='__unlabeled_brand__';
 const SYS_CATEGORY='__unlabeled_category__';
 const RED='#ff1f2d';
+const SHELL_MODE=true;
 
 type View='home'|'collections'|'portfolio'|'watchlist'|'finance'|'profile';
 type Screen={brandId?:string;categoryId?:string};
@@ -97,6 +98,7 @@ function removeAssignment(item:Item):Item{
   return {...item,collectionId:UNLABELED_COLLECTION,customFields:cf,updatedAt:new Date().toISOString()};
 }
 function structureItems(data:Store,bid:string,cid?:string){
+  if(SHELL_MODE)return [];
   return data.items.filter(i=>brandId(i)===bid&&(!cid||categoryId(i)===cid));
 }
 function sanitizeName(v:string){return v.trim().replace(/\s+/g,' ')}
@@ -182,10 +184,7 @@ export default function Page(){
         update={update} setOrganizer={setOrganizer}
         openItem={setDetail} addItem={()=>setEditingItem(blankItem())} increment={increment}
       />}
-      {view==='portfolio'&&<ProductsPage
-        title="Portfolio" subtitle="Collecting" data={data} items={owned(data.items)}
-        org={org} update={update} openItem={setDetail} increment={increment}
-      />}
+      {view==='portfolio'&&<PortfolioPage data={data} openItem={setDetail}/>}
       {view==='watchlist'&&<ProductsPage
         title="Watchlist" subtitle="Watched Products" data={data} items={data.items.filter(watched)}
         org={org} update={update} openItem={setDetail} increment={increment}
@@ -226,8 +225,9 @@ function MobileNav({view,go}:{view:View;go:(v:View)=>void}){
 }
 
 function Home({data,org,openItem,openCollections}:{data:Store;org:Organizer;openItem:(i:Item)=>void;openCollections:()=>void}){
-  const value=totalValue(data.items),cost=totalCost(data.items);
-  const top=[...owned(data.items)].sort((a,b)=>b.currentValue*b.quantity-a.currentValue*a.quantity).slice(0,4);
+  const library=SHELL_MODE?[]:data.items;
+  const value=totalValue(library),cost=totalCost(library);
+  const top=[...owned(library)].sort((a,b)=>b.currentValue*b.quantity-a.currentValue*a.quantity).slice(0,4);
   const brandRows=org.brands.map(b=>({brand:b,items:structureItems(data,b.id)})).filter(x=>x.items.length||x.brand.id===SYS_BRAND);
   return <div className="cr-page cr-home">
     <section className="cr-chart-shell"><ValueChart data={data} collectionId="all" value={value} cost={cost}/></section>
@@ -475,6 +475,68 @@ function ProductCard({item,editMode,open,add,move}:{item:Item;editMode:boolean;o
   </article>
 }
 
+
+function PortfolioPage({data,openItem}:{data:Store;openItem:(i:Item)=>void}){
+  const library=SHELL_MODE?[]:data.items;
+  const value=totalValue(library),cost=totalCost(library);
+  const ownedItems=owned(library);
+  const top=[...ownedItems].sort((a,b)=>b.currentValue*b.quantity-a.currentValue*a.quantity).slice(0,5);
+  const cards=ownedItems.filter(i=>!i.grading?.graded&&i.packagingState!=='sealed');
+  const graded=ownedItems.filter(i=>!!i.grading?.graded);
+  const sealed=ownedItems.filter(i=>i.packagingState==='sealed');
+  const total=Math.max(1,ownedItems.length);
+  const holdings=[['cards',cards.length],['sealed',sealed.length],['graded',graded.length]] as const;
+
+  return <div className="cr-page cr-portfolio-page">
+    <div className="cr-portfolio-layout">
+      <section className="cr-portfolio-main">
+        <div className="cr-portfolio-chart">
+          <ValueChart
+            data={data}
+            collectionId="all"
+            value={value}
+            cost={cost}
+            scopeId="Collecting"
+            scopeOptions={[{id:'Collecting',label:'Collecting'}]}
+            onScopeChange={()=>{}}
+          />
+        </div>
+
+        <section className="cr-panel cr-trending">
+          <div className="cr-panel-title"><h2>Trending Today</h2><button>View All</button></div>
+          <p className="cr-panel-sub">Products trending in the market today</p>
+          <div className="cr-empty-state">No results</div>
+        </section>
+      </section>
+
+      <aside className="cr-portfolio-rail">
+        <section className="cr-panel cr-holdings">
+          <div className="cr-panel-title"><h2>Holdings Breakdown</h2></div>
+          <p className="cr-panel-sub">Breakdown of your portfolio by category</p>
+          {holdings.map(([label,count])=>{
+            const pct=count/total*100;
+            return <div className="cr-holding-row" key={label}>
+              <span>{label}</span>
+              <i><em style={{width:`${pct}%`}}/></i>
+              <b>({pct.toFixed(0)}%)</b>
+              <strong>{count}</strong>
+            </div>
+          })}
+        </section>
+
+        <section className="cr-panel cr-most cr-most-portfolio">
+          <div className="cr-panel-title"><h2>Most Valuable</h2><button>View All</button></div>
+          <p className="cr-panel-sub">List of your most valuable products</p>
+          {top.length?top.map(i=><button className="cr-most-row" key={i.id} onClick={()=>openItem(i)}>
+            <div><b>{i.name}</b><small>{i.identity?.series||i.category||'Collectible'}</small></div>
+            <strong>{money(i.currentValue*i.quantity)}</strong>
+          </button>):<div className="cr-empty-state">No results</div>}
+        </section>
+      </aside>
+    </div>
+  </div>
+}
+
 function ProductsPage({
   title,subtitle,data,items,org,update,openItem,increment
 }:{
@@ -486,7 +548,8 @@ function ProductsPage({
   const [edit,setEdit]=useState(false);
   const [filterOpen,setFilterOpen]=useState(false);
   const [moving,setMoving]=useState<Item|null>(null);
-  const shown=items.filter(i=>`${i.name} ${i.identity?.series||''} ${i.category}`.toLowerCase().includes(q.toLowerCase())&&(!star||watched(i)));
+  const source=SHELL_MODE?[]:items;
+  const shown=source.filter(i=>`${i.name} ${i.identity?.series||''} ${i.category}`.toLowerCase().includes(q.toLowerCase())&&(!star||watched(i)));
   function updateOne(next:Item){update({...data,items:data.items.map(i=>i.id===next.id?next:i)})}
   return <div className="cr-page">
     <CollectrSearch title={title} query={q} setQuery={setQ} placeholder="Search your collection..."
