@@ -1,0 +1,562 @@
+/* Collection edit mode, per-collection progress controls, and Collectr-style product cards. */
+
+/* ---------- edit button beside Star ---------- */
+.brand-topbar{
+  grid-template-columns:minmax(0,1fr) 48px 48px 48px!important;
+}
+
+.ce-pen-host{
+  display:contents;
+}
+
+.ce-pen-button{
+  width:48px;
+  height:48px;
+  min-width:48px;
+  border:1px solid #38393f;
+  border-radius:50%;
+  background:#050506;
+  color:#f3f3f4;
+  display:grid;
+  place-items:center;
+}
+
+.ce-pen-button.active{
+  color:#fff;
+  background:#6c1117;
+  border-color:var(--accent);
+}
+
+.ce-page-pen-host{
+  position:absolute;
+  right:0;
+  top:0;
+  z-index:12;
+}
+
+.ce-page-pen-button{
+  width:38px;
+  height:38px;
+  border:1px solid #38393f;
+  border-radius:50%;
+  background:#101012;
+  color:#eee;
+  display:grid;
+  place-items:center;
+}
+
+.ce-page-pen-button.active{
+  border-color:var(--accent);
+  background:#6c1117;
+}
+
+/* ---------- edit overlays ---------- */
+.brand-tile,
+.brand-category-cover{
+  position:relative!important;
+}
+
+.ce-brand-host,
+.ce-category-host{
+  position:absolute;
+  inset:0;
+  z-index:6;
+  pointer-events:none;
+  display:block;
+  overflow:hidden;
+  border-radius:inherit;
+}
+
+.ce-custom-cover{
+  position:absolute;
+  inset:0;
+  z-index:1;
+  width:100%!important;
+  height:100%!important;
+  max-width:none!important;
+  max-height:none!important;
+  margin:0!important;
+  padding:0!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  background:#111113!important;
+  mix-blend-mode:normal!important;
+  pointer-events:none!important;
+}
+
+.ce-category-custom-cover{
+  object-fit:cover!important;
+}
+
+.ce-edit-overlay{
+  position:absolute;
+  z-index:8;
+  top:8px;
+  right:8px;
+  min-width:66px;
+  height:30px;
+  padding:0 9px;
+  border:1px solid rgba(255,255,255,.28);
+  border-radius:7px;
+  background:rgba(15,15,17,.92);
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  font-size:10px;
+  font-weight:600;
+  pointer-events:auto;
+  cursor:pointer;
+  box-shadow:0 4px 14px rgba(0,0,0,.28);
+}
+
+/* ---------- category covers: exact landscape geometry ---------- */
+.brand-category-cover{
+  width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  aspect-ratio:514 / 325!important;
+  border-radius:9px!important;
+  overflow:hidden!important;
+  background:#565657!important;
+}
+
+.brand-category-cover>img{
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:none!important;
+  max-height:none!important;
+  margin:0!important;
+  padding:0!important;
+  object-fit:cover!important;
+  object-position:center!important;
+  background:transparent!important;
+  transform:none!important;
+}
+
+.brand-category-cover>i{
+  display:none!important;
+}
+
+/* ---------- Collectr-style percentage bar ---------- */
+.ce-progress{
+  position:absolute;
+  z-index:7;
+  left:0;
+  right:0;
+  bottom:0;
+  height:18px;
+  display:block;
+  pointer-events:none;
+  background:rgba(219,244,244,.92);
+}
+
+.ce-progress i{
+  position:absolute;
+  left:0;
+  top:0;
+  bottom:0;
+  width:100%;
+  background:rgba(189,224,224,.86);
+}
+
+.ce-progress i em{
+  display:block;
+  height:100%;
+  background:var(--accent);
+}
+
+.ce-progress b{
+  position:absolute;
+  z-index:2;
+  left:7px;
+  top:50%;
+  transform:translateY(-50%);
+  color:#fff;
+  font-size:8px;
+  font-weight:700;
+  text-shadow:0 1px 2px rgba(0,0,0,.5);
+}
+
+/* ---------- modal ---------- */
+.ce-overlay{
+  z-index:1000!important;
+}
+
+.ce-modal{
+  width:min(520px,calc(100vw - 28px))!important;
+}
+
+.ce-modal-body{
+  display:grid;
+  gap:18px;
+  padding:18px;
+}
+
+.ce-cover-label,
+.ce-target-input{
+  display:grid;
+  gap:8px;
+  color:#d8d8dc;
+  font-size:11px;
+}
+
+.ce-cover-preview{
+  width:100%;
+  aspect-ratio:514 / 325;
+  overflow:hidden;
+  border:1px solid #34353a;
+  border-radius:9px;
+  background:#111113;
+  display:grid;
+  place-items:center;
+  color:#77777d;
+}
+
+.ce-cover-preview img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.ce-cover-label>input,
+.ce-target-input>input{
+  height:40px;
+  padding:0 11px;
+  border:1px solid #34353a;
+  border-radius:7px;
+  background:#0d0d0f;
+  color:#fff;
+}
+
+.ce-file-button,
+.ce-remove-cover{
+  width:max-content;
+  height:34px;
+  padding:0 11px;
+  border:1px solid #3a3b40;
+  border-radius:17px;
+  background:#161618;
+  color:#ddd;
+  display:flex;
+  align-items:center;
+  cursor:pointer;
+  font-size:10px;
+}
+
+.ce-remove-cover{
+  border-color:#4a2a2d;
+  color:#ff9a9f;
+}
+
+.ce-progress-check{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  padding:13px;
+  border:1px solid #34353a;
+  border-radius:8px;
+  background:#111113;
+}
+
+.ce-progress-check input{
+  width:18px;
+  height:18px;
+  margin-top:1px;
+  accent-color:var(--accent);
+}
+
+.ce-progress-check span{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+}
+
+.ce-progress-check b{
+  color:#f3f3f4;
+  font-size:12px;
+  font-weight:600;
+}
+
+.ce-progress-check small,
+.ce-target-input small{
+  color:#85858b;
+  font-size:9px;
+}
+
+/* ---------- product card metadata ---------- */
+.ce-product-meta-host{
+  display:block!important;
+  position:static!important;
+  margin:0!important;
+  padding:0!important;
+}
+
+.ce-card-meta{
+  display:block;
+  margin-top:3px;
+}
+
+.ce-card-identifier{
+  display:block;
+  margin-top:2px;
+  color:#a7a7ad;
+  font-size:9px;
+  line-height:1.25;
+  white-space:normal;
+  overflow:visible;
+}
+
+.ce-card-market{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  margin-top:9px;
+}
+
+.ce-card-market strong{
+  position:static!important;
+  display:block!important;
+  margin:0!important;
+  font-size:14px!important;
+  line-height:1.15!important;
+  font-weight:600!important;
+  color:#f5f5f5!important;
+}
+
+.ce-card-market small{
+  position:static!important;
+  display:block!important;
+  margin:2px 0 0!important;
+  font-size:9px!important;
+  line-height:1.15!important;
+  text-align:left!important;
+}
+
+.ce-card-market span{
+  position:static!important;
+  display:block!important;
+  margin:9px 0 0!important;
+  font-size:9px!important;
+  line-height:1!important;
+  color:#a8a8ae!important;
+}
+
+/* Hide old duplicated value/change/qty. The enhanced block above replaces it. */
+.cc-product-copy > strong,
+.cc-product-copy > small,
+.cc-product-copy > span{
+  display:none!important;
+}
+
+/* Product card: full image, no title truncation, metadata hierarchy like Collectr. */
+.cc-product-card{
+  min-height:0!important;
+  height:auto!important;
+  overflow:hidden!important;
+}
+
+.cc-product-open{
+  width:100%!important;
+  height:auto!important;
+}
+
+.cc-product-image{
+  width:100%!important;
+  height:270px!important;
+  min-height:270px!important;
+  display:grid!important;
+  place-items:center!important;
+  overflow:hidden!important;
+  background:#111113!important;
+  padding:8px!important;
+  box-sizing:border-box!important;
+}
+
+.cc-product-image img{
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  padding:0!important;
+  margin:0!important;
+  transform:none!important;
+}
+
+.cc-product-copy{
+  position:relative!important;
+  min-height:150px!important;
+  padding:10px 11px 45px!important;
+  box-sizing:border-box!important;
+}
+
+.cc-product-copy h3{
+  display:block!important;
+  margin:0 0 4px!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow:visible!important;
+  white-space:normal!important;
+  text-overflow:clip!important;
+  -webkit-line-clamp:unset!important;
+  -webkit-box-orient:unset!important;
+  font-size:12px!important;
+  line-height:1.25!important;
+  font-weight:600!important;
+}
+
+.cc-product-copy>a{
+  display:block!important;
+  margin:0!important;
+  color:#b9b9be!important;
+  font-size:9px!important;
+  line-height:1.25!important;
+  white-space:normal!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+}
+
+.cc-plus{
+  width:30px!important;
+  height:30px!important;
+  right:9px!important;
+  bottom:9px!important;
+}
+
+/* ---------- mobile ---------- */
+@media(max-width:640px){
+  .brand-topbar{
+    grid-template-columns:minmax(0,1fr) 42px 42px 42px!important;
+    gap:6px!important;
+  }
+
+  .brand-topbar>button,
+  .brand-filter-wrap>button,
+  .ce-pen-button{
+    width:42px!important;
+    height:42px!important;
+    min-width:42px!important;
+  }
+
+  .brand-topbar>label{
+    height:42px!important;
+    border-radius:21px!important;
+  }
+
+  .ce-edit-overlay{
+    top:6px;
+    right:6px;
+    height:28px;
+    min-width:60px;
+    padding:0 8px;
+    font-size:9px;
+  }
+
+  .brand-category-cover{
+    aspect-ratio:514 / 325!important;
+  }
+
+  .brand-category-cover>img,
+  .ce-category-custom-cover{
+    object-fit:cover!important;
+    padding:0!important;
+  }
+
+  .ce-progress{
+    height:16px;
+  }
+
+  .ce-progress b{
+    left:5px;
+    font-size:7px;
+  }
+
+  .brand-category-copy h2{
+    font-size:14px!important;
+    line-height:1.22!important;
+  }
+
+  .brand-category-copy p{
+    font-size:10px!important;
+    line-height:1.25!important;
+  }
+
+  .cc-product-image{
+    height:238px!important;
+    min-height:238px!important;
+    padding:6px!important;
+  }
+
+  .cc-product-copy{
+    min-height:165px!important;
+    padding:10px 10px 44px!important;
+  }
+
+  .cc-product-copy h3{
+    font-size:13px!important;
+    line-height:1.2!important;
+    font-weight:550!important;
+  }
+
+  .cc-product-copy>a{
+    font-size:10px!important;
+  }
+
+  .ce-card-identifier{
+    font-size:9px!important;
+    line-height:1.2!important;
+  }
+
+  .ce-card-market{
+    margin-top:8px!important;
+  }
+
+  .ce-card-market strong{
+    font-size:14px!important;
+  }
+
+  .ce-card-market small{
+    font-size:9px!important;
+  }
+
+  .ce-card-market span{
+    margin-top:8px!important;
+    font-size:9px!important;
+  }
+
+  .cc-plus{
+    width:31px!important;
+    height:31px!important;
+    right:8px!important;
+    bottom:8px!important;
+  }
+}
+
+@media(max-width:390px){
+  .brand-topbar{
+    grid-template-columns:minmax(0,1fr) 39px 39px 39px!important;
+    gap:5px!important;
+  }
+
+  .brand-topbar>button,
+  .brand-filter-wrap>button,
+  .ce-pen-button{
+    width:39px!important;
+    height:39px!important;
+    min-width:39px!important;
+  }
+
+  .cc-product-image{
+    height:220px!important;
+    min-height:220px!important;
+  }
+
+  .cc-product-copy h3{
+    font-size:12.5px!important;
+  }
+}

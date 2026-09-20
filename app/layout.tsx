@@ -6,6 +6,8 @@ import './fixes.css';
 import './brand.css';
 import './mobile-reference.css';
 import './nav-hotfix.css';
+import './collection-edit.css';
+import CollectionEditEnhancer from './CollectionEditEnhancer';
 import type {Metadata} from 'next';
 
 export const metadata:Metadata={
@@ -26,5 +28,5 @@ export const viewport={
 };
 
 export default function Layout({children}:{children:React.ReactNode}){
-  return <html lang="en"><body>{children}</body></html>
+  return <html lang="en"><body>{children}<CollectionEditEnhancer/></body></html>
 }
