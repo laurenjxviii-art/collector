@@ -451,3 +451,63 @@
   .mc-profile-portfolio{padding:14px 0 4px!important}.mc-profile-portfolio-value{padding:2px 0 15px!important;display:flex!important;flex-direction:column!important;align-items:flex-start!important}.mc-profile-portfolio-value span{font-size:14px!important;color:#aaa!important}.mc-profile-portfolio-value span b{color:#fff!important}.mc-profile-portfolio-value strong{font-size:30px!important;line-height:1.05!important;display:flex!important;align-items:center!important;gap:8px!important;margin-top:4px!important}.mc-profile-portfolio-value strong svg{width:19px!important;height:19px!important;color:#777!important}
   .mc-profile-portfolio-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px 10px!important}.mc-profile-portfolio-grid article{min-width:0!important;border:1px solid #222226!important;border-radius:7px!important;background:#080809!important;padding:7px!important;position:relative!important}.mc-profile-portfolio-grid .media{height:214px!important;background:#080809!important;display:flex!important;align-items:center!important;justify-content:center!important;position:relative!important;overflow:hidden!important;border-radius:5px!important}.mc-profile-portfolio-grid .media img{width:100%!important;height:100%!important;object-fit:contain!important;object-position:center!important}.mc-profile-portfolio-grid .media>span{width:100%!important;height:100%!important;background:#121214!important}.mc-profile-portfolio-grid h4{font-size:13px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;margin:8px 0 3px!important}.mc-profile-portfolio-grid p{font-size:10px!important;color:#aaa!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;margin:0 0 8px!important}.mc-profile-portfolio-grid footer{display:flex!important;align-items:flex-end!important;justify-content:space-between!important}.mc-profile-portfolio-grid footer b{font-size:13px!important}.mc-profile-portfolio-grid footer small{font-size:10px!important;color:#aaa!important}
 }
+
+/* Phone-only viewport, detail actions, finance performance, and edit-sheet refinement v5. */
+@media (max-width:767px), (hover:none) and (pointer:coarse) and (max-width:1100px){
+  /* Lock the app to the real visual viewport so iOS does not lift/crop the bottom UI. */
+  html,body{width:100%!important;height:100%!important;min-height:100%!important;overflow:hidden!important;background:#050505!important}
+  .mobile-collector-shell{position:fixed!important;inset:0!important;width:100%!important;height:100dvh!important;min-height:0!important;overflow:hidden!important;background:#050505!important}
+  .mc-screen-wrap{position:absolute!important;inset:0!important;width:100%!important;height:100dvh!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;padding-bottom:calc(112px + env(safe-area-inset-bottom))!important;box-sizing:border-box!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior-y:contain!important}
+  .mc-page{min-height:100%!important;padding-bottom:calc(124px + env(safe-area-inset-bottom))!important;box-sizing:border-box!important}
+
+  /* Float the nav close to Collectr's placement without letting content end behind it. */
+  .mc-bottom-nav{bottom:6px!important;left:18px!important;right:18px!important;height:62px!important;padding:4px 5px!important;z-index:1500!important}
+
+  /* Sheets own the entire viewport. The bottom nav disappears while a sheet is open. */
+  .mobile-collector-shell:has(.mc-sheet-overlay) .mc-bottom-nav{opacity:0!important;visibility:hidden!important;pointer-events:none!important}
+  .mc-sheet-overlay{position:fixed!important;z-index:2600!important;inset:0!important;width:100vw!important;height:100dvh!important;display:flex!important;align-items:flex-end!important;overflow:hidden!important}
+  .mc-bottom-sheet,.mc-bottom-sheet.tall{width:100%!important;max-height:calc(100dvh - max(env(safe-area-inset-top),48px))!important;padding-bottom:max(12px,env(safe-area-inset-bottom))!important;box-sizing:border-box!important}
+  .mc-sheet-scroll{max-height:calc(100dvh - max(env(safe-area-inset-top),48px) - 66px - env(safe-area-inset-bottom))!important;overflow-y:auto!important;overscroll-behavior:contain!important;padding-bottom:calc(34px + env(safe-area-inset-bottom))!important;-webkit-overflow-scrolling:touch!important}
+  .mc-post-compose{padding-bottom:calc(34px + env(safe-area-inset-bottom))!important}
+  .mc-profile-editor{padding-bottom:calc(48px + env(safe-area-inset-bottom))!important}
+  .mc-form-save.sticky{bottom:max(8px,env(safe-area-inset-bottom))!important;z-index:5!important}
+
+  /* Product detail: back at the safe top-left, Wishlist above Edit on the right. */
+  .mc-detail-top{top:max(calc(env(safe-area-inset-top) + 10px),54px)!important;left:0!important;right:0!important;height:auto!important;padding:0 16px!important;display:flex!important;align-items:flex-start!important;justify-content:space-between!important;pointer-events:none!important}
+  .mc-detail-top>*{pointer-events:auto!important}
+  .mc-detail-back{flex:0 0 auto!important}
+  .mc-detail-right-controls{margin-left:auto!important;display:flex!important;flex-direction:column!important;align-items:center!important;gap:10px!important;pointer-events:auto!important}
+  .mc-detail-wishlist.active{color:#ff4550!important;border-color:#ff313d!important;background:rgba(39,9,12,.92)!important}
+  .mc-detail-wishlist.active svg{fill:currentColor!important}
+  .mc-detail-edit-button{position:static!important;transform:none!important;margin:0!important}
+
+  /* Product cards are clean again; Wishlist is managed only from the detail screen. */
+  .mc-product-card .mc-wishlist-star,.mc-profile-portfolio-grid .mc-wishlist-star{display:none!important}
+
+  /* Search editing actions match the older red Add Filter / Add Set treatment. */
+  .mc-add-under-edit{margin:-2px 0 12px!important}
+  .mc-add-filter{height:36px!important;display:inline-flex!important;align-items:center!important;gap:7px!important;border:1px solid #ff313d!important;border-radius:18px!important;background:rgba(255,31,45,.10)!important;color:#ff4b55!important;padding:0 14px!important;font-size:12px!important;font-weight:650!important}
+  .mc-add-filter svg{width:15px!important;height:15px!important}
+
+  /* Portfolio has four equal utility actions now. */
+  .mc-tool-icons.four{grid-template-columns:repeat(4,1fr)!important;padding-inline:14px!important;gap:8px!important}
+  .mc-tool-icons.four button span{line-height:1.1!important}
+
+  /* The home USD indicator doubles as the entry point to budget/performance. */
+  .mc-home-tabs .mc-currency-dot{margin-left:auto!important;width:28px!important;height:28px!important;min-width:28px!important;border:0!important;border-radius:50%!important;background:#21d983!important;color:#062516!important;display:grid!important;place-items:center!important;font-size:17px!important;font-weight:900!important;line-height:1!important;box-shadow:0 0 14px rgba(33,217,131,.38)!important;padding:0!important}
+  .mc-home-tabs .mc-currency-label{font-size:13px!important;color:#a8a8ad!important;margin-left:-12px!important}
+
+  /* Performance: collecting budget + market gain. */
+  .mc-performance-stack{display:flex!important;flex-direction:column!important;gap:12px!important;padding:4px 0 12px!important}
+  .mc-budget-card,.mc-market-gain-card{border:1px solid #242429!important;border-radius:12px!important;background:#0d0d0f!important;padding:14px!important;box-shadow:0 10px 32px rgba(0,0,0,.18)!important}
+  .mc-budget-card>header{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;margin-bottom:15px!important}
+  .mc-budget-card>header>div{display:flex!important;align-items:center!important;gap:9px!important;min-width:0!important}.mc-budget-card>header>div>svg{width:26px!important;height:26px!important;color:#21d983!important;flex:0 0 auto!important}.mc-budget-card>header span{display:flex!important;flex-direction:column!important;min-width:0!important}.mc-budget-card>header b{font-size:15px!important;color:#f5f5f6!important}.mc-budget-card>header small{font-size:10px!important;color:#7d7d83!important;margin-top:2px!important}
+  .mc-plaid-connect{height:34px!important;border:1px solid #34343a!important;border-radius:17px!important;background:#151517!important;color:#fff!important;padding:0 11px!important;font-size:10px!important;font-weight:650!important;flex:0 0 auto!important}
+  .mc-budget-numbers{display:grid!important;grid-template-columns:1fr 1fr!important;gap:10px!important}.mc-budget-numbers>span{display:flex!important;flex-direction:column!important;border:1px solid #222226!important;border-radius:9px!important;background:#111113!important;padding:10px!important}.mc-budget-numbers small{font-size:10px!important;color:#85858b!important}.mc-budget-numbers b{font-size:19px!important;margin-top:3px!important;color:#f4f4f6!important}
+  .mc-budget-bar{height:8px!important;border-radius:999px!important;background:#242429!important;overflow:hidden!important;margin:11px 0 12px!important}.mc-budget-bar>i{display:block!important;height:100%!important;border-radius:999px!important;background:#21d983!important;box-shadow:0 0 12px rgba(33,217,131,.3)!important;transition:width .2s ease!important}
+  .mc-budget-input{display:flex!important;flex-direction:column!important;gap:6px!important;font-size:10px!important;color:#8e8e94!important}.mc-budget-input>div{height:40px!important;border:1px solid #2b2b30!important;border-radius:9px!important;background:#111113!important;display:flex!important;align-items:center!important;overflow:hidden!important}.mc-budget-input>div>b{font-size:14px!important;color:#777!important;padding-left:12px!important}.mc-budget-input input{flex:1!important;min-width:0!important;height:100%!important;border:0!important;outline:0!important;background:transparent!important;color:#fff!important;font-size:14px!important;padding:0 7px!important}.mc-budget-input button{height:100%!important;border:0!important;border-left:1px solid #2b2b30!important;background:#161619!important;color:#ff4b55!important;padding:0 13px!important;font-size:11px!important;font-weight:700!important}
+  .mc-budget-card>p,.mc-market-gain-card>p{font-size:10px!important;line-height:1.45!important;color:#7f7f85!important;margin:11px 0 0!important}
+  .mc-performance-card.mc-market-gain-card{margin:0!important}
+  .mc-performance-title{display:flex!important;align-items:flex-end!important;justify-content:space-between!important;gap:12px!important}.mc-performance-title>span{display:flex!important;flex-direction:column!important}.mc-performance-title small{font-size:10px!important;color:#88888e!important}.mc-performance-title strong{font-size:24px!important;line-height:1.1!important;margin-top:3px!important}.mc-performance-title b{font-size:14px!important;margin-top:4px!important;color:#e2e2e5!important}
+  .mc-market-gain-chart{height:176px!important;margin:8px -14px 0!important;overflow:hidden!important}.mc-market-gain-chart svg{display:block!important;width:100%!important;height:100%!important}
+}
