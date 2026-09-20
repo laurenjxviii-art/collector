@@ -1,178 +1,289 @@
 'use client';
 
-import {useMemo,useState} from 'react';
+import {useId,useMemo,useRef,useState} from 'react';
 import {
-  ArrowDownUp,ArrowLeft,BarChart3,Camera,ChevronDown,CircleDollarSign,
-  Download,Eye,Filter,Heart,Home,Layers3,Menu,MoreHorizontal,Package,
-  Plus,Search,Settings,Share2,ShoppingBag,SlidersHorizontal,Star,
-  Store,Trash2,UserCircle,Users,X
+  ArrowDownUp,ArrowLeft,CircleDollarSign,Download,Eye,FileUp,Heart,Home,
+  Layers3,MoreHorizontal,Package,Pencil,Plus,Search,Settings,Share2,
+  ShoppingBag,SlidersHorizontal,Star,Store as StoreIcon,Upload,UserCircle,Users,X
 } from 'lucide-react';
+import type {Item,Store as StoreData} from '../lib/model';
+import {itemLibraryLine,money} from '../lib/model';
 
 type MobileView='home'|'search'|'shop'|'social'|'portfolio'|'profile';
 type SearchScreen='root'|'sets'|'set';
-type Sheet='portfolio'|'filters'|'sort'|null;
+type Sheet='portfolio'|'filters'|'sort'|'picker'|'edit'|'create'|null;
+type RangeKey='1D'|'7D'|'1M'|'3M'|'6M'|'MAX';
 
-type Props={status:string;profileName:string};
-
-type DemoCard={name:string;set:string;number:string;price:string;change:string;qty:string};
-
-const quickFilters=[
-  'POKÉMON','MAGIC','YU-GI-OH!','ONE PIECE','LORCANA','FLESH & BLOOD',
-  'RIFTBOUND','DRAGON BALL','PALWORLD','UNION ARENA','STAR WARS','SORCERY',
-  'GRAND ARCHIVE','TRANSFORMERS'
-];
-
-const demoSets=[
-  ['30th Celebration','0/300'],['30th Classic','0/151'],['Prismatic Evolutions','0/347'],
-  ['Stellar Crown','0/175'],['Trick or Trade','0/30'],['March Battle','0/15'],
-  ['Obsidian Flames','0/230'],['Paldea Evolved','0/279'],['Surging Sparks','0/252'],
-  ['Twilight Masquerade','0/226'],['Temporal Forces','0/218'],['Paldean Fates','0/245']
-];
-
-const demoCards:DemoCard[]=[
-  {name:'Charizard',set:'30th Celebration: Classic Collection',number:'#4/102',price:'$186.50',change:'+$0.33 (0.18%)',qty:'Qty: 1'},
-  {name:'Delcatty',set:'30th Celebration: Classic Collection',number:'#5/109',price:'$5.31',change:'+$0.02 (0.38%)',qty:'Qty: 0'},
-  {name:'Genesect EX (Team Plasma)',set:'30th Celebration: Classic Collection',number:'#97',price:'$5.01',change:'+$0.01 (0.20%)',qty:'Qty: 0'},
-  {name:'Metagross (Delta Species)',set:'30th Celebration: Classic Collection',number:'#113',price:'$15.30',change:'-$0.06 (-0.39%)',qty:'Qty: 0'}
-];
+type Props={status:string;profileName:string;data:StoreData;update:(next:StoreData)=>void};
+type CategoryGroup={key:string;rawName:string;name:string;items:Item[];cover:string};
+type SetGroup={key:string;rawName:string;name:string;items:Item[];cover:string;collectionId?:string};
+type EditTarget=
+  |{kind:'category';key:string;rawName:string;name:string}
+  |{kind:'collection';key:string;rawName:string;name:string;collectionId?:string}
+  |{kind:'product';itemId:string};
+type CreateKind='category'|'collection'|'product';
 
 const sortOptions=[
   'Price: Low to High','Price: High to Low','Price Change: Low to High','Price Change: High to Low',
-  'Card Number: Low to High','Card Number: High to Low','Product Name: A to Z','Product Name: Z to A',
-  'Date Added: Oldest First','Date Added: Newest First','Percent Change: Low to High','Percent Change: High to Low','Trending Today'
+  'Product Name: A to Z','Product Name: Z to A','Date Added: Oldest First','Date Added: Newest First'
 ];
 
-export default function MobileCollector({status,profileName}:Props){
+const slug=(v:string)=>v.toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+const categoryKey=(name:string)=>`mobile-category::${slug(name)}`;
+const setKey=(category:string,name:string)=>`mobile-set::${slug(category)}::${slug(name)}`;
+const nowIso=()=>new Date().toISOString();
+
+function groupMeta(data:StoreData,key:string){return data.libraryGroups?.[key]||{}}
+function displayGroupName(data:StoreData,key:string,fallback:string){return groupMeta(data,key).name?.trim()||fallback}
+function displayGroupCover(data:StoreData,key:string){return groupMeta(data,key).coverImage||''}
+function itemCollection(data:StoreData,item:Item){return data.collections.find(c=>c.id===item.collectionId)}
+function itemCategory(data:StoreData,item:Item){return itemLibraryLine(item,itemCollection(data,item))||'Other'}
+function derivedSetName(data:StoreData,item:Item){
+  const c=itemCollection(data,item);
+  if(c&&c.id!=='unlabeled-system'&&c.name.trim()&&!/^unlabeled$/i.test(c.name))return c.name.trim();
+  const cf=item.customFields||{};
+  return cf.Set||cf.set||cf.Series||cf.series||cf.Collection||cf.collection||item.identity?.series||item.identity?.brand||item.category||'Unsorted';
+}
+function productNumber(item:Item){return item.customFields?.Number||item.customFields?.number||item.identity?.collectorNumber||item.identity?.sku||''}
+function ownedQty(item:Item){return item.status==='owned'?item.quantity:0}
+function holdingValue(item:Item){return item.status==='owned'?item.currentValue*item.quantity:0}
+function itemChange(item:Item){
+  const pts=(item.priceHistory||[]).filter(p=>p.kind!=='sale').slice(-2);
+  if(pts.length<2)return {delta:0,pct:0};
+  const a=pts[0].value,b=pts[1].value,delta=b-a;
+  return {delta,pct:a?delta/a*100:0};
+}
+function fmtChange(delta:number,pct:number){const sign=delta>=0?'+':'';return `${sign}${money(delta)} (${sign}${pct.toFixed(2)}%)`}
+function rangeMs(range:RangeKey){return range==='1D'?864e5:range==='7D'?6048e5:range==='1M'?2592e6:range==='3M'?7776e6:range==='6M'?15552e6:Infinity}
+
+export default function MobileCollector({status,profileName,data,update}:Props){
   const [view,setView]=useState<MobileView>('home');
   const [searchScreen,setSearchScreen]=useState<SearchScreen>('root');
   const [sheet,setSheet]=useState<Sheet>(null);
-  const [detail,setDetail]=useState<DemoCard|null>(null);
+  const [detailId,setDetailId]=useState<string|null>(null);
   const [homeTab,setHomeTab]=useState<'overview'|'performance'>('overview');
   const [query,setQuery]=useState('');
-  const [portfolioName,setPortfolioName]=useState('Collecting');
+  const [portfolioId,setPortfolioId]=useState('all');
   const [sort,setSort]=useState(sortOptions[0]);
-  const [filterCards,setFilterCards]=useState(true);
+  const [filterCards,setFilterCards]=useState(false);
   const [filterSealed,setFilterSealed]=useState(false);
   const [watchOnly,setWatchOnly]=useState(false);
   const [selected,setSelected]=useState<string[]>([]);
   const [selectMode,setSelectMode]=useState(false);
   const [profileTab,setProfileTab]=useState<'stats'|'settings'|'support'>('stats');
+  const [editMode,setEditMode]=useState(false);
+  const [editTarget,setEditTarget]=useState<EditTarget|null>(null);
+  const [createKind,setCreateKind]=useState<CreateKind>('product');
+  const [selectedCategory,setSelectedCategory]=useState<string>('');
+  const [selectedSet,setSelectedSet]=useState<SetGroup|null>(null);
+  const [pickerSelected,setPickerSelected]=useState<string[]>([]);
+  const [toast,setToast]=useState('');
 
-  const setViewAndReset=(next:MobileView)=>{
-    setView(next);
-    if(next!=='search')setSearchScreen('root');
-    setDetail(null);
-    setSheet(null);
-  };
+  const visibleCollections=useMemo(()=>data.collections.filter(c=>c.id!=='unlabeled-system'&&!/^unlabeled$/i.test(c.name)),[data.collections]);
+  const portfolioName=portfolioId==='all'?'Collecting':(data.collections.find(c=>c.id===portfolioId)?.name||'Collecting');
+  const portfolioItems=useMemo(()=>data.items.filter(i=>i.status==='owned'&&(portfolioId==='all'||i.collectionId===portfolioId)),[data.items,portfolioId]);
+  const portfolioValue=useMemo(()=>portfolioItems.reduce((sum,i)=>sum+holdingValue(i),0),[portfolioItems]);
+
+  const categories=useMemo<CategoryGroup[]>(()=>{
+    const map=new Map<string,Item[]>();
+    for(const item of data.items){const n=itemCategory(data,item);map.set(n,[...(map.get(n)||[]),item])}
+    const groups:Array<CategoryGroup>=Array.from(map.entries()).map(([rawName,items])=>{const key=categoryKey(rawName);return {key,rawName,name:displayGroupName(data,key,rawName),items,cover:displayGroupCover(data,key)}});
+    for(const [key,meta] of Object.entries(data.libraryGroups||{})){
+      if(!key.startsWith('mobile-category::')||!meta.name||groups.some(g=>g.key===key))continue;
+      groups.push({key,rawName:key,name:meta.name,items:[],cover:meta.coverImage||''});
+    }
+    return groups.sort((a,b)=>a.name.localeCompare(b.name));
+  },[data]);
+
+  const setGroups=useMemo<SetGroup[]>(()=>{
+    if(!selectedCategory)return [];
+    const category=categories.find(c=>c.rawName===selectedCategory);
+    const map=new Map<string,SetGroup>();
+    for(const item of category?.items||[]){
+      const c=itemCollection(data,item);
+      if(c&&c.id!=='unlabeled-system'&&!/^unlabeled$/i.test(c.name)){
+        const key=`collection::${c.id}`;
+        const existing=map.get(key);if(existing)existing.items.push(item);else map.set(key,{key,rawName:c.name,name:c.name,items:[item],cover:c.coverImage||'',collectionId:c.id});
+      }else{
+        const raw=derivedSetName(data,item),key=setKey(selectedCategory,raw),existing=map.get(key);
+        if(existing)existing.items.push(item);else map.set(key,{key,rawName:raw,name:displayGroupName(data,key,raw),items:[item],cover:displayGroupCover(data,key)});
+      }
+    }
+    for(const c of visibleCollections){
+      if(c.libraryLine===selectedCategory&&!map.has(`collection::${c.id}`))map.set(`collection::${c.id}`,{key:`collection::${c.id}`,rawName:c.name,name:c.name,items:[],cover:c.coverImage||'',collectionId:c.id});
+    }
+    return Array.from(map.values()).sort((a,b)=>a.name.localeCompare(b.name));
+  },[categories,data,selectedCategory,visibleCollections]);
+
+  const notify=(msg:string)=>{setToast(msg);window.setTimeout(()=>setToast(''),1800)};
+  const patchData=(fn:(draft:StoreData)=>StoreData)=>update(fn(data));
+  const addOne=(itemId:string)=>patchData(d=>({...d,items:d.items.map(i=>i.id===itemId?{...i,status:'owned',quantity:i.status==='owned'?i.quantity+1:1,updatedAt:nowIso()}:i)}));
+  const openEdit=(target:EditTarget)=>{setEditTarget(target);setSheet('edit')};
+  const openCreate=(kind:CreateKind)=>{setCreateKind(kind);setSheet('create')};
+
+  const setViewAndReset=(next:MobileView)=>{setView(next);if(next!=='search')setSearchScreen('root');setDetailId(null);setSheet(null);setEditMode(false)};
+  const detail=data.items.find(i=>i.id===detailId)||null;
+  const activeSet=selectedSet?(setGroups.find(s=>s.key===selectedSet.key)||selectedSet):null;
 
   if(detail){
     return <div className="mobile-collector-shell mobile-app-active">
-      <MobileProductDetail card={detail} close={()=>setDetail(null)}/>
-      <MobileBottomNav view={view} setView={setViewAndReset}/>
+      <MobileProductDetail item={detail} data={data} close={()=>setDetailId(null)} onAdd={()=>addOne(detail.id)} editMode={editMode} toggleEdit={()=>setEditMode(v=>!v)} openEdit={()=>openEdit({kind:'product',itemId:detail.id})}/>
+      <MobileBottomNav view={view} setView={setViewAndReset}/>{toast&&<div className="mc-toast">{toast}</div>}
     </div>;
   }
 
   return <div className="mobile-collector-shell mobile-app-active">
     <main className="mc-screen-wrap">
-      {view==='home'&&<MobileHome tab={homeTab} setTab={setHomeTab} portfolioName={portfolioName} choosePortfolio={()=>setSheet('portfolio')}/>} 
-      {view==='search'&&<MobileSearchFlow screen={searchScreen} setScreen={setSearchScreen} query={query} setQuery={setQuery} openCard={setDetail} openFilters={()=>setSheet('filters')} openSort={()=>setSheet('sort')}/>} 
-      {view==='shop'&&<MobileShop openCard={setDetail}/>} 
-      {view==='social'&&<MobileSocial/>}
-      {view==='portfolio'&&<MobilePortfolio portfolioName={portfolioName} query={query} setQuery={setQuery} openCard={setDetail} openFilters={()=>setSheet('filters')} openSort={()=>setSheet('sort')} selectMode={selectMode} setSelectMode={setSelectMode} selected={selected} setSelected={setSelected}/>} 
-      {view==='profile'&&<MobileProfile name={profileName} status={status} tab={profileTab} setTab={setProfileTab} portfolioName={portfolioName}/>} 
+      {view==='home'&&<MobileHome data={data} items={portfolioItems} value={portfolioValue} tab={homeTab} setTab={setHomeTab} portfolioName={portfolioName} portfolioId={portfolioId} choosePortfolio={()=>setSheet('portfolio')} editMode={editMode} toggleEdit={()=>setEditMode(v=>!v)} addAnother={()=>openCreate('collection')}/>} 
+      {view==='search'&&<MobileSearchFlow data={data} update={update} categories={categories} sets={setGroups} screen={searchScreen} setScreen={setSearchScreen} query={query} setQuery={setQuery} selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} selectedSet={activeSet} setSelectedSet={setSelectedSet} openCard={setDetailId} openFilters={()=>setSheet('filters')} openSort={()=>setSheet('sort')} editMode={editMode} toggleEdit={()=>setEditMode(v=>!v)} openEdit={openEdit} addCategory={()=>openCreate('category')} addCollection={()=>openCreate('collection')} addProduct={()=>openCreate('product')} addToCollection={()=>{setPickerSelected([]);setSheet('picker')}} onAdd={addOne}/>} 
+      {view==='shop'&&<MobileShop items={data.items.slice(0,8)} data={data} openCard={setDetailId} onAdd={addOne} editMode={editMode} toggleEdit={()=>setEditMode(v=>!v)} openEdit={openEdit} addAnother={()=>openCreate('product')}/>} 
+      {view==='social'&&<MobileSocial editMode={editMode} toggleEdit={()=>setEditMode(v=>!v)}/>} 
+      {view==='portfolio'&&<MobilePortfolio items={portfolioItems} value={portfolioValue} portfolioName={portfolioName} query={query} setQuery={setQuery} openCard={setDetailId} openFilters={()=>setSheet('filters')} openSort={()=>setSheet('sort')} selectMode={selectMode} setSelectMode={setSelectMode} selected={selected} setSelected={setSelected} onAdd={addOne} editMode={editMode} toggleEdit={()=>setEditMode(v=>!v)} openEdit={openEdit} addAnother={()=>openCreate('product')} data={data} importData={(file)=>importFile(file,data,update,notify)} exportData={()=>exportStore(data)} sort={sort}/>} 
+      {view==='profile'&&<MobileProfile name={profileName} status={status} tab={profileTab} setTab={setProfileTab} portfolioName={portfolioName} items={portfolioItems} value={portfolioValue} editMode={editMode} toggleEdit={()=>setEditMode(v=>!v)} addAnother={()=>openCreate('collection')}/>} 
     </main>
 
     <MobileBottomNav view={view} setView={setViewAndReset}/>
-
-    {sheet==='portfolio'&&<PortfolioSheet selected={portfolioName} choose={(name)=>{setPortfolioName(name);setSheet(null)}} close={()=>setSheet(null)}/>} 
+    {sheet==='portfolio'&&<PortfolioSheet data={data} selected={portfolioId} choose={(id)=>{setPortfolioId(id);setSheet(null)}} close={()=>setSheet(null)}/>} 
     {sheet==='filters'&&<FilterSheet watch={watchOnly} setWatch={setWatchOnly} cards={filterCards} setCards={setFilterCards} sealed={filterSealed} setSealed={setFilterSealed} close={()=>setSheet(null)}/>} 
     {sheet==='sort'&&<SortSheet value={sort} choose={(v)=>{setSort(v);setSheet(null)}} close={()=>setSheet(null)}/>} 
-
-    {selectMode&&view==='portfolio'&&<div className="mc-selection-bar"><span>{selected.length} products selected</span><button onClick={()=>{setSelected([]);setSelectMode(false)}}>Cancel</button><button className="primary">Select Items</button></div>}
+    {sheet==='edit'&&editTarget&&<EditSheet data={data} target={editTarget} update={update} close={()=>{setSheet(null);setEditTarget(null)}} notify={notify}/>} 
+    {sheet==='create'&&<CreateSheet data={data} kind={createKind} selectedCategory={selectedCategory} selectedSet={selectedSet} update={update} close={()=>setSheet(null)} notify={notify}/>} 
+    {sheet==='picker'&&activeSet&&<ItemPickerSheet data={data} target={activeSet} category={selectedCategory} selected={pickerSelected} setSelected={setPickerSelected} close={()=>setSheet(null)} commit={()=>{assignItemsToSet(data,update,activeSet,selectedCategory,pickerSelected);setSheet(null);notify(`${pickerSelected.length} item${pickerSelected.length===1?'':'s'} added`)}}/>}
+    {selectMode&&view==='portfolio'&&<div className="mc-selection-bar"><span>{selected.length} products selected</span><button onClick={()=>{setSelected([]);setSelectMode(false)}}>Cancel</button><button className="primary" onClick={()=>setSelectMode(false)}>Done</button></div>}
+    {toast&&<div className="mc-toast">{toast}</div>}
   </div>;
 }
 
-function MobileTopSearch({placeholder,value,setValue,onFilter,onSort,onBack}:{placeholder:string;value:string;setValue:(v:string)=>void;onFilter?:()=>void;onSort?:()=>void;onBack?:()=>void}){
+function EditToggle({active,onClick}:{active:boolean;onClick:()=>void}){return <button className={`mc-edit-pill ${active?'active':''}`} onClick={onClick}><Pencil/><span>{active?'Done':'Edit'}</span></button>}
+function AddAnother({label,onClick}:{label:string;onClick:()=>void}){return <button className="mc-add-another" onClick={onClick}><Plus/>Add another {label}</button>}
+
+function MobileTopSearch({placeholder,value,setValue,onFilter,onSort,onBack,editMode,onEdit}:{placeholder:string;value:string;setValue:(v:string)=>void;onFilter?:()=>void;onSort?:()=>void;onBack?:()=>void;editMode:boolean;onEdit:()=>void}){
   return <div className="mc-top-search">
-    {onBack?<button className="mc-circle" onClick={onBack}><ArrowLeft/></button>:<button className="mc-circle"><Camera/></button>}
+    {onBack?<button className="mc-circle" onClick={onBack}><ArrowLeft/></button>:<EditToggle active={editMode} onClick={onEdit}/>} 
     <label className="mc-search-pill"><Search/><input value={value} onChange={e=>setValue(e.target.value)} placeholder={placeholder}/>{value&&<button onClick={()=>setValue('')}><X/></button>}</label>
     <button className="mc-circle"><Star/></button>
     {onSort&&<button className="mc-circle" onClick={onSort}><ArrowDownUp/></button>}
     {onFilter&&<button className="mc-circle" onClick={onFilter}><SlidersHorizontal/></button>}
+    {onBack&&<EditToggle active={editMode} onClick={onEdit}/>} 
   </div>;
 }
 
-function MobileHome({tab,setTab,portfolioName,choosePortfolio}:{tab:'overview'|'performance';setTab:(t:'overview'|'performance')=>void;portfolioName:string;choosePortfolio:()=>void}){
+function MobileHome({data,items,value,tab,setTab,portfolioName,portfolioId,choosePortfolio,editMode,toggleEdit,addAnother}:{data:StoreData;items:Item[];value:number;tab:'overview'|'performance';setTab:(t:'overview'|'performance')=>void;portfolioName:string;portfolioId:string;choosePortfolio:()=>void;editMode:boolean;toggleEdit:()=>void;addAnother:()=>void}){
+  const [range,setRange]=useState<RangeKey>('1M');
+  const delta=portfolioDelta(data,portfolioId,value,30);
+  const most=[...items].sort((a,b)=>holdingValue(b)-holdingValue(a)).slice(0,4);
   return <section className="mc-page mc-home">
-    <div className="mc-home-tabs"><button className={tab==='overview'?'active':''} onClick={()=>setTab('overview')}>Overview</button><button className={tab==='performance'?'active':''} onClick={()=>setTab('performance')}>Performance</button><span className="mc-currency-dot"/>USD</div>
+    <div className="mc-home-tabs"><button className={tab==='overview'?'active':''} onClick={()=>setTab('overview')}>Overview</button><button className={tab==='performance'?'active':''} onClick={()=>setTab('performance')}>Performance</button><span className="mc-home-edit"><EditToggle active={editMode} onClick={toggleEdit}/></span><span className="mc-currency-dot"/>USD</div>
+    {editMode&&<div className="mc-add-under-edit"><AddAnother label="portfolio" onClick={addAnother}/></div>}
     {tab==='overview'?<>
-      <div className="mc-portfolio-head"><button onClick={choosePortfolio}>Portfolio: <b>{portfolioName}</b><ChevronDown/></button><strong>$770.26</strong><small className="loss">-$12.00 in the last 30 days</small></div>
-      <MiniChart/>
-      <RangeRow/>
-      <section className="mc-panel"><div className="mc-panel-title"><h3>Most Valuable</h3></div><ValueRows/><button className="mc-view-all">View All</button></section>
-      <section className="mc-section"><h3>Just For You</h3><div className="mc-promo-row"><div className="mc-promo-card">CELEBRATE<br/><b>30 YEARS</b></div><div className="mc-promo-card alt">25% OFF<br/><b>YOUR FIRST PACK</b></div></div></section>
-      <section className="mc-section"><h3>Trending Today</h3><div className="mc-trending-row"><div className="mc-trend-thumb"/><div><b>Collector 101</b><small>Trending now</small></div><strong>+$0.74</strong></div></section>
-    </>:<section className="mc-performance-card"><h2>Your Performance</h2><p>Collector helps you track the performance of your products by showing their current value and returns.</p><MiniChart compact/><button>View Transaction Logs</button></section>}
+      <div className="mc-portfolio-head"><span>Portfolio: <button className="mc-portfolio-word" onClick={choosePortfolio}>{portfolioName}</button></span><strong>{money(value)}</strong><small className={delta.delta>=0?'gain':'loss'}>{delta.delta>=0?'+':''}{money(delta.delta)} in the last 30 days</small></div>
+      <LiveChart data={data} portfolioId={portfolioId} currentValue={value} range={range}/><RangeRow range={range} setRange={setRange}/>
+      <section className="mc-panel"><div className="mc-panel-title"><h3>Most Valuable</h3></div><ValueRows items={most}/><button className="mc-view-all">View All</button></section>
+    </>:<section className="mc-performance-card"><h2>Your Performance</h2><p>Current portfolio value and historical changes are calculated from your synced collection.</p><LiveChart data={data} portfolioId={portfolioId} currentValue={value} range={range} compact/><RangeRow range={range} setRange={setRange}/><button>View Transaction Logs</button></section>}
   </section>;
 }
 
-function MiniChart({compact=false}:{compact?:boolean}){
-  return <div className={`mc-chart ${compact?'compact':''}`}><svg viewBox="0 0 390 170" preserveAspectRatio="none"><defs><linearGradient id="mcRedFade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#ff1f2d" stopOpacity=".38"/><stop offset="1" stopColor="#ff1f2d" stopOpacity="0"/></linearGradient></defs><path d="M0 84 L18 55 L36 50 L50 116 L68 109 L82 126 L104 112 L126 117 L152 92 L172 79 L195 63 L214 70 L235 83 L258 72 L279 75 L300 89 L322 97 L342 79 L365 80 L390 82 L390 170 L0 170Z" fill="url(#mcRedFade)"/><path d="M0 84 L18 55 L36 50 L50 116 L68 109 L82 126 L104 112 L126 117 L152 92 L172 79 L195 63 L214 70 L235 83 L258 72 L279 75 L300 89 L322 97 L342 79 L365 80 L390 82" fill="none" stroke="#ff1f2d" strokeWidth="2.6" strokeLinejoin="round" strokeLinecap="round"/></svg></div>;
+function LiveChart({data,portfolioId,currentValue,range,compact=false}:{data:StoreData;portfolioId:string;currentValue:number;range:RangeKey;compact?:boolean}){
+  const id=useId().replace(/:/g,'');
+  const pts=useMemo(()=>chartPoints(data,portfolioId,currentValue,range),[data,portfolioId,currentValue,range]);
+  const w=390,h=170,p=8,min=Math.min(...pts.map(x=>x.value)),max=Math.max(...pts.map(x=>x.value));
+  const span=Math.max(1,max-min),x=(i:number)=>pts.length===1?w/2:(i/(pts.length-1))*w,y=(v:number)=>p+(1-(v-min)/span)*(h-p*2);
+  const line=pts.map((pt,i)=>`${i?'L':'M'}${x(i).toFixed(1)} ${y(pt.value).toFixed(1)}`).join(' ');
+  const area=`${line} L${w} ${h} L0 ${h} Z`;
+  return <div className={`mc-chart ${compact?'compact':''}`}><svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none"><defs><linearGradient id={id} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#ff1f2d" stopOpacity=".38"/><stop offset="1" stopColor="#ff1f2d" stopOpacity="0"/></linearGradient></defs><path d={area} fill={`url(#${id})`}/><path d={line} fill="none" stroke="#ff1f2d" strokeWidth="2.6" strokeLinejoin="round" strokeLinecap="round"/></svg></div>;
 }
-function RangeRow(){return <div className="mc-ranges">{['1D','7D','1M','3M','6M','MAX'].map(r=><button key={r} className={r==='1M'?'active':''}>{r}</button>)}</div>}
-function ValueRows(){return <div className="mc-value-list">{[['Sukuna (F) (SR)','$180'],['Satoru Gojo (SR)','$32.50'],['Parallel Lives (Borderless)','$28.96'],['Venom, Eddie Brock','$18.85']].map(([a,b])=><div key={a}><span>{a}<small>Near Mint • Foil</small></span><b>{b}</b></div>)}</div>}
+function RangeRow({range,setRange}:{range:RangeKey;setRange:(r:RangeKey)=>void}){return <div className="mc-ranges">{(['1D','7D','1M','3M','6M','MAX'] as RangeKey[]).map(r=><button key={r} className={r===range?'active':''} onClick={()=>setRange(r)}>{r}</button>)}</div>}
+function ValueRows({items}:{items:Item[]}){return <div className="mc-value-list">{items.length?items.map(item=>{const ch=itemChange(item);return <div key={item.id}><span>{item.name}<small>{item.condition||'Unspecified'}{item.customFields?.Finish?` • ${item.customFields.Finish}`:''}</small></span><span className="mc-value-right"><b>{money(holdingValue(item)||item.currentValue)}</b><small className={ch.delta>=0?'gain':'loss'}>{ch.pct.toFixed(2)}%</small></span></div>}):<div className="mc-empty-row">No owned products yet</div>}</div>}
 
-function MobileSearchFlow({screen,setScreen,query,setQuery,openCard,openFilters,openSort}:{screen:SearchScreen;setScreen:(s:SearchScreen)=>void;query:string;setQuery:(v:string)=>void;openCard:(c:DemoCard)=>void;openFilters:()=>void;openSort:()=>void}){
-  if(screen==='root')return <section className="mc-page"><MobileTopSearch placeholder="Search for products" value={query} setValue={setQuery} onFilter={openFilters} onSort={openSort}/><h3 className="mc-heading">Quick Filters</h3><div className="mc-quick-grid">{quickFilters.map((x,i)=><button key={x} onClick={()=>i===0&&setScreen('sets')}><span>{x}</span></button>)}</div></section>;
-  if(screen==='sets')return <MobileSets query={query} setQuery={setQuery} back={()=>setScreen('root')} openSet={()=>setScreen('set')}/>;
-  return <MobileSetProducts query={query} setQuery={setQuery} back={()=>setScreen('sets')} openCard={openCard} openFilters={openFilters} openSort={openSort}/>;
-}
-
-function MobileSets({query,setQuery,back,openSet}:{query:string;setQuery:(v:string)=>void;back:()=>void;openSet:()=>void}){
-  return <section className="mc-page mc-sets"><div className="mc-title-row"><button className="mc-circle" onClick={back}><ArrowLeft/></button><h2>Pokemon Sets</h2></div><MobileTopSearch placeholder="Search by sets" value={query} setValue={setQuery}/><div className="mc-language-tabs"><button className="active">English</button><button>Japanese</button><button>Chinese</button><button>PullDex</button></div><div className="mc-set-grid">{demoSets.map(([name,progress])=><button className="mc-set-card" key={name} onClick={openSet}><div className="mc-set-logo">{name.toUpperCase()}</div><small>Progress: {progress}</small><small>Total Value: $0</small></button>)}</div></section>;
-}
-
-function MobileSetProducts({query,setQuery,back,openCard,openFilters,openSort}:{query:string;setQuery:(v:string)=>void;back:()=>void;openCard:(c:DemoCard)=>void;openFilters:()=>void;openSort:()=>void}){
-  return <section className="mc-page"><MobileTopSearch placeholder="Search for products" value={query} setValue={setQuery} onBack={back} onFilter={openFilters} onSort={openSort}/><div className="mc-adding-line"><span>Adding to: <b>Dupes</b></span><button>Set Analytics</button></div><div className="mc-active-filter">Cards <X/></div><div className="mc-set-summary"><div className="mc-set-logo small">30TH</div><div><b>30th Celebration: Classic Collection</b><small>Progress: 0/300</small><small>Total Value: $0</small></div><button>Update</button></div><div className="mc-product-grid">{demoCards.map(c=><MobileProductCard key={c.name} card={c} open={()=>openCard(c)}/>)}</div></section>;
+function MobileSearchFlow({data,update,categories,sets,screen,setScreen,query,setQuery,selectedCategory,setSelectedCategory,selectedSet,setSelectedSet,openCard,openFilters,openSort,editMode,toggleEdit,openEdit,addCategory,addCollection,addProduct,addToCollection,onAdd}:{data:StoreData;update:(s:StoreData)=>void;categories:CategoryGroup[];sets:SetGroup[];screen:SearchScreen;setScreen:(s:SearchScreen)=>void;query:string;setQuery:(v:string)=>void;selectedCategory:string;setSelectedCategory:(v:string)=>void;selectedSet:SetGroup|null;setSelectedSet:(s:SetGroup|null)=>void;openCard:(id:string)=>void;openFilters:()=>void;openSort:()=>void;editMode:boolean;toggleEdit:()=>void;openEdit:(t:EditTarget)=>void;addCategory:()=>void;addCollection:()=>void;addProduct:()=>void;addToCollection:()=>void;onAdd:(id:string)=>void}){
+  if(screen==='root')return <section className="mc-page"><MobileTopSearch placeholder="Search for products" value={query} setValue={setQuery} onFilter={openFilters} onSort={openSort} editMode={editMode} onEdit={toggleEdit}/>{editMode&&<div className="mc-add-under-edit"><AddAnother label="category" onClick={addCategory}/></div>}<h3 className="mc-heading">Quick Filters</h3><div className="mc-quick-grid">{categories.filter(c=>!query||c.name.toLowerCase().includes(query.toLowerCase())).map(c=><div key={c.key} className="mc-cover-card" role="button" tabIndex={0} style={coverStyle(c.cover)} onClick={()=>{setSelectedCategory(c.rawName);setScreen('sets')}}><span>{c.name}</span>{editMode&&<button className="mc-card-edit" onClick={e=>{e.stopPropagation();openEdit({kind:'category',key:c.key,rawName:c.rawName,name:c.name})}}><Pencil/></button>}</div>)}</div></section>;
+  if(screen==='sets')return <MobileSets data={data} sets={sets} query={query} setQuery={setQuery} back={()=>setScreen('root')} openSet={(s)=>{setSelectedSet(s);setScreen('set')}} openFilters={openFilters} editMode={editMode} toggleEdit={toggleEdit} openEdit={openEdit} addAnother={addCollection}/>;
+  return <MobileSetProducts data={data} update={update} group={selectedSet} query={query} setQuery={setQuery} back={()=>setScreen('sets')} openCard={openCard} openFilters={openFilters} openSort={openSort} editMode={editMode} toggleEdit={toggleEdit} openEdit={openEdit} addAnother={addProduct} addToCollection={addToCollection} onAdd={onAdd}/>;
 }
 
-function MobileProductCard({card,open,selected=false,toggle}:{card:DemoCard;open:()=>void;selected?:boolean;toggle?:()=>void}){
-  return <article className={`mc-product-card ${selected?'selected':''}`} onClick={toggle||open}><div className="mc-product-image"><span>{card.name.slice(0,1)}</span>{selected&&<i>✓</i>}</div><h4>{card.name}</h4><p>{card.set}</p><small>{card.number}</small><footer><div><b>{card.price}</b><em>{card.change}</em><span>{card.qty}</span></div><button onClick={e=>{e.stopPropagation();if(!toggle)open()}}><Plus/></button></footer></article>;
+function MobileSets({data,sets,query,setQuery,back,openSet,openFilters,editMode,toggleEdit,openEdit,addAnother}:{data:StoreData;sets:SetGroup[];query:string;setQuery:(v:string)=>void;back:()=>void;openSet:(s:SetGroup)=>void;openFilters:()=>void;editMode:boolean;toggleEdit:()=>void;openEdit:(t:EditTarget)=>void;addAnother:()=>void}){
+  return <section className="mc-page mc-sets"><div className="mc-title-row"><button className="mc-circle" onClick={back}><ArrowLeft/></button><h2>Sets</h2><span/></div><MobileTopSearch placeholder="Search sets" value={query} setValue={setQuery} onFilter={openFilters} editMode={editMode} onEdit={toggleEdit}/>{editMode&&<div className="mc-add-under-edit"><AddAnother label="collection" onClick={addAnother}/></div>}<div className="mc-set-grid">{sets.filter(s=>!query||s.name.toLowerCase().includes(query.toLowerCase())).map(s=><div className="mc-set-card mc-cover-card" role="button" tabIndex={0} style={coverStyle(s.cover)} key={s.key} onClick={()=>openSet(s)}><div className="mc-set-logo">{s.name.toUpperCase()}</div><small>{s.items.reduce((n,i)=>n+ownedQty(i),0)} items</small><small>Total Value: {money(s.items.reduce((n,i)=>n+holdingValue(i),0))}</small>{editMode&&<button className="mc-card-edit" onClick={e=>{e.stopPropagation();openEdit({kind:'collection',key:s.key,rawName:s.rawName,name:s.name,collectionId:s.collectionId})}}><Pencil/></button>}</div>)}</div></section>;
 }
 
-function MobilePortfolio({portfolioName,query,setQuery,openCard,openFilters,openSort,selectMode,setSelectMode,selected,setSelected}:{portfolioName:string;query:string;setQuery:(v:string)=>void;openCard:(c:DemoCard)=>void;openFilters:()=>void;openSort:()=>void;selectMode:boolean;setSelectMode:(v:boolean)=>void;selected:string[];setSelected:(v:string[])=>void}){
-  const toggle=(name:string)=>setSelected(selected.includes(name)?selected.filter(x=>x!==name):[...selected,name]);
-  return <section className="mc-page"><MobileTopSearch placeholder="Search your collection" value={query} setValue={setQuery} onFilter={openFilters} onSort={openSort}/><div className="mc-portfolio-value"><span>Portfolio: <b>{portfolioName}</b></span><strong>$223.65 <Eye/></strong><small className="gain">+$0.00</small></div><div className="mc-tool-icons"><button><BarChart3/><span>Market<br/>Movers</span></button><button><ArrowDownUp/><span>Trade<br/>Analyzer</span></button><button onClick={()=>setSelectMode(!selectMode)} className={selectMode?'active':''}><Layers3/><span>Bulk Actions</span></button><button><Download/><span>Export</span></button></div><div className="mc-product-grid">{demoCards.map(c=><MobileProductCard key={c.name} card={c} open={()=>openCard(c)} selected={selected.includes(c.name)} toggle={selectMode?()=>toggle(c.name):undefined}/>)}</div></section>;
+function MobileSetProducts({data,update,group,query,setQuery,back,openCard,openFilters,openSort,editMode,toggleEdit,openEdit,addAnother,addToCollection,onAdd}:{data:StoreData;update:(s:StoreData)=>void;group:SetGroup|null;query:string;setQuery:(v:string)=>void;back:()=>void;openCard:(id:string)=>void;openFilters:()=>void;openSort:()=>void;editMode:boolean;toggleEdit:()=>void;openEdit:(t:EditTarget)=>void;addAnother:()=>void;addToCollection:()=>void;onAdd:(id:string)=>void}){
+  const items=(group?.items||[]).filter(i=>!query||i.name.toLowerCase().includes(query.toLowerCase()));
+  return <section className="mc-page"><MobileTopSearch placeholder="Search for products" value={query} setValue={setQuery} onBack={back} onFilter={openFilters} onSort={openSort} editMode={editMode} onEdit={toggleEdit}/>{editMode&&<div className="mc-add-under-edit"><AddAnother label="product" onClick={addAnother}/></div>}<div className="mc-add-to-collection-row"><button onClick={addToCollection}>Add to Collection</button></div><div className="mc-set-summary"><div className="mc-set-logo small" style={coverStyle(group?.cover||'')}>{group?.name.slice(0,8).toUpperCase()||'SET'}</div><div><b>{group?.name||'Collection'}</b><small>{group?.items.reduce((n,i)=>n+ownedQty(i),0)||0} owned</small><small>Total Value: {money(group?.items.reduce((n,i)=>n+holdingValue(i),0)||0)}</small></div><button onClick={()=>group&&openEdit({kind:'collection',key:group.key,rawName:group.rawName,name:group.name,collectionId:group.collectionId})}>Update</button></div><div className="mc-product-grid">{items.map(item=><MobileProductCard key={item.id} item={item} data={data} open={()=>openCard(item.id)} onAdd={()=>onAdd(item.id)} editMode={editMode} openEdit={()=>openEdit({kind:'product',itemId:item.id})}/>)}</div></section>;
 }
 
-function MobileShop({openCard}:{openCard:(c:DemoCard)=>void}){return <section className="mc-page"><div className="mc-page-title"><h2>Shop</h2></div><div className="mc-shop-banner"><span>Shop</span><b>View all listings</b><strong>Free<br/>$185.00</strong></div><h3 className="mc-heading">Check Out These Listings</h3><div className="mc-product-grid">{demoCards.slice(0,2).map(c=><MobileProductCard key={c.name} card={c} open={()=>openCard(c)}/>)}</div></section>}
-
-function MobileSocial(){return <section className="mc-page"><MobileTopSearch placeholder="Search users and hashtags" value="" setValue={()=>{}}/><div className="mc-social-tabs"><button className="active">Following</button><button>For You</button><button>Your Posts</button></div><article className="mc-social-post"><header><div className="mc-avatar">C</div><div><b>Collector</b><small>3 days ago</small></div><button>Following</button><MoreHorizontal/></header><div className="mc-social-image">GIVEAWAY<br/><span>30th Celebration Set Boxes</span></div><div className="mc-social-actions"><Heart/>1.8K Likes <span>♡ 352</span></div><p><b>collector</b> Collector EPIC exclusive giveaway is here! This is a community showcase preview.</p></article></section>}
-
-function MobileProfile({name,status,tab,setTab,portfolioName}:{name:string;status:string;tab:'stats'|'settings'|'support';setTab:(t:'stats'|'settings'|'support')=>void;portfolioName:string}){
-  return <section className="mc-page"><div className="mc-profile-head"><div className="mc-profile-avatar">{(name||'C')[0]?.toUpperCase()}</div><h2>{name||'Collector'}</h2><small>{status}</small><div className="mc-profile-counts"><span><b>617</b>Total Cards</span><span><b>0</b>Total Sealed</span><span><b>0</b>Total Graded</span><span><b>$599.31</b>Total Value</span></div><div className="mc-profile-buttons"><button>View Social Profile</button><button>Edit Background</button></div></div><div className="mc-profile-tabs">{(['stats','settings','support'] as const).map(t=><button key={t} className={tab===t?'active':''} onClick={()=>setTab(t)}>{t[0].toUpperCase()+t.slice(1)}</button>)}</div>{tab==='stats'?<><h3 className="mc-heading">Portfolio: <b>{portfolioName}</b></h3><div className="mc-stat-grid"><span><b>21</b>Cards</span><span><b>0</b>Sealed</span><span><b>0</b>Graded</span><span><b>$223.65</b>Value</span></div><div className="mc-performance-card"><h3>Your Performance</h3><p>Collector helps you track the performance of your products by showing the current value and returns.</p><MiniChart compact/><button>View Transaction Logs</button></div></>:tab==='settings'?<div className="mc-settings-list"><button><Settings/>Account Settings</button><button><CircleDollarSign/>Currency: USD</button><button><Share2/>Share Profile</button></div>:<div className="mc-settings-list"><button>Help Center</button><button>Contact Support</button><button>About Collector</button></div>}</section>;
+function MobileProductCard({item,data,open,onAdd,selected=false,toggle,editMode=false,openEdit}:{item:Item;data:StoreData;open:()=>void;onAdd:()=>void;selected?:boolean;toggle?:()=>void;editMode?:boolean;openEdit?:()=>void}){
+  const ch=itemChange(item),set=derivedSetName(data,item),num=productNumber(item);
+  return <article className={`mc-product-card ${selected?'selected':''}`} onClick={toggle||open}><div className="mc-product-image">{item.image?<img src={item.image} alt=""/>:<span>{item.name.slice(0,1)}</span>}{selected&&<i>✓</i>}{editMode&&openEdit&&<button className="mc-card-edit product" onClick={e=>{e.stopPropagation();openEdit()}}><Pencil/></button>}</div><h4>{item.name}</h4><p>{set}</p><small>{num}</small><footer><div><b>{money(item.currentValue)}</b><em className={ch.delta>=0?'gain':'loss'}>{fmtChange(ch.delta,ch.pct)}</em><span>Qty: {ownedQty(item)}</span></div><button onClick={e=>{e.stopPropagation();onAdd()}}><Plus/></button></footer></article>;
 }
 
-function MobileProductDetail({card,close}:{card:DemoCard;close:()=>void}){
-  const [grade,setGrade]=useState<'RAW'|'GRADED'|'POP'>('RAW');
-  return <section className="mc-page mc-product-detail"><div className="mc-detail-top"><button className="mc-circle" onClick={close}><ArrowLeft/></button><button className="mc-circle"><Share2/></button></div><div className="mc-detail-image"><span>{card.name}</span></div><div className="mc-detail-body"><div className="mc-detail-title"><div><h2>{card.name}</h2><p>{card.set} • {card.number}</p></div><button><Star/></button></div><div className="mc-detail-price"><strong>{card.price}</strong><small className="gain">{card.change}</small></div><button className="mc-sold-button"><ShoppingBag/>View Sold Listings</button><div className="mc-grade-tabs">{(['RAW','GRADED','POP'] as const).map(x=><button className={grade===x?'active':''} key={x} onClick={()=>setGrade(x)}>{x}</button>)}</div><div className="mc-history-card"><div className="mc-history-head"><span>Holofoil</span><strong>$99.99</strong></div><MiniChart/><RangeRow/></div><button className="mc-share-main">Share</button></div></section>;
+function MobilePortfolio({items,value,portfolioName,query,setQuery,openCard,openFilters,openSort,selectMode,setSelectMode,selected,setSelected,onAdd,editMode,toggleEdit,openEdit,addAnother,data,importData,exportData,sort}:{items:Item[];value:number;portfolioName:string;query:string;setQuery:(v:string)=>void;openCard:(id:string)=>void;openFilters:()=>void;openSort:()=>void;selectMode:boolean;setSelectMode:(v:boolean)=>void;selected:string[];setSelected:(v:string[])=>void;onAdd:(id:string)=>void;editMode:boolean;toggleEdit:()=>void;openEdit:(t:EditTarget)=>void;addAnother:()=>void;data:StoreData;importData:(f:File)=>void;exportData:()=>void;sort:string}){
+  const input=useRef<HTMLInputElement|null>(null),toggle=(id:string)=>setSelected(selected.includes(id)?selected.filter(x=>x!==id):[...selected,id]);
+  const shown=sortItems(items.filter(i=>!query||i.name.toLowerCase().includes(query.toLowerCase())),sort);
+  return <section className="mc-page"><MobileTopSearch placeholder="Search your collection" value={query} setValue={setQuery} onFilter={openFilters} onSort={openSort} editMode={editMode} onEdit={toggleEdit}/>{editMode&&<div className="mc-add-under-edit"><AddAnother label="product" onClick={addAnother}/></div>}<div className="mc-portfolio-value"><span>Portfolio: <b>{portfolioName}</b></span><strong>{money(value)} <Eye/></strong></div><div className="mc-tool-icons three"><button onClick={()=>input.current?.click()}><FileUp/><span>Import</span></button><button onClick={()=>setSelectMode(!selectMode)} className={selectMode?'active':''}><Layers3/><span>Bulk Actions</span></button><button onClick={exportData}><Download/><span>Export</span></button></div><input ref={input} hidden type="file" accept=".json,.csv,application/json,text/csv" onChange={e=>{const f=e.target.files?.[0];if(f)importData(f);e.currentTarget.value=''}}/><div className="mc-product-grid">{shown.map(item=><MobileProductCard key={item.id} item={item} data={data} open={()=>openCard(item.id)} onAdd={()=>onAdd(item.id)} selected={selected.includes(item.id)} toggle={selectMode?()=>toggle(item.id):undefined} editMode={editMode} openEdit={()=>openEdit({kind:'product',itemId:item.id})}/>)}</div></section>;
 }
 
-function PortfolioSheet({selected,choose,close}:{selected:string;choose:(s:string)=>void;close:()=>void}){
-  return <BottomSheet title="Choose Portfolio" close={close}><div className="mc-sheet-heading"><span>All Portfolios</span><button>Add New</button></div><p className="mc-sheet-copy">Switch between your collections. Product-based actions are disabled in this preview.</p>{['Collecting','Dupes'].map(x=><button className="mc-portfolio-row" key={x} onClick={()=>choose(x)}><i className="mc-red-dot"/><span><b>{x}</b><small>{x==='Collecting'?'616 Products':'21 Products'}</small></span><Star className={selected===x?'selected':''}/><MoreHorizontal/></button>)}</BottomSheet>;
+function MobileShop({items,openCard,onAdd,editMode,toggleEdit,openEdit,addAnother,data}:{items:Item[];openCard:(id:string)=>void;onAdd:(id:string)=>void;editMode:boolean;toggleEdit:()=>void;openEdit:(t:EditTarget)=>void;addAnother:()=>void;data:StoreData}){return <section className="mc-page"><div className="mc-page-edit-title"><h2>Shop</h2><EditToggle active={editMode} onClick={toggleEdit}/></div>{editMode&&<div className="mc-add-under-edit"><AddAnother label="product" onClick={addAnother}/></div>}<h3 className="mc-heading">Your Products</h3><div className="mc-product-grid">{items.map(i=><MobileProductCard key={i.id} item={i} data={data} open={()=>openCard(i.id)} onAdd={()=>onAdd(i.id)} editMode={editMode} openEdit={()=>openEdit({kind:'product',itemId:i.id})}/>)}</div></section>}
+function MobileSocial({editMode,toggleEdit}:{editMode:boolean;toggleEdit:()=>void}){return <section className="mc-page"><div className="mc-page-edit-title"><h2>Social</h2><EditToggle active={editMode} onClick={toggleEdit}/></div>{editMode&&<div className="mc-add-under-edit"><button className="mc-add-another" disabled><Plus/>Add another post</button></div>}<div className="mc-social-tabs"><button className="active">Following</button><button>For You</button><button>Your Posts</button></div><article className="mc-social-post"><header><div className="mc-avatar">C</div><div><b>Collector</b><small>Your private feed</small></div><button>Following</button><MoreHorizontal/></header><div className="mc-social-image">COLLECTOR<br/><span>Your collection, your way.</span></div><div className="mc-social-actions"><Heart/> Likes</div></article></section>}
+
+function MobileProfile({name,status,tab,setTab,portfolioName,items,value,editMode,toggleEdit,addAnother}:{name:string;status:string;tab:'stats'|'settings'|'support';setTab:(t:'stats'|'settings'|'support')=>void;portfolioName:string;items:Item[];value:number;editMode:boolean;toggleEdit:()=>void;addAnother:()=>void}){
+  const cards=items.filter(i=>/card/i.test(i.category)).reduce((n,i)=>n+i.quantity,0),sealed=items.filter(i=>i.packagingState==='sealed').reduce((n,i)=>n+i.quantity,0),graded=items.filter(i=>i.grading?.graded).reduce((n,i)=>n+i.quantity,0);
+  return <section className="mc-page"><div className="mc-page-edit-title"><span/><EditToggle active={editMode} onClick={toggleEdit}/></div>{editMode&&<div className="mc-add-under-edit"><AddAnother label="collection" onClick={addAnother}/></div>}<div className="mc-profile-head"><div className="mc-profile-avatar">{(name||'C')[0]?.toUpperCase()}</div><h2>{name||'Collector'}</h2><small>{status}</small><div className="mc-profile-counts"><span><b>{cards}</b>Total Cards</span><span><b>{sealed}</b>Total Sealed</span><span><b>{graded}</b>Total Graded</span><span><b>{money(value)}</b>Total Value</span></div><div className="mc-profile-buttons"><button>View Social Profile</button><button>Edit Background</button></div></div><div className="mc-profile-tabs">{(['stats','settings','support'] as const).map(t=><button key={t} className={tab===t?'active':''} onClick={()=>setTab(t)}>{t[0].toUpperCase()+t.slice(1)}</button>)}</div>{tab==='stats'?<><h3 className="mc-heading">Portfolio: <b>{portfolioName}</b></h3><div className="mc-stat-grid"><span><b>{items.length}</b>Products</span><span><b>{sealed}</b>Sealed</span><span><b>{graded}</b>Graded</span><span><b>{money(value)}</b>Value</span></div></>:tab==='settings'?<div className="mc-settings-list"><button><Settings/>Account Settings</button><button><CircleDollarSign/>Currency: USD</button><button><Share2/>Share Profile</button></div>:<div className="mc-settings-list"><button>Help Center</button><button>Contact Support</button><button>About Collector</button></div>}</section>;
 }
 
-function FilterSheet({watch,setWatch,cards,setCards,sealed,setSealed,close}:{watch:boolean;setWatch:(v:boolean)=>void;cards:boolean;setCards:(v:boolean)=>void;sealed:boolean;setSealed:(v:boolean)=>void;close:()=>void}){
-  return <BottomSheet title="Filters" close={close} tall><FilterBlock title="Watchlist" copy="Show only products on your Watchlist."><SheetCheck label="Watchlist" checked={watch} setChecked={setWatch}/></FilterBlock><FilterBlock title="Product Type" copy="Filter by type of product."><SheetCheck label="Cards Only" checked={cards} setChecked={setCards}/><SheetCheck label="Sealed Only" checked={sealed} setChecked={setSealed}/></FilterBlock><FilterBlock title="Product Status within Portfolio" copy="Filter by inventory status within your currently selected portfolio."><SheetCheck label="Products Owned" checked={false} setChecked={()=>{}}/></FilterBlock><FilterBlock title="Price Range" copy="Show all products within a price range (inclusive)."><div className="mc-price-row"><input placeholder="Min."/><span>to</span><input placeholder="Max."/></div></FilterBlock><FilterBlock title="Language" copy="Filters by language.">{['English','Japanese','Chinese'].map(x=><SheetCheck key={x} label={x} checked={false} setChecked={()=>{}}/>)}</FilterBlock><FilterBlock title="Category" copy="Select a category below."/></BottomSheet>;
+function MobileProductDetail({item,data,close,onAdd,editMode,toggleEdit,openEdit}:{item:Item;data:StoreData;close:()=>void;onAdd:()=>void;editMode:boolean;toggleEdit:()=>void;openEdit:()=>void}){
+  const [grade,setGrade]=useState<'RAW'|'GRADED'|'POP'>('RAW');const [range,setRange]=useState<RangeKey>('1M');const ch=itemChange(item);
+  return <section className="mc-page mc-product-detail"><div className="mc-detail-top"><button className="mc-circle" onClick={close}><ArrowLeft/></button><EditToggle active={editMode} onClick={toggleEdit}/><button className="mc-circle"><Share2/></button></div>{editMode&&<div className="mc-detail-edit-row"><button onClick={openEdit}><Pencil/>Quick edit product</button></div>}<div className="mc-detail-image">{item.image?<img src={item.image} alt=""/>:<span>{item.name}</span>}</div><div className="mc-detail-body"><div className="mc-detail-title"><div><h2>{item.name}</h2><p>{derivedSetName(data,item)} {productNumber(item)&&`• ${productNumber(item)}`}</p></div><button><Star/></button></div><div className="mc-detail-price"><strong>{money(item.currentValue)}</strong><small className={ch.delta>=0?'gain':'loss'}>{fmtChange(ch.delta,ch.pct)}</small></div><button className="mc-sold-button"><ShoppingBag/>View Sold Listings</button><div className="mc-grade-tabs">{(['RAW','GRADED','POP'] as const).map(x=><button className={grade===x?'active':''} key={x} onClick={()=>setGrade(x)}>{x}</button>)}</div><div className="mc-history-card"><div className="mc-history-head"><span>{item.condition||'Current Value'}</span><strong>{money(item.currentValue)}</strong></div><ItemChart item={item} range={range}/><RangeRow range={range} setRange={setRange}/></div><button className="mc-share-main" onClick={onAdd}><Plus/> Add 1 to collection</button></div></section>;
 }
+function ItemChart({item,range}:{item:Item;range:RangeKey}){const id=useId().replace(/:/g,''),cut=Date.now()-rangeMs(range),raw=(item.priceHistory||[]).filter(p=>p.kind!=='sale'&&(range==='MAX'||new Date(p.date).getTime()>=cut)).map(p=>p.value),vals=raw.length?raw:[item.currentValue,item.currentValue],w=390,h=140,min=Math.min(...vals),max=Math.max(...vals),span=Math.max(1,max-min),line=vals.map((v,i)=>`${i?'L':'M'}${vals.length===1?w/2:(i/(vals.length-1))*w} ${8+(1-(v-min)/span)*(h-16)}`).join(' ');return <div className="mc-chart compact"><svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none"><defs><linearGradient id={id}><stop stopColor="#ff1f2d" stopOpacity=".35"/><stop offset="1" stopColor="#ff1f2d" stopOpacity="0"/></linearGradient></defs><path d={`${line} L${w} ${h} L0 ${h} Z`} fill={`url(#${id})`}/><path d={line} fill="none" stroke="#ff1f2d" strokeWidth="2.5"/></svg></div>}
 
+function PortfolioSheet({data,selected,choose,close}:{data:StoreData;selected:string;choose:(s:string)=>void;close:()=>void}){return <BottomSheet title="Choose Portfolio" close={close}><button className="mc-portfolio-row" onClick={()=>choose('all')}><i className="mc-red-dot"/><span><b>Collecting</b><small>{data.items.filter(i=>i.status==='owned').length} Products</small></span><Star className={selected==='all'?'selected':''}/><MoreHorizontal/></button>{data.collections.filter(c=>c.id!=='unlabeled-system'&&!/^unlabeled$/i.test(c.name)).map(c=><button className="mc-portfolio-row" key={c.id} onClick={()=>choose(c.id)}><i className="mc-red-dot"/><span><b>{c.name}</b><small>{data.items.filter(i=>i.collectionId===c.id&&i.status==='owned').length} Products</small></span><Star className={selected===c.id?'selected':''}/><MoreHorizontal/></button>)}</BottomSheet>}
+function FilterSheet({watch,setWatch,cards,setCards,sealed,setSealed,close}:{watch:boolean;setWatch:(v:boolean)=>void;cards:boolean;setCards:(v:boolean)=>void;sealed:boolean;setSealed:(v:boolean)=>void;close:()=>void}){return <BottomSheet title="Filters" close={close} tall><FilterBlock title="Watchlist" copy="Show only products on your Watchlist."><SheetCheck label="Watchlist" checked={watch} setChecked={setWatch}/></FilterBlock><FilterBlock title="Product Type" copy="Filter by type of product."><SheetCheck label="Cards Only" checked={cards} setChecked={setCards}/><SheetCheck label="Sealed Only" checked={sealed} setChecked={setSealed}/></FilterBlock><FilterBlock title="Price Range" copy="Show all products within a price range."><div className="mc-price-row"><input placeholder="Min."/><span>to</span><input placeholder="Max."/></div></FilterBlock><FilterBlock title="Category" copy="Select a category below."/></BottomSheet>}
 function SortSheet({value,choose,close}:{value:string;choose:(v:string)=>void;close:()=>void}){return <BottomSheet title="Sort By" close={close} tall>{sortOptions.map(x=><button className="mc-sort-row" key={x} onClick={()=>choose(x)}><span>{x}</span><i className={value===x?'selected':''}/></button>)}</BottomSheet>}
+
+function EditSheet({data,target,update,close,notify}:{data:StoreData;target:EditTarget;update:(s:StoreData)=>void;close:()=>void;notify:(s:string)=>void}){
+  const item=target.kind==='product'?data.items.find(i=>i.id===target.itemId):undefined;
+  const collection=target.kind==='collection'&&target.collectionId?data.collections.find(c=>c.id===target.collectionId):undefined;
+  const meta=target.kind!=='product'?groupMeta(data,target.key):{};
+  const [name,setName]=useState(item?.name||collection?.name||(target.kind!=='product'?target.name:''));
+  const [image,setImage]=useState(item?.image||collection?.coverImage||meta.coverImage||'');
+  const [value,setValue]=useState(String(item?.currentValue??''));
+  const [pricePaid,setPricePaid]=useState(String(item?.purchasePrice??''));
+  const [condition,setCondition]=useState(item?.condition||'');
+  const save=()=>{
+    if(target.kind==='product'&&item){update({...data,items:data.items.map(i=>i.id===item.id?{...i,name:name.trim()||i.name,image,currentValue:Math.max(0,Number(value)||0),purchasePrice:Math.max(0,Number(pricePaid)||0),condition,updatedAt:nowIso()}:i)});notify('Product updated')}
+    else if(target.kind==='collection'&&collection){update({...data,collections:data.collections.map(c=>c.id===collection.id?{...c,name:name.trim()||c.name,coverImage:image}:c)});notify('Collection updated')}
+    else if(target.kind!=='product'){update({...data,libraryGroups:{...(data.libraryGroups||{}),[target.key]:{...(data.libraryGroups?.[target.key]||{}),name:name.trim()||target.rawName,coverImage:image,coverMode:'full'}}});notify(target.kind==='category'?'Category updated':'Collection updated')}
+    close();
+  };
+  return <BottomSheet title={`Edit ${target.kind}`} close={close}><div className="mc-edit-form"><label>Name<input value={name} onChange={e=>setName(e.target.value)}/></label><ImagePicker value={image} setValue={setImage}/>{target.kind==='product'&&<><label>Current value<input inputMode="decimal" value={value} onChange={e=>setValue(e.target.value)}/></label><label>Price paid<input inputMode="decimal" value={pricePaid} onChange={e=>setPricePaid(e.target.value)}/></label><label>Condition<input value={condition} onChange={e=>setCondition(e.target.value)}/></label></>}<button className="mc-form-save" onClick={save}>Save Changes</button></div></BottomSheet>;
+}
+
+function CreateSheet({data,kind,selectedCategory,selectedSet,update,close,notify}:{data:StoreData;kind:CreateKind;selectedCategory:string;selectedSet:SetGroup|null;update:(s:StoreData)=>void;close:()=>void;notify:(s:string)=>void}){
+  const [name,setName]=useState(''),[image,setImage]=useState(''),[value,setValue]=useState(''),[qty,setQty]=useState('1');
+  const save=()=>{const clean=name.trim();if(!clean)return;
+    if(kind==='category'){const key=categoryKey(clean);update({...data,libraryGroups:{...(data.libraryGroups||{}),[key]:{name:clean,coverImage:image,coverMode:'full'}}});notify('Category added')}
+    if(kind==='collection'){const id=`collection-${Date.now().toString(36)}`;update({...data,collections:[...data.collections,{id,name:clean,icon:'Layers',color:'#ff1f2d',coverMode:'full',coverImage:image,libraryLine:selectedCategory||undefined}]});notify('Collection added')}
+    if(kind==='product'){const col=selectedSet?.collectionId||data.collections.find(c=>c.id!=='unlabeled-system')?.id||data.collections[0]?.id||'';const item:Item={id:`item-${Date.now().toString(36)}`,collectionId:col,name:clean,category:selectedCategory||'Other',status:'owned',purchasePrice:0,currentValue:Math.max(0,Number(value)||0),quantity:Math.max(1,Math.floor(Number(qty)||1)),image,condition:'',purchaseDate:new Date().toISOString().slice(0,10),location:'',notes:'',customFields:{},createdAt:nowIso(),updatedAt:nowIso()};update({...data,items:[...data.items,item]});notify('Product added')}
+    close();
+  };
+  return <BottomSheet title={`Add ${kind}`} close={close}><div className="mc-edit-form"><label>Name<input value={name} onChange={e=>setName(e.target.value)} autoFocus/></label><ImagePicker value={image} setValue={setImage}/>{kind==='product'&&<><label>Current value<input inputMode="decimal" value={value} onChange={e=>setValue(e.target.value)}/></label><label>Quantity<input inputMode="numeric" value={qty} onChange={e=>setQty(e.target.value)}/></label></>}<button className="mc-form-save" onClick={save}>Add {kind}</button></div></BottomSheet>;
+}
+
+function ImagePicker({value,setValue}:{value:string;setValue:(v:string)=>void}){const input=useRef<HTMLInputElement|null>(null);return <div className="mc-image-picker">{value?<div className="mc-image-preview" style={{backgroundImage:`url(${value})`}}/>:<div className="mc-image-preview empty">No image</div>}<button onClick={()=>input.current?.click()}><Upload/>Upload image</button><input ref={input} hidden type="file" accept="image/*" onChange={e=>{const f=e.target.files?.[0];if(!f)return;const reader=new FileReader();reader.onload=()=>setValue(String(reader.result||''));reader.readAsDataURL(f);e.currentTarget.value=''}}/></div>}
+
+function ItemPickerSheet({data,target,category,selected,setSelected,close,commit}:{data:StoreData;target:SetGroup;category:string;selected:string[];setSelected:(v:string[])=>void;close:()=>void;commit:()=>void}){const [q,setQ]=useState('');const candidates=data.items.filter(i=>!target.items.some(x=>x.id===i.id)&&(!q||i.name.toLowerCase().includes(q.toLowerCase())));return <BottomSheet title={`Add to ${target.name}`} close={close} tall><label className="mc-picker-search"><Search/><input placeholder="Search your collection" value={q} onChange={e=>setQ(e.target.value)}/></label><div className="mc-picker-list">{candidates.map(i=><button key={i.id} onClick={()=>setSelected(selected.includes(i.id)?selected.filter(x=>x!==i.id):[...selected,i.id])}><span>{i.name}<small>{itemCategory(data,i)}</small></span><i className={selected.includes(i.id)?'checked':''}>{selected.includes(i.id)?'✓':''}</i></button>)}</div><button className="mc-form-save sticky" disabled={!selected.length} onClick={commit}>Add {selected.length||''} item{selected.length===1?'':'s'}</button></BottomSheet>}
 
 function BottomSheet({title,close,children,tall=false}:{title:string;close:()=>void;children:React.ReactNode;tall?:boolean}){return <div className="mc-sheet-overlay" onClick={close}><section className={`mc-bottom-sheet ${tall?'tall':''}`} onClick={e=>e.stopPropagation()}><div className="mc-sheet-handle"/><header><span/><h3>{title}</h3><button onClick={close}><X/></button></header><div className="mc-sheet-scroll">{children}</div></section></div>}
 function FilterBlock({title,copy,children}:{title:string;copy:string;children?:React.ReactNode}){return <section className="mc-filter-block"><h4>{title}</h4><p>{copy}</p><div>{children}</div></section>}
 function SheetCheck({label,checked,setChecked}:{label:string;checked:boolean;setChecked:(v:boolean)=>void}){return <button className="mc-sheet-check" onClick={()=>setChecked(!checked)}><span>{label}</span><i className={checked?'checked':''}>{checked?'✓':''}</i></button>}
 
-function MobileBottomNav({view,setView}:{view:MobileView;setView:(v:MobileView)=>void}){
-  const tabs:[MobileView,string,React.ReactNode][]=[['home','Home',<Home key="h"/>],['search','Search',<Search key="s"/>],['shop','Shop',<Store key="sh"/>],['social','Social',<Users key="so"/>],['portfolio','Portfolio',<Package key="p"/>],['profile','Profile',<UserCircle key="u"/>]];
-  return <nav className="mc-bottom-nav">{tabs.map(([id,label,icon])=><button key={id} className={view===id?'active':''} onClick={()=>setView(id)}>{icon}<span>{label}</span></button>)}</nav>;
-}
+function MobileBottomNav({view,setView}:{view:MobileView;setView:(v:MobileView)=>void}){const tabs:[MobileView,string,React.ReactNode][]=[['home','Home',<Home key="h"/>],['search','Search',<Search key="s"/>],['shop','Shop',<StoreIcon key="sh"/>],['social','Social',<Users key="so"/>],['portfolio','Portfolio',<Package key="p"/>],['profile','Profile',<UserCircle key="u"/>]];return <nav className="mc-bottom-nav">{tabs.map(([id,label,icon])=><button key={id} className={view===id?'active':''} onClick={()=>setView(id)}>{icon}<span>{label}</span></button>)}</nav>}
+
+function coverStyle(url:string){return url?{backgroundImage:`linear-gradient(rgba(0,0,0,.22),rgba(0,0,0,.45)),url(${url})`,backgroundSize:'cover',backgroundPosition:'center'}:undefined}
+function chartPoints(data:StoreData,portfolioId:string,currentValue:number,range:RangeKey){const cutoff=Date.now()-rangeMs(range);let pts=(data.history||[]).map(h=>({date:new Date(h.date).getTime(),value:portfolioId==='all'?Object.values(h.values).reduce((a,b)=>a+b,0):(h.values[portfolioId]||0)})).filter(p=>Number.isFinite(p.date)&&(range==='MAX'||p.date>=cutoff)).sort((a,b)=>a.date-b.date);const now=Date.now();if(!pts.length)pts=[{date:now-(Number.isFinite(rangeMs(range))?rangeMs(range):864e5),value:currentValue},{date:now,value:currentValue}];else if(Math.abs(pts[pts.length-1].value-currentValue)>.01)pts=[...pts,{date:now,value:currentValue}];if(pts.length===1)pts=[{date:pts[0].date-3600e3,value:pts[0].value},...pts];return pts}
+function portfolioDelta(data:StoreData,portfolioId:string,currentValue:number,days:number){const points=chartPoints(data,portfolioId,currentValue,'MAX');const target=Date.now()-days*864e5;let base=points[0];for(const p of points){if(p.date<=target)base=p;else break}const delta=currentValue-base.value;return {delta,pct:base.value?delta/base.value*100:0}}
+function sortItems(items:Item[],sort:string){const out=[...items];if(sort==='Price: Low to High')return out.sort((a,b)=>a.currentValue-b.currentValue);if(sort==='Price: High to Low')return out.sort((a,b)=>b.currentValue-a.currentValue);if(sort==='Product Name: A to Z')return out.sort((a,b)=>a.name.localeCompare(b.name));if(sort==='Product Name: Z to A')return out.sort((a,b)=>b.name.localeCompare(a.name));if(sort==='Date Added: Oldest First')return out.sort((a,b)=>a.createdAt.localeCompare(b.createdAt));if(sort==='Date Added: Newest First')return out.sort((a,b)=>b.createdAt.localeCompare(a.createdAt));if(sort.startsWith('Price Change'))return out.sort((a,b)=>{const av=itemChange(a).pct,bv=itemChange(b).pct;return sort.includes('Low')?av-bv:bv-av});return out}
+function assignItemsToSet(data:StoreData,update:(s:StoreData)=>void,target:SetGroup,category:string,ids:string[]){let collectionId=target.collectionId,collections=data.collections;if(!collectionId){collectionId=`collection-${Date.now().toString(36)}`;collections=[...collections,{id:collectionId,name:target.name,icon:'Layers',color:'#ff1f2d',coverMode:'full',coverImage:target.cover,libraryLine:category}]}update({...data,collections,items:data.items.map(i=>ids.includes(i.id)?{...i,collectionId:collectionId!,updatedAt:nowIso()}:i)})}
+function exportStore(data:StoreData){const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`collector-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(url)}
+async function importFile(file:File,data:StoreData,update:(s:StoreData)=>void,notify:(s:string)=>void){try{const text=await file.text();if(file.name.toLowerCase().endsWith('.json')){const parsed=JSON.parse(text);const incoming:Array<Partial<Item>>=Array.isArray(parsed)?parsed:(Array.isArray(parsed.items)?parsed.items:[]);if(!incoming.length)throw new Error('No products found');const fallback=data.collections[0]?.id||'';const existing=new Map(data.items.map(i=>[i.id,i]));for(const raw of incoming){const id=String(raw.id||`item-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`);existing.set(id,{id,collectionId:data.collections.some(c=>c.id===String(raw.collectionId))?String(raw.collectionId):fallback,name:String(raw.name||'Imported product'),category:String(raw.category||'Other'),status:raw.status==='wishlist'||raw.status==='sold'?raw.status:'owned',purchasePrice:Number(raw.purchasePrice)||0,currentValue:Number(raw.currentValue)||0,quantity:Math.max(1,Math.floor(Number(raw.quantity)||1)),image:String(raw.image||''),condition:String(raw.condition||''),purchaseDate:String(raw.purchaseDate||new Date().toISOString().slice(0,10)),location:String(raw.location||''),notes:String(raw.notes||''),customFields:raw.customFields&&typeof raw.customFields==='object'?raw.customFields as Record<string,string>:{},createdAt:String(raw.createdAt||nowIso()),updatedAt:nowIso()})}update({...data,items:Array.from(existing.values())});notify(`${incoming.length} products imported`);return}
+    const lines=text.split(/\r?\n/).filter(Boolean),headers=parseCsvLine(lines.shift()||'').map(h=>h.trim().toLowerCase());if(!headers.length)throw new Error('Invalid CSV');const fallback=data.collections[0]?.id||'';const added:Item[]=[];for(const line of lines){const cols=parseCsvLine(line),row:Object=Object.fromEntries(headers.map((h,i)=>[h,cols[i]||''])),r=row as Record<string,string>,name=r.name||r.product||r.title;if(!name)continue;added.push({id:`item-${Date.now().toString(36)}-${added.length}`,collectionId:fallback,name,category:r.category||'Other',status:'owned',purchasePrice:Number(r['price paid']||r.purchaseprice)||0,currentValue:Number(r['current value']||r.currentvalue||r.price)||0,quantity:Math.max(1,Math.floor(Number(r.quantity)||1)),image:r.image||r.imageurl||'',condition:r.condition||'',purchaseDate:r['purchase date']||new Date().toISOString().slice(0,10),location:'',notes:'',customFields:{},createdAt:nowIso(),updatedAt:nowIso()})}update({...data,items:[...data.items,...added]});notify(`${added.length} products imported`)}catch(e){notify(e instanceof Error?e.message:'Import failed')}}
+function parseCsvLine(line:string){const out:string[]=[],re=/(?:^|,)("(?:[^"]|"")*"|[^,]*)/g;let m;while((m=re.exec(line)))out.push((m[1]||'').replace(/^"|"$/g,'').replace(/""/g,'"'));return out}
