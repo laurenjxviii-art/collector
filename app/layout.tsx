@@ -5,6 +5,7 @@ import './experience.css';
 import './fixes.css';
 import './brand.css';
 import './mobile-reference.css';
+import './nav-hotfix.css';
 import type {Metadata} from 'next';
 
 export const metadata:Metadata={
