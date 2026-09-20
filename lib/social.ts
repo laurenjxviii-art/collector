@@ -13,7 +13,7 @@ export type SocialPost={
 };
 export type SocialComment={id:string;post_id:string;user_id:string;body:string;created_at:string;profile?:SocialProfile};
 export type DropEvent={id:string;provider:string;retailer:string;external_id:string;product_name:string;image_url:string;product_url:string;price:number|null;msrp:number|null;currency:string;stock_status:string;niche_tags:string[];metadata:Record<string,unknown>;first_seen:string;last_seen:string};
-export type PublicItem={user_id:string;item_id:string;status:'owned'|'wishlist';name:string;image_url:string;category:string;collection_name:string;quantity:number;updated_at:string};
+export type PublicItem={user_id:string;item_id:string;status:'owned'|'wishlist';name:string;image_url:string;category:string;collection_name:string;quantity:number;current_value:number;updated_at:string};
 export type ProfileStats={followers:number;following:number;posts:number};
 
 async function rest<T>(config:CloudConfig,path:string,options:RequestInit={},prefer?:string):Promise<T>{
@@ -114,8 +114,8 @@ export async function listDrops(config:CloudConfig,niches:string[]):Promise<Drop
 }
 export async function listPublicItems(config:CloudConfig,userId:string,status?:'owned'|'wishlist'){let path='collector_public_items?'+qs({user_id:'eq.'+userId,select:'*',order:'updated_at.desc',limit:'300'});if(status)path+='&status=eq.'+status;return rest<PublicItem[]>(config,path)}
 export async function syncPublicItems(config:CloudConfig,store:Store){
-  const session=await freshSession(config);await ensureMyProfile(config,store.profile?.name||'Collector');const id=session.user.id;
+  const session=await freshSession(config);const profile=await ensureMyProfile(config,store.profile?.name||'Collector');const id=session.user.id,shareValue=profile.show_collection_value;
   await rest(config,'collector_public_items?'+qs({user_id:'eq.'+id}),{method:'DELETE'},'return=minimal');
-  const collections=new Map(store.collections.map(c=>[c.id,c.name]));const rows=store.items.filter(i=>i.status==='owned'||i.status==='wishlist').map(i=>({user_id:id,item_id:i.id,status:i.status,name:i.name,image_url:i.image||'',category:i.category||'',collection_name:collections.get(i.collectionId)||'',quantity:i.quantity,updated_at:i.updatedAt||new Date().toISOString()}));
+  const collections=new Map(store.collections.map(c=>[c.id,c.name]));const rows=store.items.flatMap(i=>{const base={user_id:id,item_id:i.id,name:i.name,image_url:i.image||'',category:i.category||'',collection_name:collections.get(i.collectionId)||'',quantity:i.quantity,current_value:shareValue?i.currentValue:0,updated_at:i.updatedAt||new Date().toISOString()};const out:any[]=[];if(i.status==='owned')out.push({...base,status:'owned'});if(i.status==='wishlist'||i.customFields?.__wishlist==='true')out.push({...base,status:'wishlist'});return out});
   for(let i=0;i<rows.length;i+=150){const batch=rows.slice(i,i+150);if(batch.length)await rest(config,'collector_public_items',{method:'POST',body:JSON.stringify(batch)},'return=minimal')}
 }
