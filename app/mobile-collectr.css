@@ -2,7 +2,7 @@
 .mobile-collector-shell{display:none}
 .desktop-source-shell{display:block}
 
-@media(max-width:767px){
+@media (max-width:767px), (hover:none) and (pointer:coarse) and (max-width:1100px){
   :root{--mc-red:#ff1f2d;--mc-bg:#050505;--mc-panel:#0e0e0f;--mc-card:#121214;--mc-card2:#171719;--mc-line:#242427;--mc-muted:#8f8f94;--mc-text:#f5f5f5}
   html,body{background:#050505!important;overscroll-behavior-y:none}
   body{min-height:100dvh}
@@ -78,4 +78,11 @@
   @keyframes mcOverlay{from{opacity:0}to{opacity:1}}@keyframes mcSheetIn{from{transform:translateY(100%);opacity:.7}to{transform:translateY(0);opacity:1}}
 
   @media(prefers-reduced-motion:reduce){.mc-page,.mc-sheet-overlay,.mc-bottom-sheet,.mc-selection-bar{animation:none!important}.mobile-collector-shell *{transition:none!important}}
+}
+
+
+/* iOS standalone/PWA safe-area guard. Keeps the app UI below the status bar / Dynamic Island even when iOS reports a desktop-width viewport. */
+@media (display-mode:standalone) and (max-width:1100px){
+  .mc-page{padding-top:max(calc(env(safe-area-inset-top) + 10px),58px)!important}
+  .mc-top-search{top:max(env(safe-area-inset-top),48px)!important}
 }
