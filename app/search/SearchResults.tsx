@@ -1,5 +1,6 @@
 'use client';
 
+import {useState} from 'react';
 import {Layers3,Search,SlidersHorizontal,Star} from 'lucide-react';
 import type {NormalizedProduct,UserProductRelationship} from '../../lib/search/types';
 
@@ -17,11 +18,11 @@ type SortMode='relevance'|'market-high'|'market-low'|'msrp'|'release-new';
 const CATEGORIES=['All','Action Figures','Trading Cards','Comics','Sneakers','Games','Technology','Collectible Figures','Other'];
 
 export default function SearchResults({query,products,relationships,onSelect,onAddPortfolio,onAddWishlist}:Props){
-  const [category,setCategory]=useStateSafe('All');
-  const [sort,setSort]=useStateSafe<SortMode>('relevance');
-  const [filtersOpen,setFiltersOpen]=useStateSafe(false);
-  const [owned,setOwned]=useStateSafe<'all'|'owned'|'not-owned'>('all');
-  const [wishlist,setWishlist]=useStateSafe<'all'|'wishlisted'|'not-wishlisted'>('all');
+  const [category,setCategory]=useState('All');
+  const [sort,setSort]=useState<SortMode>('relevance');
+  const [filtersOpen,setFiltersOpen]=useState(false);
+  const [owned,setOwned]=useState<'all'|'owned'|'not-owned'>('all');
+  const [wishlist,setWishlist]=useState<'all'|'wishlisted'|'not-wishlisted'>('all');
 
   let visible=products.filter(product=>{
     if(category!=='All'&&product.category!==category)return false;
@@ -82,9 +83,4 @@ export default function SearchResults({query,products,relationships,onSelect,onA
     </div>}
     <div className="vxs-demo-note"><span>DEMO CATALOG</span><p>These results use isolated example product records so the Search experience can be designed before the live catalog is populated. They are not presented as live inventory.</p></div>
   </div>;
-}
-
-function useStateSafe<T>(initial:T){
-  const React=require('react') as typeof import('react');
-  return React.useState<T>(initial);
 }
