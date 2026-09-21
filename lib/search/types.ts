@@ -32,6 +32,7 @@ export type NormalizedProduct={
   attributes:ProductAttribute[];
   variants:ProductVariant[];
   demo?:boolean;
+  demoMarket?:{current:number;lastSold:number;average30d:number;trend30d:number;confidence:MarketConfidence};
 };
 
 export type NormalizedSale={
