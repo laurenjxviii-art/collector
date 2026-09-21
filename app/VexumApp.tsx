@@ -6,6 +6,7 @@ import {
   CircleDollarSign,Eye,FileUp,Layers3,Plus,Search,Share2,ShoppingBag,
   SlidersHorizontal,Star
 } from 'lucide-react';
+import VexumPortfolio from './VexumPortfolio';
 
 type View='home'|'portfolio'|'search'|'wishlist'|'setup'|'financial'|'social';
 type Tone='red'|'green'|'orange'|'muted';
@@ -445,20 +446,7 @@ function FinancialPage(){
   </PageFrame>;
 }
 
-function PortfolioPage(){
-  const items=[
-    {name:'Spider-Man Final Swing',brand:'Marvel Legends',value:'$42.68',gain:'+28%'},
-    {name:'Charizard',brand:'Pokémon',value:'$185',gain:'+14%'},
-    {name:'AJ1 Chicago',brand:'Nike',value:'$310',gain:'+8%'},
-    {name:'Batman',brand:'Hot Toys',value:'$220',gain:'+11%'},
-    {name:'Luffy Gear 5',brand:'SH Figuarts',value:'$68',gain:'+4%'},
-    {name:'Pikachu',brand:'Pokémon',value:'$95',gain:'+7%'},
-    {name:'Goku',brand:'SH Figuarts',value:'$72',gain:'+3%'},
-    {name:'iPhone 15 Pro',brand:'Apple',value:'$699',gain:'+2%'},
-  ];
-  return <PageFrame hero="plain"><section className="vx-page-title"><div><h1>Portfolio</h1><p>Everything you own, organized your way.</p></div><HeroMeta/></section><Tabs items={['All Items','Action Figures','Sneakers','Trading Cards','Comics','Tech']}/><div className="vx-portfolio-toolbar"><span>487 items · $12,480 estimated value</span><div><button><SlidersHorizontal/>Filter</button><button><Layers3/></button><button className="red"><Plus/>Add Item</button></div></div><div className="vx-portfolio-grid">{items.map((item,index)=><button className="vx-portfolio-card" key={item.name}><div className={'vx-card-art a'+index}><Layers3/></div><strong>{item.name}</strong><span>{item.brand}</span><footer><b>{item.value}</b><em>{item.gain}</em></footer></button>)}</div></PageFrame>;
-}
-
+function PortfolioPage(){return <PageFrame hero="plain"><VexumPortfolio/></PageFrame>;}
 function SocialPage(){
   return <PageFrame hero="plain"><section className="vx-page-title"><div><h1>Social</h1><p>Collectors, communities, drops, and setups.</p></div><HeroMeta text="“Collect together. Build bigger.”"/></section><Tabs items={['For You','Following','Communities','Drops','Marketplace']}/><div className="vx-social-grid"><section className="vx-panel vx-feed"><article><header><div className="vx-avatar small">J</div><div><strong>jordan</strong><span>@jordan · 2h</span></div></header><p>The setup is finally starting to feel right. Red lighting was absolutely the move.</p><div className="vx-social-photo"><Star/></div><footer>♡ 248 &nbsp;&nbsp; ◇ 31 &nbsp;&nbsp; ↗ Share</footer></article><article><header><div className="vx-avatar small">C</div><div><strong>collectorfall</strong><span>@collectorfall · 4h</span></div></header><p>Who else is hunting the Final Swing figure this week?</p></article></section><aside className="vx-panel"><PanelHead title="Trending"/>{['#MarvelLegends','#SpiderMan','#CollectionSetup','#Restock','#VEXUM'].map((name,index)=><div className="vx-trend-row" key={name}><b>{name}</b><span>{[32,28,21,18,15][index]}k posts</span></div>)}</aside></div></PageFrame>;
 }
