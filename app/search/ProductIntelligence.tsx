@@ -59,7 +59,7 @@ export default function ProductIntelligence({product,relationship,onBack,onAddPo
 
   const demo=product.demoMarket;
   const confidence=demo?.confidence||'unavailable';
-  const relation=relationship||{productId:product.id,ownedQuantity:0,wishlisted:false,tracked:false,grail:false};
+  const relation:UserProductRelationship=relationship??{productId:product.id,ownedQuantity:0,wishlisted:false,tracked:false,grail:false};
 
   const track=()=>{
     const next={...relation,tracked:!relation.tracked};
