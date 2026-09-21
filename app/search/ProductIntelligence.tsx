@@ -1,6 +1,7 @@
 'use client';
 
-import {useEffect,useMemo,useState} from 'react';
+import {useEffect,useState} from 'react';
+import type {ReactNode} from 'react';
 import {Bell,Check,CircleDollarSign,Eye,FileUp,Layers3,MapPin,Plus,Search,Share2,ShoppingBag,Star} from 'lucide-react';
 import type {NormalizedProduct,UserProductRelationship} from '../../lib/search/types';
 
@@ -110,7 +111,7 @@ export default function ProductIntelligence({product,relationship,onBack,onAddPo
       <Metric label="Current Market" value={demo?money(demo.current):'—'} sub={demo?'Demo estimate':'Source not connected'}/>
       <Metric label="Last Sold" value={demo?money(demo.lastSold):'—'} sub={demo?'Demo sale':'Source not connected'}/>
       <Metric label="30-Day Average" value={demo?money(demo.average30d):'—'} sub={demo?'Demo sample':'Source not connected'}/>
-      <Metric label="Market Trend" value={demo?(demo.trend30d>=0?'+':'')+demo.trend30d.toFixed(1)+'%':'—'} tone={demo?.trend30d&&demo.trend30d<0?'red':'green'} sub="30-day"/>
+      <Metric label="Market Trend" value={demo?(demo.trend30d>=0?'+':'')+demo.trend30d.toFixed(1)+'%':'—'} tone={demo&&demo.trend30d<0?'red':'green'} sub="30-day"/>
       <Metric label="Market Confidence" value={confidence==='unavailable'?'Unavailable':confidence[0].toUpperCase()+confidence.slice(1)} tone={confidence==='high'?'green':confidence==='low'?'red':'muted'} sub={demo?'Demo confidence':'No comparable-sales source'}/>
     </div>
 
@@ -178,6 +179,6 @@ export default function ProductIntelligence({product,relationship,onBack,onAddPo
   </div>;
 }
 
-function RadarRow({label,desc,enabled,onToggle,children}:{label:string;desc:string;enabled:boolean;onToggle:()=>void;children?:React.ReactNode}){
+function RadarRow({label,desc,enabled,onToggle,children}:{label:string;desc:string;enabled:boolean;onToggle:()=>void;children?:ReactNode}){
   return <div className="vxs-radar-row"><button className={'vxs-toggle '+(enabled?'on':'')} onClick={onToggle} aria-pressed={enabled}><i/></button><div><strong>{label}</strong><span>{desc}</span></div>{children?<aside>{children}</aside>:null}</div>;
 }
