@@ -1,5 +1,6 @@
 import './vexum-shell.css';
 import './desktop-collector.css';
+import './mobile-collectr.css';
 import type {Metadata} from 'next';
 
 export const metadata:Metadata={
