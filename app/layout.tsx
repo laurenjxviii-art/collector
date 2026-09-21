@@ -1,9 +1,10 @@
 import './vexum-shell.css';
+import './desktop-collector.css';
 import type {Metadata} from 'next';
 
 export const metadata:Metadata={
   title:'VEXUM',
-  description:'VEXUM',
+  description:'Track, value, organize, and understand everything you collect.',
   manifest:'/manifest.webmanifest',
   appleWebApp:{capable:true,title:'VEXUM',statusBarStyle:'black-translucent'},
   icons:{icon:'/icons/icon-192.png',apple:'/icons/apple-touch-icon.png'}
