@@ -7,6 +7,7 @@ import {
   SlidersHorizontal,Star
 } from 'lucide-react';
 import VexumPortfolio from './VexumPortfolio';
+import VexumSearch from './search/VexumSearch';
 
 type View='home'|'portfolio'|'search'|'wishlist'|'setup'|'financial'|'social';
 type Tone='red'|'green'|'orange'|'muted';
@@ -330,40 +331,9 @@ function WishlistPage(){
   </PageFrame>;
 }
 
-function SearchPage(){
-  const details=[
-    {k:'Brand',v:'Hasbro'},{k:'Line',v:'Marvel Legends'},{k:'Character',v:'Spider-Man'},{k:'Series',v:'Final Swing'},
-    {k:'Release Year',v:'2024'},{k:'Scale',v:'6 inch (1:12)'},{k:'UPC',v:'5010996283714'},{k:'SKU',v:'F90715L00'},
-    {k:'MSRP',v:'$24.99'},{k:'Current Value',v:'$42.68 (+28%)'},{k:'Condition',v:'New'},
-  ];
-  return <PageFrame hero="search">
-    <section className="vx-search-title"><div className="vx-inline-query"><Search/><span>Spider-Man Marvel Legends Final Swing</span><button>×</button><button>‹</button></div><h1>Search</h1><p>Find, track, and collect what you love.</p><HeroMeta text="“Collectors find more than items here. They find what’s next.”"/></section>
-    <div className="vx-search-tabs"><Tabs items={['All Results','Figures','Trading Cards','Comics','Sneakers','Other']}/><span>About 342 results for “Spider-Man Marvel Legends Final Swing”</span><button>Most Relevant</button></div>
-    <div className="vx-search-main">
-      <section className="vx-panel vx-product-hero">
-        <div className="vx-product-gallery"><div className="vx-gallery-thumbs"><button className="active"><Layers3/></button><button><Layers3/></button><button><Layers3/></button><button>+4</button></div><div className="vx-product-image"/></div>
-        <div className="vx-product-copy"><div className="vx-pillrow"><span>Action Figure</span><span className="green">In Production</span></div><h2>Spider-Man Marvel Legends<br/>Final Swing</h2><p>Hasbro <i/> Marvel Legends <i/> 2024</p><small>UPC: 5010996283714 &nbsp;&nbsp; | &nbsp;&nbsp; SKU: F90715L00</small><div className="vx-product-values"><div><b>$24.99</b><span>MSRP</span></div><div><b>$42.68</b><span>Current Market Value</span><em>↗ +28%</em></div><div><SmallChart/><span>Market Trend (90d)</span><strong>+28%</strong></div></div></div>
-        <div className="vx-product-actions"><button><Layers3/>You own: <b>1</b><span>›</span></button><button><Star/>Wishlist: <b>No</b><Plus/></button></div>
-      </section>
-      <aside className="vx-search-right">
-        <section className="vx-panel"><h3>Quick Add This Item</h3><p>Add to your collection in seconds.</p><div className="vx-quick-cards"><button><Search/>Scan Barcode</button><button><FileUp/>Upload Receipt</button><button><Eye/>Take Photo</button></div></section>
-        <section className="vx-panel"><PanelHead title="AI Match Suggestions" action="View All →"/><p>Similar items you might like.</p>{['Spider-Man Retro Collection','Amazing Spider-Man 2-Pack','Symbiote Spider-Man'].map((name,index)=><div className="vx-ai-row" key={name}><div className="vx-mini-product"><Layers3/></div><span><strong>{name}</strong><small>Marvel Legends</small><b>{['$36.99','$54.99','$37.50'][index]}</b></span><button><Plus/></button></div>)}</section>
-        <section className="vx-panel vx-trending"><PanelHead title="Trending Searches" action="View All →"/>{['Spider-Man Marvel Legends','Wolverine 97 Marvel Legends','Deadpool Marvel Legends','Venom Marvel Legends','X-Men 97'].map((name,index)=><div key={name}><i>{index+1}</i><span>{name}</span><em>↗</em></div>)}</section>
-      </aside>
-    </div>
-    <div className="vx-search-lower">
-      <section className="vx-panel vx-details"><Tabs items={['Product','Market','Local','VEXUM','Radar']}/><h3>Product Details</h3>{details.map(row=><div key={row.k}><span>{row.k}</span><b>{row.v}</b></div>)}</section>
-      <section className="vx-panel vx-market"><PanelHead title="Market Intelligence" action="View More →"/><div className="vx-market-cards"><div><span>eBay Sold</span><b>$40.12</b><em>↗ +22%</em><small>Last 30 days</small></div><div><span>Active Listings</span><b>$44.99+</b><small>23 listings · Lowest price</small></div><div><span>Retailers</span><b>$24.99</b><em>In Stock (2)</em></div><div><span>Marketplace Offers</span><b>$38.00+</b><small>12 offers</small></div></div><h4>Recent Sales (eBay)</h4><SmallChart/></section>
-      <section className="vx-panel vx-local"><h3>Local Inventory</h3><p>Check what's in stock near you.</p>{[
-        {name:'Target',stock:'In Stock',dist:'2.4 mi',tone:'good'},
-        {name:'Walmart',stock:'Low Stock',dist:'6.1 mi',tone:'warn'},
-        {name:'GameStop',stock:'Out of Stock',dist:'8.3 mi',tone:'bad'},
-        {name:'Best Buy',stock:'In Stock',dist:'12.6 mi',tone:'good'},
-      ].map(row=><div className="vx-store-row" key={row.name}><div className="vx-store-icon">◎</div><strong>{row.name}</strong><span className={row.tone}>{row.stock}</span><small>{row.dist}</small><b>›</b></div>)}<div className="vx-location">⌖ Austin, TX 78701<button>Change</button></div><div className="vx-map-fake"><i/><i/><i/></div></section>
-    </div>
-  </PageFrame>;
+function SearchPage({initialQuery='',initialProductId=''}:{initialQuery?:string;initialProductId?:string}){
+  return <PageFrame hero="search"><VexumSearch initialQuery={initialQuery} initialProductId={initialProductId}/></PageFrame>;
 }
-
 function SetupPage(){
   const library=[
     {a:'Display Case',b:'Single'},{a:'Display Case',b:'Large'},{a:'Shelf Unit',b:'Medium'},
@@ -451,14 +421,39 @@ function SocialPage(){
   return <PageFrame hero="plain"><section className="vx-page-title"><div><h1>Social</h1><p>Collectors, communities, drops, and setups.</p></div><HeroMeta text="“Collect together. Build bigger.”"/></section><Tabs items={['For You','Following','Communities','Drops','Marketplace']}/><div className="vx-social-grid"><section className="vx-panel vx-feed"><article><header><div className="vx-avatar small">J</div><div><strong>jordan</strong><span>@jordan · 2h</span></div></header><p>The setup is finally starting to feel right. Red lighting was absolutely the move.</p><div className="vx-social-photo"><Star/></div><footer>♡ 248 &nbsp;&nbsp; ◇ 31 &nbsp;&nbsp; ↗ Share</footer></article><article><header><div className="vx-avatar small">C</div><div><strong>collectorfall</strong><span>@collectorfall · 4h</span></div></header><p>Who else is hunting the Final Swing figure this week?</p></article></section><aside className="vx-panel"><PanelHead title="Trending"/>{['#MarvelLegends','#SpiderMan','#CollectionSetup','#Restock','#VEXUM'].map((name,index)=><div className="vx-trend-row" key={name}><b>{name}</b><span>{[32,28,21,18,15][index]}k posts</span></div>)}</aside></div></PageFrame>;
 }
 
-export default function VexumApp(){
-  const [view,setView]=useState<View>('home');
+export default function VexumApp({
+  initialView='home',
+  initialSearchQuery='',
+  initialProductId=''
+}:{
+  initialView?:View;
+  initialSearchQuery?:string;
+  initialProductId?:string;
+}){
+  const [view,setView]=useState<View>(initialView);
+
+  const navigate=(next:View)=>{
+    setView(next);
+    if(typeof window==='undefined')return;
+    if(next==='search'){
+      if(!window.location.pathname.startsWith('/search'))window.history.pushState({},'','/search');
+    }else if(window.location.pathname.startsWith('/search')){
+      window.history.pushState({},'','/');
+    }
+  };
+
+  useEffect(()=>{
+    const onPop=()=>setView(window.location.pathname.startsWith('/search')?'search':'home');
+    window.addEventListener('popstate',onPop);
+    return ()=>window.removeEventListener('popstate',onPop);
+  },[]);
+
   let content:ReactNode=<HomePage/>;
   if(view==='portfolio')content=<PortfolioPage/>;
-  else if(view==='search')content=<SearchPage/>;
+  else if(view==='search')content=<SearchPage initialQuery={initialSearchQuery} initialProductId={initialProductId}/>;
   else if(view==='wishlist')content=<WishlistPage/>;
   else if(view==='setup')content=<SetupPage/>;
   else if(view==='financial')content=<FinancialPage/>;
   else if(view==='social')content=<SocialPage/>;
-  return <div className="vx-app"><Sidebar view={view} setView={setView}/>{content}</div>;
+  return <div className="vx-app"><Sidebar view={view} setView={navigate}/>{content}</div>;
 }
