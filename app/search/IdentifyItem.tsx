@@ -6,10 +6,10 @@ import {DEMO_PRODUCTS} from '../../lib/search/demo';
 import type {NormalizedProduct} from '../../lib/search/types';
 
 type Method='camera'|'image'|'barcode'|'receipt'|'url';
-type Props={onClose:()=>void;onConfirm:(product:NormalizedProduct)=>void};
+type Props={onClose:()=>void;onConfirm:(product:NormalizedProduct)=>void;initialMethod?:Method};
 
-export default function IdentifyItem({onClose,onConfirm}:Props){
-  const [method,setMethod]=useState<Method>('camera');
+export default function IdentifyItem({onClose,onConfirm,initialMethod='camera'}:Props){
+  const [method,setMethod]=useState<Method>(initialMethod);
   const [barcode,setBarcode]=useState('');
   const [url,setUrl]=useState('');
   const [fileName,setFileName]=useState('');
