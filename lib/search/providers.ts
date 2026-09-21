@@ -36,9 +36,11 @@ function fuzzyScore(query:string,value:string){
   return Math.max(0,Math.min(.9,overlap*.68+edit*.32));
 }
 
-export function rankProducts(query:string,products=DEMO_PRODUCTS){
+export type RankedProduct={product:NormalizedProduct;score:number;exact:boolean};
+
+export function rankProducts(query:string,products:NormalizedProduct[]=DEMO_PRODUCTS):RankedProduct[]{
   const q=query.trim();
-  if(!q)return products;
+  if(!q)return products.map(product=>({product,score:0,exact:false}));
   const qDigits=digits(q);
   return products.map(product=>{
     const exactUpc=product.upc&&qDigits.length>=8&&digits(product.upc)===qDigits;
