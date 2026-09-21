@@ -2,8 +2,8 @@
 
 import {useId,useMemo,useRef,useState} from 'react';
 import {
-  Activity,ArrowDownUp,ArrowLeft,Bell,Box,CalendarDays,Check,ChevronDown,CircleDollarSign,Download,Eye,FileUp,Filter,
-  Heart,Home,Layers3,LayoutGrid,Minus,PackageSearch,PenLine,Plus,ReceiptText,ScanLine,Search,Settings,Share2,ShoppingBag,SlidersHorizontal,Sparkles,Star,Upload,UserCircle,Users,WalletCards,X
+  ArrowDownUp,ArrowLeft,Check,ChevronDown,CircleDollarSign,Download,Eye,FileUp,Filter,
+  Layers3,Minus,PenLine,Plus,Search,Share2,ShoppingBag,SlidersHorizontal,Star,Upload,X
 } from 'lucide-react';
 import type {CloudConfig,Session} from '../lib/cloud';
 import type {Collection,Item,Store as StoreData} from '../lib/model';
@@ -64,16 +64,16 @@ export default function DesktopCollector({status,profileName,data,update,config,
 
 function DesktopHeader({view,nav,status,profileName,createProduct}:{view:View;nav:(v:View)=>void;status:string;profileName:string;createProduct:()=>void}){
   const items:[View,string,React.ReactNode][]=[
-    ['home','Home',<Home key="h"/>],['portfolio','Portfolio',<LayoutGrid key="p"/>],['search','Search',<Search key="s"/>],
-    ['wishlist','Wishlist',<Heart key="w"/>],['setup','Setup',<Settings key="st"/>],['financial','Financial',<WalletCards key="f"/>],['social','Social',<Users key="so"/>]
+    ['home','Home',<Layers3 key="h"/>],['portfolio','Portfolio',<Layers3 key="p"/>],['search','Search',<Search key="s"/>],
+    ['wishlist','Wishlist',<Star key="w"/>],['setup','Setup',<SlidersHorizontal key="st"/>],['financial','Financial',<CircleDollarSign key="f"/>],['social','Social',<Share2 key="so"/>]
   ];
   const initials=(profileName||'V').split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase();
   return <header className="dc-header"><div className="dc-header-inner">
     <button className="dc-brand" onClick={()=>nav('home')} aria-label="VEXUM home"><span className="dc-brand-mark">V</span><span className="dc-brand-word">VEXUM</span></button>
     <nav>{items.map(([id,label,icon])=><button key={id} className={view===id?'active':''} onClick={()=>nav(id)}>{icon}<span>{label}</span></button>)}</nav>
-    <div className="dc-quick-add"><small>Quick Add</small><button onClick={()=>nav('search')}><ScanLine/>Scan Item</button><button onClick={createProduct}><Plus/>Add Manually</button><button onClick={()=>nav('portfolio')}><ReceiptText/>Import Receipt</button><button onClick={()=>nav('wishlist')}><Sparkles/>Add to Wishlist</button></div>
+    <div className="dc-quick-add"><small>Quick Add</small><button onClick={()=>nav('search')}><Search/>Scan Item</button><button onClick={createProduct}><Plus/>Add Manually</button><button onClick={()=>nav('portfolio')}><FileUp/>Import Receipt</button><button onClick={()=>nav('wishlist')}><Star/>Add to Wishlist</button></div>
     <button className="dc-side-profile" onClick={()=>nav('profile')}><i>{initials}</i><span><b>{profileName||'Collector'}</b><small>{status}</small></span></button>
-    <div className="dc-header-right"><button className="dc-command" onClick={()=>nav('search')}><Search/><span>Search for anything...</span><kbd>⌘ K</kbd></button><button title="VEXUM Intelligence"><Sparkles/></button><button title="Calendar"><CalendarDays/></button><button title="Alerts"><Bell/></button><button className="dc-avatar-mini" onClick={()=>nav('profile')}><UserCircle/></button></div>
+    <div className="dc-header-right"><button className="dc-command" onClick={()=>nav('search')}><Search/><span>Search for anything...</span><kbd>⌘ K</kbd></button><button title="VEXUM Intelligence"><Star/></button><button title="Calendar"><Eye/></button><button title="Alerts"><Star/></button><button className="dc-avatar-mini" onClick={()=>nav('profile')}><Eye/></button></div>
   </div></header>
 }
 
@@ -101,9 +101,9 @@ function DesktopHome({data,update,owned,value,name}:{data:StoreData;update:(s:St
     <div className="dc-dashboard-grid">
       <section className="dc-card dc-activity-card"><div className="dc-widget-head"><h2>Recent Activity</h2><button>View All</button></div><div className="dc-activity-list">{recent.map((i,idx)=><div key={i.id}>{i.image?<img src={i.image} alt=""/>:<span className="dc-thumb-fallback"/>}<div><b>{idx===1?'Price Update':'Added'} <em>{i.name}</em></b><small>{i.identity?.series||i.identity?.brand||i.category||'Collection'}</small></div><time>{idx*2+2}h ago</time></div>)}</div></section>
       <section className="dc-card dc-home-chart"><div className="dc-widget-head"><h2>Collection Value</h2><RangeRow range={range} setRange={setRange}/></div><PortfolioChart data={data} value={value} range={range}/><footer><span><b>{money(value)}</b><small>Current Value</small></span><span><b>{money(cost)}</b><small>Cost Basis</small></span><span><b className={gain>=0?'gain':'loss'}>{(gain>=0?'+':'')+money(gain)}</b><small>Unrealized Gain</small></span></footer></section>
-      <section className="dc-card dc-category-card"><div className="dc-widget-head"><h2>Top Categories</h2></div><div className="dc-category-list">{topCategories.map(([label,v])=>{const p=value?Math.round(v.value/value*100):0;return <div key={label}><span><Box/><b>{label}</b></span><i><em style={{width:Math.max(5,p)+'%'}}/></i><strong>{p}%</strong></div>})}</div></section>
+      <section className="dc-card dc-category-card"><div className="dc-widget-head"><h2>Top Categories</h2></div><div className="dc-category-list">{topCategories.map(([label,v])=>{const p=value?Math.round(v.value/value*100):0;return <div key={label}><span><Layers3/><b>{label}</b></span><i><em style={{width:Math.max(5,p)+'%'}}/></i><strong>{p}%</strong></div>})}</div></section>
     </div>
-    <div className="dc-home-banner-grid"><section className="dc-brand-banner"><div><small>TRACK MORE THAN ITEMS.</small><strong>TRACK YOUR STORY.</strong></div><span>VEXUM</span></section><section className="dc-mini-brief"><Sparkles/><div><small>VEXUM Intelligence</small><b>{wishlist.length} wishlist items tracked · {owned.length} owned items organized.</b></div></section></div>
+    <div className="dc-home-banner-grid"><section className="dc-brand-banner"><div><small>TRACK MORE THAN ITEMS.</small><strong>TRACK YOUR STORY.</strong></div><span>VEXUM</span></section><section className="dc-mini-brief"><Star/><div><small>VEXUM Intelligence</small><b>{wishlist.length} wishlist items tracked · {owned.length} owned items organized.</b></div></section></div>
   </div>;
 }
 function StatCard({label,value,meta,tone}:{label:string;value:string;meta:string;tone:'gain'|'loss'|'warn'}){return <section className="dc-stat-card"><span>{label}</span><strong>{value}</strong><small className={tone}>{tone==='gain'?'◇':tone==='loss'?'↓':'◉'} {meta}</small></section>}
@@ -116,7 +116,7 @@ function DesktopSetup({data,owned}:{data:StoreData;owned:Item[]}){
   const toolNames=['Display Cases','Shelves','Desks','Storage','Decor','Gadgets','Custom'];
   return <div className="dc-page dc-feature-page"><div className="dc-page-head"><div><h1>Setup Planner</h1><p>{located} of {owned.length} owned items have a saved physical location.</p></div><button className="dc-primary"><Plus/>Save Layout</button></div>
     <div className="dc-setup-layout"><section className="dc-setup-canvas"><div className="dc-room"><div className="fixture shelf a">DISPLAY 01</div><div className="fixture shelf b">DISPLAY 02</div><div className="fixture desk">DESK</div><div className="fixture rug">COLLECTION ROOM</div><div className="fixture storage">STORAGE</div></div></section>
-    <aside className="dc-setup-tools"><div className="dc-widget-head"><h2>Items</h2><Search/></div>{toolNames.map((x,i)=><button key={x}>{i===0?<Box/>:i===1?<Layers3/>:i===2?<LayoutGrid/>:i===3?<PackageSearch/>:i===4?<Star/>:i===5?<Sparkles/>:<Plus/>}{x}</button>)}</aside></div>
+    <aside className="dc-setup-tools"><div className="dc-widget-head"><h2>Items</h2><Search/></div>{toolNames.map((x,i)=><button key={x}>{i===0?<Layers3/>:i===1?<Layers3/>:i===2?<Layers3/>:i===3?<Search/>:i===4?<Star/>:i===5?<Star/>:<Plus/>}{x}</button>)}</aside></div>
   </div>;
 }
 
@@ -124,9 +124,9 @@ function DesktopFinancial({data,update,owned,value}:{data:StoreData;update:(s:St
   const month=currentMonth(),spent=owned.filter(i=>i.purchaseDate?.slice(0,7)===month).reduce((n,i)=>n+(Number(i.purchasePrice)||0)*Math.max(1,i.quantity||1),0);
   const prefs:any=defaultPrefs(data),budget=Number(prefs.monthlyCollectingBudget||0),cost=owned.reduce((n,i)=>n+(Number(i.purchasePrice)||0)*Math.max(1,i.quantity||1),0),gain=value-cost;
   const setBudget=(n:number)=>update({...data,preferences:{...defaultPrefs(data),monthlyCollectingBudget:String(Math.max(0,n))} as any});
-  return <div className="dc-page dc-feature-page"><div className="dc-page-head"><div><h1>Financial</h1><p>Hobby-focused money context without treating collection value as cash.</p></div><button className="dc-primary"><WalletCards/>Link Bank</button></div>
+  return <div className="dc-page dc-feature-page"><div className="dc-page-head"><div><h1>Financial</h1><p>Hobby-focused money context without treating collection value as cash.</p></div><button className="dc-primary"><CircleDollarSign/>Link Bank</button></div>
     <div className="dc-financial-stats"><StatCard label="Collection Estimated Value" value={money(value)} meta={(gain>=0?'+':'')+money(gain)+' vs cost'} tone={gain>=0?'gain':'loss'}/><StatCard label="Total Cost Basis" value={money(cost)} meta={String(owned.length)+' owned items'} tone="warn"/><StatCard label="Monthly Hobby Spend" value={money(spent)} meta={budget?String(Math.round(spent/budget*100))+'% of budget':'Set a budget'} tone={budget&&spent>budget?'loss':'gain'}/></div>
-    <div className="dc-financial-grid"><section className="dc-card"><div className="dc-widget-head"><h2>Income vs Spending</h2><Activity/></div><div className="dc-bars">{[64,82,48,76].map((h,i)=><div key={i}><i style={{height:h+'%'}}/><em style={{height:Math.max(18,h-22)+'%'}}/><small>{['Jun','Jul','Aug','Sep'][i]}</small></div>)}</div></section><section className="dc-card"><div className="dc-widget-head"><h2>Monthly Budget</h2><CircleDollarSign/></div><div className="dc-budget-donut"><div><strong>{money(spent)}</strong><small>of {budget?money(budget):'unset'}</small></div></div><label className="dc-inline-budget">Budget $<input type="number" value={budget||''} placeholder="0" onChange={e=>setBudget(Number(e.target.value))}/></label></section></div>
+    <div className="dc-financial-grid"><section className="dc-card"><div className="dc-widget-head"><h2>Income vs Spending</h2><CircleDollarSign/></div><div className="dc-bars">{[64,82,48,76].map((h,i)=><div key={i}><i style={{height:h+'%'}}/><em style={{height:Math.max(18,h-22)+'%'}}/><small>{['Jun','Jul','Aug','Sep'][i]}</small></div>)}</div></section><section className="dc-card"><div className="dc-widget-head"><h2>Monthly Budget</h2><CircleDollarSign/></div><div className="dc-budget-donut"><div><strong>{money(spent)}</strong><small>of {budget?money(budget):'unset'}</small></div></div><label className="dc-inline-budget">Budget $<input type="number" value={budget||''} placeholder="0" onChange={e=>setBudget(Number(e.target.value))}/></label></section></div>
   </div>;
 }
 
