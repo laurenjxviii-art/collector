@@ -1,6 +1,7 @@
 'use client';
 
 import {useMemo,useState} from 'react';
+import type {ReactNode} from 'react';
 import {Camera,FileText,Image as ImageIcon,Link2,ScanLine,Search,Upload,X} from 'lucide-react';
 import {DEMO_PRODUCTS} from '../../lib/search/demo';
 import type {NormalizedProduct} from '../../lib/search/types';
@@ -19,7 +20,7 @@ export default function IdentifyItem({onClose,onConfirm,initialMethod='camera'}:
     return DEMO_PRODUCTS.find(product=>product.upc?.replace(/\D/g,'')===digits)||null;
   },[barcode]);
 
-  const methods:Array<{id:Method;label:string;icon:React.ReactNode;desc:string}>=[
+  const methods:Array<{id:Method;label:string;icon:ReactNode;desc:string}>=[
     {id:'camera',label:'Camera',icon:<Camera/>,desc:'Photograph an item'},
     {id:'image',label:'Image',icon:<ImageIcon/>,desc:'Upload a photo or screenshot'},
     {id:'barcode',label:'Barcode',icon:<ScanLine/>,desc:'Scan UPC / EAN'},
