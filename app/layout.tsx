@@ -1,24 +1,21 @@
-import './vexum-shell.css';
-import './desktop-collector.css';
-import './mobile-collectr.css';
+import './vexum-reset.css';
 import type {Metadata} from 'next';
 
 export const metadata:Metadata={
   title:'VEXUM',
-  description:'Track, value, organize, and understand everything you collect.',
+  description:'Collect. Track. Plan. Connect.',
   manifest:'/manifest.webmanifest',
-  appleWebApp:{capable:true,title:'VEXUM',statusBarStyle:'black-translucent'},
-  icons:{icon:'/icons/icon-192.png',apple:'/icons/apple-touch-icon.png'}
+  appleWebApp:{capable:true,title:'VEXUM',statusBarStyle:'black-translucent'}
 };
 
 export const viewport={
   width:'device-width',
   initialScale:1,
   viewportFit:'cover',
-  themeColor:'#0a0a0a',
+  themeColor:'#050506',
   colorScheme:'dark' as const
 };
 
 export default function Layout({children}:{children:React.ReactNode}){
-  return <html lang="en"><body>{children}</body></html>
+  return <html lang="en"><body>{children}</body></html>;
 }
