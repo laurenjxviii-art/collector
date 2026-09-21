@@ -2,7 +2,7 @@ import type {NormalizedProduct,UserProductRelationship} from './types';
 
 export const DEMO_PRODUCTS:NormalizedProduct[]=[
   {
-    id:'ml-final-swing',demoMarket:{current:42.68,lastSold:39.99,average30d:41.37,trend30d:12.8,confidence:'high'},,
+    id:'ml-final-swing',demoMarket:{current:42.68,lastSold:39.99,average30d:41.37,trend30d:12.8,confidence:'high'},
     canonicalName:'Spider-Man Marvel Legends Final Swing',
     aliases:['Spider-Man Final Swing','Final Swing Spider-Man','No Way Home Final Swing','Marvel Legends Final Swing Spider-Man'],
     category:'Action Figures',
@@ -32,7 +32,7 @@ export const DEMO_PRODUCTS:NormalizedProduct[]=[
     ]
   },
   {
-    id:'ml-friendly-neighborhood',demoMarket:{current:36.5,lastSold:35,average30d:36.2,trend30d:6.4,confidence:'medium'},,
+    id:'ml-friendly-neighborhood',demoMarket:{current:36.5,lastSold:35,average30d:36.2,trend30d:6.4,confidence:'medium'},
     canonicalName:'Marvel Legends Friendly Neighborhood Spider-Man',
     aliases:['Tobey Spider-Man Marvel Legends','Friendly Neighborhood Spider-Man','No Way Home Tobey'],
     category:'Action Figures',manufacturer:'Hasbro',brand:'Marvel',line:'Marvel Legends',franchise:'Spider-Man',character:'Spider-Man',
@@ -41,7 +41,7 @@ export const DEMO_PRODUCTS:NormalizedProduct[]=[
     variants:[]
   },
   {
-    id:'ml-amazing-spiderman',demoMarket:{current:61,lastSold:58,average30d:59.4,trend30d:9.1,confidence:'medium'},,
+    id:'ml-amazing-spiderman',demoMarket:{current:61,lastSold:58,average30d:59.4,trend30d:9.1,confidence:'medium'},
     canonicalName:'Marvel Legends The Amazing Spider-Man',
     aliases:['Andrew Garfield Spider-Man Marvel Legends','Amazing Spider-Man NWH Marvel Legends'],
     category:'Action Figures',manufacturer:'Hasbro',brand:'Marvel',line:'Marvel Legends',franchise:'Spider-Man',character:'Spider-Man',
@@ -50,7 +50,7 @@ export const DEMO_PRODUCTS:NormalizedProduct[]=[
     variants:[]
   },
   {
-    id:'pokemon-151-etb',demoMarket:{current:89,lastSold:86,average30d:87.8,trend30d:-4.2,confidence:'high'},,
+    id:'pokemon-151-etb',demoMarket:{current:89,lastSold:86,average30d:87.8,trend30d:-4.2,confidence:'high'},
     canonicalName:'Pokémon Scarlet & Violet 151 Elite Trainer Box',
     aliases:['Pokemon 151 ETB','151 Elite Trainer Box'],
     category:'Trading Cards',manufacturer:'The Pokémon Company',brand:'Pokémon',line:'Scarlet & Violet 151',franchise:'Pokémon',character:'',
@@ -59,7 +59,7 @@ export const DEMO_PRODUCTS:NormalizedProduct[]=[
     variants:[]
   },
   {
-    id:'spiderman-1-silver',demoMarket:{current:225,lastSold:210,average30d:218,trend30d:5.7,confidence:'low'},,
+    id:'spiderman-1-silver',demoMarket:{current:225,lastSold:210,average30d:218,trend30d:5.7,confidence:'low'},
     canonicalName:'Spider-Man #1 Silver Cover',
     aliases:['Spider-Man 1 Silver','McFarlane Spider-Man #1 Silver Cover'],
     category:'Comics',manufacturer:'Marvel Comics',brand:'Marvel',line:'Spider-Man',franchise:'Spider-Man',character:'Spider-Man',
@@ -68,7 +68,7 @@ export const DEMO_PRODUCTS:NormalizedProduct[]=[
     variants:[{id:'spiderman-1-green',name:'Green Cover',type:'Cover Variant',status:'Released'}]
   },
   {
-    id:'gibson-sg-standard',demoMarket:{current:1399,lastSold:1375,average30d:1408,trend30d:1.8,confidence:'low'},,
+    id:'gibson-sg-standard',demoMarket:{current:1399,lastSold:1375,average30d:1408,trend30d:1.8,confidence:'low'},
     canonicalName:'Gibson SG Standard',
     aliases:['Gibson SG','SG Standard Heritage Cherry'],
     category:'Other',manufacturer:'Gibson',brand:'Gibson',line:'SG',franchise:'',character:'',
@@ -77,7 +77,7 @@ export const DEMO_PRODUCTS:NormalizedProduct[]=[
     variants:[]
   },
   {
-    id:'sony-wh1000xm5',demoMarket:{current:248,lastSold:244,average30d:252,trend30d:-8.1,confidence:'medium'},,
+    id:'sony-wh1000xm5',demoMarket:{current:248,lastSold:244,average30d:252,trend30d:-8.1,confidence:'medium'},
     canonicalName:'Sony WH-1000XM5',
     aliases:['WH1000XM5','Sony XM5'],
     category:'Technology',manufacturer:'Sony',brand:'Sony',line:'1000X',franchise:'',character:'',
