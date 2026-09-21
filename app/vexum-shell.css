@@ -1,24 +1,117 @@
-:root {
-  color-scheme: dark;
-  background: #0a0a0a;
-  color: #ededed;
-  font-family: Arial, Helvetica, sans-serif;
+:root{
+  color-scheme:dark;
+  --vexum-bg:#0a0a0a;
+  --vexum-surface:#151515;
+  --vexum-surface-2:#1b1b1d;
+  --vexum-field:#202023;
+  --vexum-border:#2a2a2f;
+  --vexum-text:#f5f5f6;
+  --vexum-muted:#8d8d94;
+  --vexum-red:#ff2436;
+  --vexum-red-soft:rgba(255,36,54,.16);
+  --vexum-red-glow:rgba(255,36,54,.26);
+  background:var(--vexum-bg);
+  color:var(--vexum-text);
+  font-family:Inter,Lato,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--vexum-bg)}
+body{min-height:100vh;min-height:100svh}
+button,input,textarea,select{font:inherit}
+
+.vexum-app{min-height:100vh;min-height:100svh;background:
+  radial-gradient(circle at 50% -140px,rgba(255,36,54,.08),transparent 360px),
+  var(--vexum-bg)
 }
 
-* { box-sizing: border-box; }
-html, body { margin: 0; min-height: 100%; }
+.vexum-boot{
+  min-height:100vh;
+  min-height:100svh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:14px;
+  background:
+    radial-gradient(circle at 50% 45%,rgba(255,36,54,.12),transparent 260px),
+    #0a0a0a;
+}
+.vexum-mark{
+  width:42px;height:42px;border:1px solid rgba(255,75,88,.42);border-radius:12px;
+  display:grid;place-items:center;background:linear-gradient(145deg,#1e1113,#101011);
+  color:#fff;font-weight:900;letter-spacing:-.08em;
+  box-shadow:0 0 26px rgba(255,36,54,.18),inset 0 0 18px rgba(255,36,54,.06)
+}
+.vexum-boot-copy{display:flex;flex-direction:column;gap:2px}
+.vexum-boot-copy strong{font-size:13px;letter-spacing:.22em}
+.vexum-boot-copy span{font-size:10px;color:#727278}
 
-.vexum-shell {
-  min-height: 100vh;
-  min-height: 100svh;
-  display: grid;
-  place-items: center;
-  padding: 24px;
+.vexum-mobile-hold{display:none}
+
+@media (min-width:768px){
+  .dc-shell{
+    --dc-red:var(--vexum-red);
+    --dc-panel:var(--vexum-surface);
+    --dc-field:var(--vexum-field);
+    --dc-border:var(--vexum-border);
+    --dc-muted:var(--vexum-muted);
+    background:transparent;
+    font-family:inherit;
+  }
+  .dc-header{
+    height:68px;
+    background:rgba(10,10,10,.88);
+    border-bottom:1px solid rgba(255,255,255,.065);
+    box-shadow:0 12px 34px rgba(0,0,0,.24);
+  }
+  .dc-header-inner{max-width:none;padding:0 28px;gap:24px}
+  .dc-brand{
+    height:38px;display:flex;align-items:center;gap:10px;flex:none;margin-right:7px
+  }
+  .dc-brand-mark{
+    width:30px;height:30px;border:1px solid rgba(255,75,88,.4);border-radius:9px;
+    display:grid;place-items:center;background:#151012;color:#fff;font-size:12px;font-weight:900;
+    box-shadow:0 0 18px var(--vexum-red-glow),inset 0 0 12px rgba(255,36,54,.06)
+  }
+  .dc-brand-word{
+    font-size:12px;font-weight:900;letter-spacing:.21em;color:#fff
+  }
+  .dc-header nav{gap:20px}
+  .dc-header nav button{font-size:12px;color:#85858c}
+  .dc-header nav button.active:after{
+    height:2px;box-shadow:0 0 14px var(--vexum-red),0 0 4px var(--vexum-red)
+  }
+  .dc-main{max-width:1600px;padding:24px 28px 64px}
+  .dc-card,.dc-filter-sidebar,.dc-product-card,.dc-set-card,.dc-listing-block,.dc-social-aside section,.dc-feed-post,.dc-drop-card{
+    border-color:rgba(255,255,255,.075);
+    box-shadow:0 10px 34px rgba(0,0,0,.17)
+  }
+  .dc-command{
+    background:#141416;border-color:#2d2d31;border-radius:10px
+  }
+  .dc-command:focus-within,.dc-search-panel:focus-within{
+    border-color:rgba(255,36,54,.48);
+    box-shadow:0 0 0 2px rgba(255,36,54,.08),0 0 26px rgba(255,36,54,.07)
+  }
+  .dc-primary{
+    box-shadow:0 0 18px rgba(255,36,54,.14)
+  }
+  .dc-product-card:hover{
+    border-color:rgba(255,70,82,.34);
+    box-shadow:0 18px 40px rgba(0,0,0,.3),0 0 22px rgba(255,36,54,.055)
+  }
+  .dc-product-media{background:#0f0f11}
+  .dc-home-grid,.dc-performance-grid{gap:16px}
+  .dc-card{border-radius:12px}
+  .dc-page-head{margin-bottom:20px}
+  .dc-page-head h1{letter-spacing:-.025em}
+  .dc-toolbar{margin-bottom:16px}
 }
 
-.vexum-shell h1 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 500;
-  letter-spacing: 0.18em;
+@media (max-width:767px){
+  .vexum-mobile-hold{
+    min-height:100vh;min-height:100svh;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:9px;color:#fff;text-align:center;padding:28px
+  }
+  .vexum-mobile-hold strong{font-size:14px;letter-spacing:.22em;margin-top:4px}
+  .vexum-mobile-hold span{font-size:11px;color:#77777d}
 }
