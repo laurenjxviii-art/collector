@@ -153,7 +153,7 @@ export default function VexumApp({
   useEffect(()=>{
     const onKey=(event:KeyboardEvent)=>{
       if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==='k'){event.preventDefault();setCommandOpen(true);setNotificationsOpen(false);setProfileOpen(false)}
-      if(event.key==='Escape'){setCommandOpen(false);setQuickOpen(false);setNotificationsOpen(false);setProfileOpen(false)}
+      if(event.key==='Escape'){setCommandOpen(false);setQuickOpen(false);setNotificationsOpen(false);setProfileOpen(false);setAccountOpen(false)}
     };
     window.addEventListener('keydown',onKey);return()=>window.removeEventListener('keydown',onKey);
   },[]);
