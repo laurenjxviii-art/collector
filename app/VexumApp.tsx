@@ -66,7 +66,7 @@ function Sidebar({view,navigate,enabled,order,displayName,onQuick}:{view:View;na
         if(!modules.length)return null;
         return <section className="vxp-nav-group" key={group.label}><span>{group.label}</span><nav className="vx-nav">{modules.map(module=><button key={module} className={view===module?'active':''} onClick={()=>navigate(module)}>{iconFor(module)}<span>{MODULE_LABELS[module]}</span></button>)}</nav></section>;
       })}
-      <section className="vx-quick vxp-quick"><span>QUICK ADD</span><button className="primary" onClick={()=>onQuick()}><Plus/><span>Add Anything</span></button><button onClick={()=>onQuick('task')}><CalendarCheck/><span>Task</span></button><button onClick={()=>onQuick('collectible')}><Search/><span>Collectible</span></button><button onClick={()=>onQuick('expense')}><CircleDollarSign/><span>Expense</span></button></section>
+      <section className="vx-quick vxp-quick"><span>QUICK ADD</span><button className="primary" onClick={()=>onQuick()}><Plus/><span>Add Anything</span></button>{enabled.includes('life')?<button onClick={()=>onQuick('task')}><CalendarCheck/><span>Task</span></button>:null}{enabled.includes('search')?<button onClick={()=>onQuick('collectible')}><Search/><span>Collectible</span></button>:null}{enabled.includes('financial')?<button onClick={()=>onQuick('expense')}><CircleDollarSign/><span>Expense</span></button>:null}</section>
     </div>
     <button className="vx-user vxp-sidebar-user" onClick={()=>navigate('settings')}><div className="vx-avatar">{displayName[0]?.toUpperCase()||'V'}</div><div><strong>{displayName}</strong><span>VEXUM workspace</span></div><ChevronDown/></button>
   </aside>;
