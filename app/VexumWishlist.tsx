@@ -169,6 +169,7 @@ export default function VexumWishlist(){
   const [showInsights,setShowInsights]=useState(false);
   const [marketRefreshing,setMarketRefreshing]=useState(false);
   const [marketError,setMarketError]=useState('');
+  const [budgetModal,setBudgetModal]=useState(false);
 
   const prefs=workspace.data.wishlistPreferences||{view:'table' as const,sort:'priority'};
   const view=prefs.view;
@@ -249,6 +250,17 @@ export default function VexumWishlist(){
   const grails=activeEntries.filter(entry=>entry.record.priority==='Grail');
   const preorders=activeEntries.filter(entry=>entry.record.preorder?.enabled&&entry.record.preorder.status!=='Cancelled'&&entry.record.preorder.status!=='Delivered');
   const planned=activeEntries.filter(entry=>Boolean(entry.record.plannedMonth));
+  const currentMonthKey=new Date().toISOString().slice(0,7);
+  const nextMonthKey=nextMonth();
+  const hobbyBudget=workspace.data.financialPreferences?.monthlyHobbyBudget;
+  const currentHobbySpend=workspace.data.items.filter(item=>item.status==='owned'&&item.purchaseDate.startsWith(currentMonthKey)).reduce((sum,item)=>sum+item.purchasePrice*item.quantity,0);
+  const plannedForMonth=(month:string)=>planned.filter(entry=>entry.record.plannedMonth===month).reduce((sum,entry)=>sum+(entry.market??entry.record.targetPrice??entry.record.maximumPrice??0)*entry.record.quantityWanted,0);
+  const preorderDueForMonth=(month:string)=>preorders.filter(entry=>entry.record.preorder?.estimatedChargeDate?.startsWith(month)).reduce((sum,entry)=>sum+preorderCommitment(entry.record)*entry.record.quantityWanted,0);
+  const financialContext={
+    budget:hobbyBudget,currentSpend:currentHobbySpend,
+    currentPlanned:plannedForMonth(currentMonthKey),currentPreorders:preorderDueForMonth(currentMonthKey),
+    nextPlanned:plannedForMonth(nextMonthKey),nextPreorders:preorderDueForMonth(nextMonthKey)
+  };
   const opportunityRows=activeEntries.map(entry=>({entry,...opportunityFor(entry)})).filter(row=>row.states.length>0).toSorted((a,b)=>b.score-a.score);
   const opportunities=opportunityRows.filter(row=>row.states.some(state=>['Under target','At target','Below MSRP','Release soon','Preorder tracked'].includes(state.label))).map(row=>row.entry);
   const targetMatches=activeEntries.filter(entry=>typeof entry.market==='number'&&typeof entry.record.targetPrice==='number'&&entry.market<=entry.record.targetPrice);
@@ -480,6 +492,7 @@ export default function VexumWishlist(){
     </>:null}
 
     {selected?<DetailDrawer entry={selected} tab={detailTab} setTab={setDetailTab} marketRefreshing={marketRefreshing} marketError={marketError}
+      financial={financialContext} onSetBudget={()=>setBudgetModal(true)}
       onRefreshMarket={()=>void refreshMarket(selected)} onClose={()=>{setSelectedId(null);setMarketError('')}} onEdit={()=>setEditingId(selected.id)}
       onPlan={()=>setPlanningId(selected.id)} onPurchase={()=>setPurchasingId(selected.id)} onArchive={()=>archiveEntry(selected)} onRestore={()=>restoreEntry(selected)}/>:null}
 
@@ -521,6 +534,7 @@ export default function VexumWishlist(){
       setPurchasingId(null);setSelectedId(null);setTab('Archive');
     }}/>:null}
     {bulkOpen?<BulkModal entries={entries.filter(entry=>selectedIds.includes(entry.id))} onClose={()=>setBulkOpen(false)} onApply={applyBulk}/>:null}
+    {budgetModal?<BudgetModal value={hobbyBudget} onClose={()=>setBudgetModal(false)} onSave={value=>{workspace.update({...workspace.data,financialPreferences:{...(workspace.data.financialPreferences||{}),monthlyHobbyBudget:value}});setBudgetModal(false)}}/>:null}
   </div>;
 }
 
@@ -680,8 +694,10 @@ function EmptyState({tab,filtered}:{tab:MainTab;filtered:boolean}){
   return <section className="vxw-empty"><Star/><strong>{filtered?'No matches':tab+' is empty'}</strong><p>{text}</p>{!filtered&&tab==='Items'?<div><button className="vxw-primary" onClick={()=>window.location.assign('/search')}><Search/>Explore Search</button><button onClick={()=>window.location.assign('/search')}><Eye/>Identify Product</button></div>:null}</section>;
 }
 
-function DetailDrawer({entry,tab,setTab,marketRefreshing,marketError,onRefreshMarket,onClose,onEdit,onPlan,onPurchase,onArchive,onRestore}:{
-  entry:WishlistEntry;tab:DetailTab;setTab:(tab:DetailTab)=>void;marketRefreshing:boolean;marketError:string;onRefreshMarket:()=>void;onClose:()=>void;onEdit:()=>void;onPlan:()=>void;onPurchase:()=>void;onArchive:()=>void;onRestore:()=>void;
+function DetailDrawer({entry,tab,setTab,marketRefreshing,marketError,financial,onSetBudget,onRefreshMarket,onClose,onEdit,onPlan,onPurchase,onArchive,onRestore}:{
+  entry:WishlistEntry;tab:DetailTab;setTab:(tab:DetailTab)=>void;marketRefreshing:boolean;marketError:string;
+  financial:{budget?:number;currentSpend:number;currentPlanned:number;currentPreorders:number;nextPlanned:number;nextPreorders:number};
+  onSetBudget:()=>void;onRefreshMarket:()=>void;onClose:()=>void;onEdit:()=>void;onPlan:()=>void;onPurchase:()=>void;onArchive:()=>void;onRestore:()=>void;
 }){
   const plannedAmount=(entry.record.preorder?.enabled?preorderCommitment(entry.record):entry.market??entry.record.targetPrice??entry.record.maximumPrice);
   const pct=grailProgress(entry.record),opp=opportunityFor(entry);
@@ -724,7 +740,15 @@ function DetailDrawer({entry,tab,setTab,marketRefreshing,marketError,onRefreshMa
         </div>:null}
         {tab==='Planning'?<div className="vxw-detail-stack">
           <section className="vxw-intelligence"><WalletCards/><div><span>PURCHASE INTELLIGENCE</span><strong>{plannedAmount!==undefined?money(plannedAmount*entry.record.quantityWanted):'Amount not set'}</strong><p>{plannedAmount!==undefined?'Known Wishlist/preorder amount for '+entry.record.quantityWanted+' item'+(entry.record.quantityWanted===1?'':'s')+'.':'Set a target, maximum, market value, or preorder balance to calculate known exposure.'}</p></div></section>
-          <div className="vxw-neutral-grid"><span><small>Planned month</small><b>{plannedLabel(entry.record.plannedMonth)}</b></span><span><small>Maximum exposure</small><b>{entry.record.maximumPrice!==undefined?money(entry.record.maximumPrice*entry.record.quantityWanted):'Not set'}</b></span><span><small>Financial budget impact</small><b>Not configured</b><em>Wishlist stores the commitment; Financial must provide a real budget before VEXUM calculates impact.</em></span></div>
+          <div className="vxw-neutral-grid"><span><small>Planned month</small><b>{plannedLabel(entry.record.plannedMonth)}</b></span><span><small>Maximum exposure</small><b>{entry.record.maximumPrice!==undefined?money(entry.record.maximumPrice*entry.record.quantityWanted):'Not set'}</b></span><span><small>Hobby budget remaining</small><b>{financial.budget!==undefined?money(financial.budget-financial.currentSpend):'Not configured'}</b><em>{financial.budget!==undefined?'Based on recorded Portfolio purchases this month.':'Set a hobby budget to enable factual purchase impact.'}</em></span></div>
+          {financial.budget!==undefined?<section className="vxw-budget-impact">
+            <div><small>Current recorded hobby spend</small><b>{money(financial.currentSpend)}</b></div>
+            <div><small>Projected after this item</small><b>{money(financial.currentSpend+(plannedAmount||0)*entry.record.quantityWanted)}</b></div>
+            <div><small>Current-month preorder commitments</small><b>{money(financial.currentPreorders)}</b></div>
+            <div><small>Current-month planned Wishlist</small><b>{money(financial.currentPlanned)}</b></div>
+            <p>{(()=>{const projected=financial.currentSpend+(plannedAmount||0)*entry.record.quantityWanted;const delta=projected-financial.budget!;return delta>0?'This purchase would put recorded hobby spending '+money(delta)+' above your current monthly target.':'This purchase would leave '+money(Math.max(0,-delta))+' remaining against your current monthly target.'})()}</p>
+            <small>Next month: {money(financial.nextPlanned)} planned Wishlist + {money(financial.nextPreorders)} known preorder balances.</small>
+          </section>:<button className="vxw-budget-setup" onClick={onSetBudget}><WalletCards/>Set Hobby Budget</button>}
           {entry.record.priority==='Grail'?<section className="vxw-goal-block"><header><div><Gem/><strong>Grail savings goal</strong></div><b>{pct}%</b></header><div className="vxw-progress"><i style={{width:pct+'%'}}/></div><p>{money(entry.record.grail?.savedAmount)} saved of {money(entry.record.grail?.goalAmount??entry.record.targetPrice)} · {entry.record.grail?.status||'Not Started'}{entry.record.grail?.deadline?' · '+entry.record.grail.deadline:''}</p></section>:null}
           {entry.record.preorder?.enabled?<section className="vxw-preorder-block"><header><PackageCheck/><strong>Preorder commitment</strong><span>{entry.record.preorder.status}</span></header><InfoGrid rows={[
             ['Retailer',entry.record.preorder.retailer||'Unknown'],['Total price',money(entry.record.preorder.totalPrice)],['Deposit',money(entry.record.preorder.depositPaid)],
@@ -902,4 +926,10 @@ function BulkModal({entries,onClose,onApply}:{entries:WishlistEntry[];onClose:()
     <label>Alerts<select value={alerts} onChange={e=>setAlerts(e.target.value)}><option value="">No change</option><option value="on">Priority defaults on</option><option value="off">All off</option></select></label>
     <label className="vxw-check-filter"><input type="checkbox" checked={archive} onChange={e=>setArchive(e.target.checked)}/>Archive selected</label>
   </div></div><footer><button onClick={onClose}>Cancel</button><button className="vxw-primary" onClick={()=>onApply({priority:priority as WishlistPriority||undefined,plannedMonth:plan||undefined,condition:condition||undefined,retailer:retailer||undefined,alerts:alerts as 'on'|'off'||undefined,archive})}><Check/>Apply to {entries.length}</button></footer></div></div>;
+}
+
+function BudgetModal({value,onClose,onSave}:{value?:number;onClose:()=>void;onSave:(value:number)=>void}){
+  const [budget,setBudget]=useState(value===undefined?'':String(value));
+  const parsed=Math.max(0,Number(budget)||0);
+  return <div className="vxw-modal-backdrop"><div className="vxw-modal small"><header><div><span>FINANCIAL CONTEXT</span><h2>Monthly Hobby Budget</h2><p>This is a target for context, not a spending restriction.</p></div><button onClick={onClose}><X/></button></header><div className="vxw-modal-scroll"><div className="vxw-form-grid"><label className="wide">Monthly hobby budget<input inputMode="decimal" value={budget} onChange={e=>setBudget(e.target.value)} placeholder="500"/></label></div><section className="vxw-provider-state saved compact"><WalletCards/><div><strong>Workspace-backed target</strong><p>VEXUM compares this target with purchase prices recorded in Portfolio plus Wishlist/preorder commitments. It does not infer bank balances.</p></div></section></div><footer><button onClick={onClose}>Cancel</button><button className="vxw-primary" onClick={()=>onSave(parsed)}><Check/>Save Budget</button></footer></div></div>;
 }
