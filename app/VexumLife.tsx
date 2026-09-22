@@ -32,7 +32,7 @@ export default function VexumLife(){
   const workspace=useWorkspace();
   const life=normalizeLifeData(workspace.data.life||emptyLifeData());
   const platform=normalizePlatformState(workspace.data.platform,true);
-  const lifeSections=platform.lifeSections.length?platform.lifeSections:['Today'];
+  const lifeSections:LifeTab[]=platform.lifeSections.length?[...platform.lifeSections]:['Today'];
   const fitnessEnabled=lifeSections.includes('Fitness');
   const [tab,setTab]=useState<LifeTab>('Today');
   const [taskComposer,setTaskComposer]=useState(false);
