@@ -8,7 +8,7 @@ import {
   Sparkles,Star,TrendingDown,TrendingUp,WalletCards,X
 } from 'lucide-react';
 import {useWorkspace} from '../lib/useWorkspace';
-import {DEMO_HOME_DATA,HOME_WIDGET_TITLES,defaultHomeDashboard,normalizeHomeDashboard,type HomeWidgetId,type HomeWidgetLayout,type HomeWidgetSize} from '../lib/home';
+import {HOME_WIDGET_TITLES,defaultHomeDashboard,normalizeHomeDashboard,type HomeWidgetId,type HomeWidgetLayout,type HomeWidgetSize} from '../lib/home';
 import {normalizeFinancialData} from '../lib/financial';
 import {normalizeSetupData} from '../lib/setup';
 import {normalizePortfolioPreferences} from '../lib/portfolio';
@@ -43,14 +43,14 @@ function DashboardChart({values}:{values:number[]}){
   </svg>;
 }
 
-function SourceBadge({source}:{source:'live'|'demo'|'mixed'}){
-  return <span className={'vxh-source '+source}>{source==='live'?'LIVE':source==='mixed'?'MIXED':'DEMO'}</span>;
+function SourceBadge({source}:{source:'live'|'unavailable'|'mixed'}){
+  return <span className={'vxh-source '+source}>{source==='live'?'LIVE':source==='mixed'?'MIXED':'UNAVAILABLE'}</span>;
 }
 
 function WidgetShell({layout,editing,dragged,onDragStart,onDrop,onHide,onResize,onConfigure,menuFor,setMenuFor,source,children}:{
   layout:HomeWidgetLayout;editing:boolean;dragged:HomeWidgetId|null;onDragStart:(id:HomeWidgetId)=>void;onDrop:(id:HomeWidgetId)=>void;
   onHide:(id:HomeWidgetId)=>void;onResize:(id:HomeWidgetId)=>void;onConfigure:(id:HomeWidgetId)=>void;menuFor:HomeWidgetId|null;
-  setMenuFor:(id:HomeWidgetId|null)=>void;source:'live'|'demo'|'mixed';children:ReactNode;
+  setMenuFor:(id:HomeWidgetId|null)=>void;source:'live'|'unavailable'|'mixed';children:ReactNode;
 }){
   return <section className={'vxh-widget vx-panel size-'+layout.size+(editing?' editing':'')+(dragged===layout.id?' dragging':'')} draggable={editing}
     onDragStart={()=>onDragStart(layout.id)} onDragOver={event=>editing&&event.preventDefault()} onDrop={()=>onDrop(layout.id)}>
@@ -106,8 +106,8 @@ export default function VexumHome(){
   const owned=workspace.data.items.filter(item=>item.status==='owned'&&!item.archivedAt);
   const sold=workspace.data.items.filter(item=>item.status==='sold');
   const hasPortfolio=owned.length>0;
-  const currentValue=hasPortfolio?owned.reduce((sum,item)=>sum+item.currentValue*item.quantity,0):DEMO_HOME_DATA.portfolio.currentValue;
-  const costBasis=hasPortfolio?owned.reduce((sum,item)=>sum+item.purchasePrice*item.quantity,0):DEMO_HOME_DATA.portfolio.costBasis;
+  const currentValue=owned.reduce((sum,item)=>sum+item.currentValue*item.quantity,0);
+  const costBasis=owned.reduce((sum,item)=>sum+item.purchasePrice*item.quantity,0);
   const pl=currentValue-costBasis;
   const plPct=costBasis?pl/costBasis*100:0;
 
@@ -139,12 +139,12 @@ export default function VexumHome(){
   const liveMonthSpend=financial.transactions.filter(tx=>tx.direction==='expense'&&tx.isHobby&&tx.date.startsWith(month)).reduce((sum,tx)=>sum+tx.amount,0);
   const liveBudget=workspace.data.financialPreferences?.monthlyHobbyBudget||financial.budgets.find(budget=>budget.active&&budget.period==='monthly'&&(!budget.category||/hobby|collect/i.test(budget.category)))?.amount;
   const hasSpend=Boolean(liveBudget||liveMonthSpend);
-  const monthSpend=hasSpend?liveMonthSpend:DEMO_HOME_DATA.monthlySpend.spent;
-  const monthBudget=liveBudget||DEMO_HOME_DATA.monthlySpend.budget;
+  const monthSpend=liveMonthSpend;
+  const monthBudget=liveBudget||0;
 
   const historyValues=useMemo(()=>{
     const rows=(workspace.data.history||[]).slice(-30).map(snapshot=>Object.values(snapshot.values).reduce((sum,value)=>sum+value,0)).filter(value=>value>0);
-    return rows.length>=3?rows:[...DEMO_HOME_DATA.portfolio.chart];
+    return rows;
   },[workspace.data.history]);
 
   const liveWishlist=Object.values(workspace.data.wishlist||{}).filter(record=>!record.archived&&typeof record.currentMarket==='number'&&(
@@ -221,28 +221,29 @@ export default function VexumHome(){
   const profileName=workspace.data.profile?.name?.trim();
   const dateLabel=new Intl.DateTimeFormat('en-US',{weekday:'long',month:'long',day:'numeric'}).format(new Date());
 
-  const sourceFor=(id:HomeWidgetId):'live'|'demo'|'mixed'=> {
-    if(['collectionValue','costBasis','profitLoss','portfolioPerformance'].includes(id))return hasPortfolio?'live':'demo';
-    if(id==='monthlySpend'||id==='finance')return hasSpend?'live':'demo';
-    if(id==='wishlist')return liveWishlist.length?'live':'demo';
-    if(id==='progress')return progressRows.length?'live':'demo';
-    if(id==='purchases')return recentPurchases.length?'live':'demo';
-    if(id==='sales')return recentSales.length?'live':'demo';
-    if(id==='capacity')return capacityRows.length?'live':'demo';
-    if(id==='alerts')return auditCounts.total?'mixed':'demo';
-    if(id==='brief')return 'mixed';
-    if(id==='calendar')return lifeCalendarRows.length?'live':'demo';
-    return 'demo';
+  const sourceFor=(id:HomeWidgetId):'live'|'unavailable'|'mixed'=> {
+    if(['collectionValue','costBasis','profitLoss'].includes(id))return hasPortfolio?'live':'unavailable';
+    if(id==='portfolioPerformance')return historyValues.length>=2?'live':'unavailable';
+    if(id==='monthlySpend')return hasSpend?'live':'unavailable';
+    if(id==='finance')return financial.accounts.length||hasSpend?'live':'unavailable';
+    if(id==='wishlist')return liveWishlist.length?'live':'unavailable';
+    if(id==='progress')return progressRows.length?'live':'unavailable';
+    if(id==='purchases')return recentPurchases.length?'live':'unavailable';
+    if(id==='sales')return recentSales.length?'live':'unavailable';
+    if(id==='capacity')return capacityRows.length?'live':'unavailable';
+    if(id==='alerts'||id==='brief')return 'live';
+    if(id==='calendar')return lifeCalendarRows.length?'live':'unavailable';
+    return 'unavailable';
   };
 
   const render=(layout:HomeWidgetLayout)=>{
     const source=sourceFor(layout.id);
     const shell=(body:ReactNode)=><WidgetShell key={layout.id} layout={layout} editing={editing} dragged={dragged} onDragStart={setDragged} onDrop={drop} onHide={hide} onResize={resize} onConfigure={configure} menuFor={menuFor} setMenuFor={setMenuFor} source={source}>{body}</WidgetShell>;
-    if(layout.id==='collectionValue')return shell(<div className="vxh-metric"><strong>{money(currentValue)}</strong><span className={hasPortfolio?'tone-muted':'tone-green'}>{hasPortfolio?owned.reduce((s,i)=>s+i.quantity,0)+' owned units':'+'+money(DEMO_HOME_DATA.portfolio.changeYesterday)+' yesterday'}</span></div>);
-    if(layout.id==='costBasis')return shell(<div className="vxh-metric"><strong>{money(costBasis)}</strong><span>{hasPortfolio?'Recorded acquisition cost':'Demo ownership basis'}</span></div>);
-    if(layout.id==='profitLoss')return shell(<div className="vxh-metric"><strong className={pl>=0?'tone-green':'tone-red'}>{pl>=0?'+':''}{money(pl)}</strong><span className={pl>=0?'tone-green':'tone-red'}>{plPct>=0?'+':''}{plPct.toFixed(1)}%</span></div>);
-    if(layout.id==='monthlySpend')return shell(<div className="vxh-metric"><strong>{money(monthSpend)} <small>/ {money(monthBudget)}</small></strong><span>{monthBudget?Math.round(monthSpend/monthBudget*100):0}% of monthly target</span><div className="vxh-progress"><i style={{width:Math.min(100,monthBudget?monthSpend/monthBudget*100:0)+'%'}}/></div></div>);
-    if(layout.id==='portfolioPerformance')return shell(<div className="vxh-performance"><div className="vxh-chart-head"><div><strong>{money(currentValue)}</strong><span>{source==='live'?'Workspace value history':'Isolated dashboard demo history'}</span></div><div>{['7D','30D','3M','6M','1Y','ALL'].map(interval=><button className={(layout.config.interval||'30D')===interval?'active':''} key={interval} onClick={()=>updateDashboard(state.widgets.map(w=>w.id===layout.id?{...w,config:{...w.config,interval}}:w))}>{interval}</button>)}</div></div><DashboardChart values={historyValues}/><footer><span><i className="red"/>Market value</span><span><i/>Cost basis {money(costBasis)}</span></footer></div>);
+    if(layout.id==='collectionValue')return shell(hasPortfolio?<div className="vxh-metric"><strong>{money(currentValue)}</strong><span className="tone-muted">{owned.reduce((s,i)=>s+i.quantity,0)} owned units</span></div>:<EmptyWidget text="Add owned items to Portfolio to calculate collection value." action="Open Portfolio" route="/portfolio"/>);
+    if(layout.id==='costBasis')return shell(hasPortfolio?<div className="vxh-metric"><strong>{money(costBasis)}</strong><span>Recorded acquisition cost</span></div>:<EmptyWidget text="Cost basis appears after real Portfolio purchases are recorded." action="Open Portfolio" route="/portfolio"/>);
+    if(layout.id==='profitLoss')return shell(hasPortfolio?<div className="vxh-metric"><strong className={pl>=0?'tone-green':'tone-red'}>{pl>=0?'+':''}{money(pl)}</strong><span className={pl>=0?'tone-green':'tone-red'}>{plPct>=0?'+':''}{plPct.toFixed(1)}%</span></div>:<EmptyWidget text="Profit / loss needs real Portfolio cost and market values." action="Open Portfolio" route="/portfolio"/>);
+    if(layout.id==='monthlySpend')return shell(hasSpend?<div className="vxh-metric"><strong>{money(monthSpend)} <small>{monthBudget?' / '+money(monthBudget):''}</small></strong><span>{monthBudget?Math.round(monthSpend/monthBudget*100)+'% of monthly target':'No monthly target set'}</span><div className="vxh-progress"><i style={{width:Math.min(100,monthBudget?monthSpend/monthBudget*100:0)+'%'}}/></div></div>:<EmptyWidget text="Record Financial hobby spending or set a monthly budget to activate this widget." action="Open Financial" route="/financial"/>);
+    if(layout.id==='portfolioPerformance')return shell(historyValues.length>=2?<div className="vxh-performance"><div className="vxh-chart-head"><div><strong>{money(currentValue)}</strong><span>Workspace value history</span></div><div>{['7D','30D','3M','6M','1Y','ALL'].map(interval=><button className={(layout.config.interval||'30D')===interval?'active':''} key={interval} onClick={()=>updateDashboard(state.widgets.map(w=>w.id===layout.id?{...w,config:{...w.config,interval}}:w))}>{interval}</button>)}</div></div><DashboardChart values={historyValues}/><footer><span><i className="red"/>Market value</span><span><i/>Cost basis {money(costBasis)}</span></footer></div>:<EmptyWidget text="VEXUM needs at least two real value snapshots before it can draw performance history." action="Open Portfolio" route="/portfolio"/>);
     if(layout.id==='brief'){
       const rows:ReadonlyArray<readonly [string,string,string]>=[
         ['Today',lifeTodayTasks.length+' task'+(lifeTodayTasks.length===1?'':'s')+' · '+lifeTodayEvents.length+' event'+(lifeTodayEvents.length===1?'':'s'),lifeTodayTasks.length?'orange':'green'],
