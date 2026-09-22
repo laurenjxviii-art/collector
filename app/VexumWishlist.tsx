@@ -725,8 +725,8 @@ function OverviewDashboard({entries,opportunities,grails,preorders,planned,finan
 }
 function OverviewEmpty({text}:{text:string}){return <div className="vxw-overview-empty"><span>{text}</span></div>}
 
-function WishlistTable({entries,selectMode,selectedIds,onSelect,onOpen,onEdit,onPlan,onRestore,onPriority,onAlerts}:{
-  entries:WishlistEntry[];selectMode:boolean;selectedIds:string[];onSelect:(id:string)=>void;onOpen:(entry:WishlistEntry)=>void;onEdit:(entry:WishlistEntry)=>void;onPlan:(entry:WishlistEntry)=>void;onRestore:(entry:WishlistEntry)=>void;onPriority:(entry:WishlistEntry)=>void;onAlerts:(entry:WishlistEntry)=>void;
+function WishlistTable({entries,selectMode,selectedIds,onSelect,onOpen,onEdit,onPlan,onPurchase,onArchive,onRestore,onPriority,onAlerts}:{
+  entries:WishlistEntry[];selectMode:boolean;selectedIds:string[];onSelect:(id:string)=>void;onOpen:(entry:WishlistEntry)=>void;onEdit:(entry:WishlistEntry)=>void;onPlan:(entry:WishlistEntry)=>void;onPurchase:(entry:WishlistEntry)=>void;onArchive:(entry:WishlistEntry)=>void;onRestore:(entry:WishlistEntry)=>void;onPriority:(entry:WishlistEntry)=>void;onAlerts:(entry:WishlistEntry)=>void;
 }){
   return <section className="vxw-list-panel">
     <div className={'vxw-table-head '+(selectMode?'selecting':'')}><span>{selectMode?'Select':'Item'}</span><span>Priority</span><span>Target / Max</span><span>Market / MSRP</span><span>Condition</span><span>Plan</span><span>Signals</span><span>Actions</span></div>
@@ -738,20 +738,20 @@ function WishlistTable({entries,selectMode,selectedIds,onSelect,onOpen,onEdit,on
       <span>{entry.record.desiredCondition}</span>
       <span className="vxw-plan-cell"><b>{plannedLabel(entry.record.plannedMonth)}</b><small>{entry.record.preorder?.enabled?'Preorder · '+entry.record.preorder.status:entry.record.deadline?'Deadline '+entry.record.deadline:'No deadline'}</small></span>
       <span className="vxw-signal-cell">{opp.states.slice(0,2).map(state=><StateBadge key={state.label} state={state}/>)}<small>{alertCount(entry.record)} alerts · <MarketBadge entry={entry}/></small></span>
-      <span className="vxw-row-buttons" onClick={event=>event.stopPropagation()}>{entry.record.archived?<button onClick={()=>onRestore(entry)}>Restore</button>:<><button title="Cycle priority" onClick={()=>onPriority(entry)}><Star/></button><button title="Toggle alerts" onClick={()=>onAlerts(entry)}><Bell/></button><button title="Plan purchase" onClick={()=>onPlan(entry)}><CalendarDays/></button><button title="Edit" onClick={()=>onEdit(entry)}><Pencil/></button></>}<ChevronRight/></span>
+      <span className="vxw-row-buttons" onClick={event=>event.stopPropagation()}>{entry.record.archived?<button onClick={()=>onRestore(entry)}>Restore</button>:<><button title="Cycle priority" onClick={()=>onPriority(entry)}><Star/></button><button title="Toggle alerts" onClick={()=>onAlerts(entry)}><Bell/></button><button title="Plan purchase" onClick={()=>onPlan(entry)}><CalendarDays/></button><button title="Mark purchased" onClick={()=>onPurchase(entry)}><PackageCheck/></button><button title="Edit target and preferences" onClick={()=>onEdit(entry)}><Pencil/></button><button title="Remove / archive" onClick={()=>onArchive(entry)}><Archive/></button></>}<ChevronRight/></span>
     </button>})}
   </section>;
 }
 
-function WishlistGrid({entries,selectMode,selectedIds,onSelect,onOpen,onEdit,onPlan,onRestore,onPriority,onAlerts}:{
-  entries:WishlistEntry[];selectMode:boolean;selectedIds:string[];onSelect:(id:string)=>void;onOpen:(entry:WishlistEntry)=>void;onEdit:(entry:WishlistEntry)=>void;onPlan:(entry:WishlistEntry)=>void;onRestore:(entry:WishlistEntry)=>void;onPriority:(entry:WishlistEntry)=>void;onAlerts:(entry:WishlistEntry)=>void;
+function WishlistGrid({entries,selectMode,selectedIds,onSelect,onOpen,onEdit,onPlan,onPurchase,onArchive,onRestore,onPriority,onAlerts}:{
+  entries:WishlistEntry[];selectMode:boolean;selectedIds:string[];onSelect:(id:string)=>void;onOpen:(entry:WishlistEntry)=>void;onEdit:(entry:WishlistEntry)=>void;onPlan:(entry:WishlistEntry)=>void;onPurchase:(entry:WishlistEntry)=>void;onArchive:(entry:WishlistEntry)=>void;onRestore:(entry:WishlistEntry)=>void;onPriority:(entry:WishlistEntry)=>void;onAlerts:(entry:WishlistEntry)=>void;
 }){
   return <section className="vxw-grid">{entries.map(entry=>{const selected=selectedIds.includes(entry.id),states=opportunityFor(entry).states;return <article className={'vxw-card '+(selected?'selected':'')} key={entry.id} onClick={()=>onOpen(entry)}>
     <div className="vxw-card-top">{selectMode?<button className={'vxw-select-box '+(selected?'on':'')} onClick={event=>{event.stopPropagation();onSelect(entry.id)}}>{selected?<Check/>:null}</button>:<PriorityBadge priority={entry.record.priority}/>}<MarketBadge entry={entry}/></div>
     <ItemArt entry={entry}/>
     <div className="vxw-card-copy"><span>{entry.category} · {entry.line}</span><h3>{entry.name}</h3>{entry.ownedQuantity>0?<small className="warning"><AlertTriangle/>Already own {entry.ownedQuantity}</small>:null}<em className="vxw-card-states">{states.slice(0,2).map(state=><StateBadge key={state.label} state={state}/>)}</em></div>
     <div className="vxw-card-values"><span><small>Target / Max</small><b>{money(entry.record.targetPrice)}</b><em>{money(entry.record.maximumPrice)}</em></span><span><small>Market / MSRP</small><b>{money(entry.market)}</b><em>{money(entry.msrp)}</em></span></div>
-    <div className="vxw-card-footer" onClick={event=>event.stopPropagation()}>{entry.record.archived?<button onClick={()=>onRestore(entry)}>Restore</button>:<><button title="Priority" onClick={()=>onPriority(entry)}><Star/></button><button title="Alerts" onClick={()=>onAlerts(entry)}><Bell/></button><button onClick={()=>onPlan(entry)}><CalendarDays/>Plan</button><button onClick={()=>onEdit(entry)}><Pencil/>Edit</button></>}<button onClick={()=>onOpen(entry)}><Eye/>Open</button></div>
+    <div className="vxw-card-footer" onClick={event=>event.stopPropagation()}>{entry.record.archived?<button onClick={()=>onRestore(entry)}>Restore</button>:<><button title="Priority" onClick={()=>onPriority(entry)}><Star/></button><button title="Alerts" onClick={()=>onAlerts(entry)}><Bell/></button><button onClick={()=>onPlan(entry)}><CalendarDays/>Plan</button><button onClick={()=>onPurchase(entry)}><PackageCheck/>Purchased</button><button onClick={()=>onEdit(entry)}><Pencil/>Edit</button><button onClick={()=>onArchive(entry)}><Archive/>Remove</button></>}<button onClick={()=>onOpen(entry)}><Eye/>Open</button></div>
   </article>})}</section>;
 }
 
