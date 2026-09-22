@@ -4,6 +4,8 @@ import {useEffect,useState} from 'react';
 import type {ReactNode} from 'react';
 import {Bell,Check,CircleDollarSign,Eye,FileUp,Layers3,MapPin,Plus,Search,Share2,ShoppingBag,Star} from 'lucide-react';
 import type {NormalizedProduct,UserProductRelationship} from '../../lib/search/types';
+import {useWorkspace} from '../../lib/useWorkspace';
+import {wishlistEvent,type WishlistRecord} from '../../lib/wishlist';
 
 type Tab='product'|'market'|'local'|'vexum'|'radar';
 type Props={
@@ -31,30 +33,65 @@ function DemoChart(){
 }
 
 export default function ProductIntelligence({product,relationship,onBack,onAddPortfolio,onAddWishlist,onRelationshipChange}:Props){
+  const workspace=useWorkspace();
+  const wishlistRecord=workspace.data.wishlist?.[product.id];
   const [tab,setTab]=useState<Tab>('product');
   const [range,setRange]=useState('30D');
   const [location,setLocation]=useState('');
   const [radar,setRadar]=useState({
-    price:Boolean(relationship?.tracked),
-    target:relationship?.targetPrice||30,
-    msrp:true,
-    restock:true,
-    local:false,
-    radius:25,
-    marketplace:false,
-    release:true,
-    variant:false,
-    priority:relationship?.grail?'Grail':'Important'
+    price:wishlistRecord?.alerts.priceTarget.enabled??Boolean(relationship?.tracked),
+    target:wishlistRecord?.targetPrice||relationship?.targetPrice||30,
+    msrp:wishlistRecord?.alerts.msrp.enabled??true,
+    restock:wishlistRecord?.alerts.restock.enabled??true,
+    local:wishlistRecord?.alerts.localStock.enabled??false,
+    radius:wishlistRecord?.alerts.localStock.radiusMiles||25,
+    marketplace:wishlistRecord?.alerts.marketplace.enabled??false,
+    release:wishlistRecord?.alerts.releaseChange.enabled??true,
+    variant:wishlistRecord?.alerts.newVariant.enabled??false,
+    priority:wishlistRecord?.priority==='Grail'?'Grail':wishlistRecord?.priority==='High'?'Important':'Normal'
   });
 
   useEffect(()=>{
+    if(wishlistRecord){
+      setRadar({
+        price:wishlistRecord.alerts.priceTarget.enabled,target:wishlistRecord.targetPrice||30,
+        msrp:wishlistRecord.alerts.msrp.enabled,restock:wishlistRecord.alerts.restock.enabled,
+        local:wishlistRecord.alerts.localStock.enabled,radius:wishlistRecord.alerts.localStock.radiusMiles||25,
+        marketplace:wishlistRecord.alerts.marketplace.enabled,release:wishlistRecord.alerts.releaseChange.enabled,
+        variant:wishlistRecord.alerts.newVariant.enabled,
+        priority:wishlistRecord.priority==='Grail'?'Grail':wishlistRecord.priority==='High'?'Important':'Normal'
+      });
+      return;
+    }
     try{
       const saved=localStorage.getItem('vexum.radar.'+product.id);
       if(saved)setRadar(current=>({...current,...JSON.parse(saved)}));
     }catch{}
-  },[product.id]);
+  },[product.id,wishlistRecord?.updatedAt]);
+
   useEffect(()=>{
-    try{localStorage.setItem('vexum.radar.'+product.id,JSON.stringify(radar))}catch{}
+    if(!wishlistRecord){
+      try{localStorage.setItem('vexum.radar.'+product.id,JSON.stringify(radar))}catch{}
+      return;
+    }
+    const frequency=wishlistRecord.priority==='Grail'||wishlistRecord.priority==='High'?'Immediate':'Daily Digest';
+    const alerts={...wishlistRecord.alerts,
+      priceTarget:{...wishlistRecord.alerts.priceTarget,enabled:radar.price,frequency:radar.price?frequency:'Off' as const},
+      msrp:{...wishlistRecord.alerts.msrp,enabled:radar.msrp,frequency:radar.msrp?frequency:'Off' as const},
+      restock:{...wishlistRecord.alerts.restock,enabled:radar.restock,frequency:radar.restock?frequency:'Off' as const},
+      localStock:{...wishlistRecord.alerts.localStock,enabled:radar.local,frequency:radar.local?frequency:'Off' as const,radiusMiles:[5,10,25,50].includes(radar.radius)?radar.radius as 5|10|25|50:25},
+      marketplace:{...wishlistRecord.alerts.marketplace,enabled:radar.marketplace,frequency:radar.marketplace?frequency:'Off' as const},
+      releaseChange:{...wishlistRecord.alerts.releaseChange,enabled:radar.release,frequency:radar.release?frequency:'Off' as const},
+      newVariant:{...wishlistRecord.alerts.newVariant,enabled:radar.variant,frequency:radar.variant?frequency:'Off' as const}
+    };
+    const target=radar.price&&radar.target>0?radar.target:wishlistRecord.targetPrice;
+    const signature=JSON.stringify([alerts.priceTarget,alerts.msrp,alerts.restock,alerts.localStock,alerts.marketplace,alerts.releaseChange,alerts.newVariant,target]);
+    const current=JSON.stringify([wishlistRecord.alerts.priceTarget,wishlistRecord.alerts.msrp,wishlistRecord.alerts.restock,wishlistRecord.alerts.localStock,wishlistRecord.alerts.marketplace,wishlistRecord.alerts.releaseChange,wishlistRecord.alerts.newVariant,wishlistRecord.targetPrice]);
+    if(signature===current)return;
+    const updated=wishlistEvent(wishlistRecord,'alert','Radar rules updated from Product Intelligence',{alerts,targetPrice:target});
+    workspace.update({...workspace.data,wishlist:{...(workspace.data.wishlist||{}),[product.id]:updated}});
+  // Workspace intentionally excluded: only user Radar changes should persist this effect.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   },[product.id,radar]);
 
   const demo=product.demoMarket;
@@ -158,12 +195,12 @@ export default function ProductIntelligence({product,relationship,onBack,onAddPo
       <section className="vx-panel"><div className="vxs-panel-head"><div><h3>Wishlist</h3><p>Your private acquisition preferences.</p></div></div>{relation.wishlisted?<div className="vxs-wishlist-context"><div><span>Priority</span><b>{relation.grail?'Grail':'Medium'}</b></div><div><span>Target</span><b>{money(relation.targetPrice)}</b></div><button>Open Wishlist →</button></div>:<div className="vxs-source-empty"><span>Not on your wishlist.</span><button onClick={()=>onAddWishlist(product)}>Add to Wishlist</button></div>}</section>
       <section className="vx-panel"><div className="vxs-panel-head"><div><h3>Community Ownership</h3><p>Privacy-aware VEXUM network layer.</p></div></div><div className="vxs-demo-community"><span>DEMO PREVIEW</span><strong>1,284</strong><p>Example collector-count presentation. No real user ownership is exposed until authenticated privacy-aware aggregation is connected.</p></div></section>
       <section className="vx-panel"><div className="vxs-panel-head"><div><h3>Community & Marketplace</h3><p>Canonical product-linked activity.</p></div></div><div className="vxs-provider-unavailable"><span>Social marketplace data not connected</span><p>Future content: friends owning, people selling, trades, tagged posts, reviews, setup photos, discussions and questions.</p></div></section>
-      <section className="vx-panel vxs-cross-system"><div className="vxs-panel-head"><div><h3>Connected Context</h3><p>Same product identity across VEXUM.</p></div></div><div><CircleDollarSign/><span><strong>Financial</strong><small>Demo hobby budget remaining: $212</small></span><button>View →</button></div><div><Layers3/><span><strong>Setup</strong><small>{relation.setupLocation||'No physical location assigned'}</small></span><button>Check fit →</button></div><div><ShoppingBag/><span><strong>Sell</strong><small>{relation.ownedQuantity?'Preload this product into Sell':'Browse VEXUM marketplace listings'}</small></span><button>Open →</button></div></section>
+      <section className="vx-panel vxs-cross-system"><div className="vxs-panel-head"><div><h3>Connected Context</h3><p>Same product identity across VEXUM.</p></div></div><div><CircleDollarSign/><span><strong>Financial</strong><small>{workspace.data.financialPreferences?.monthlyHobbyBudget!==undefined?'Monthly hobby target: '+money(workspace.data.financialPreferences.monthlyHobbyBudget):'Hobby budget not configured'}</small></span><button>View →</button></div><div><Layers3/><span><strong>Setup</strong><small>{relation.setupLocation||'No physical location assigned'}</small></span><button>Check fit →</button></div><div><ShoppingBag/><span><strong>Sell</strong><small>{relation.ownedQuantity?'Preload this product into Sell':'Browse VEXUM marketplace listings'}</small></span><button>Open →</button></div></section>
     </div>:null}
 
     {tab==='radar'?<div className="vxs-radar-tab">
       <section className="vx-panel vxs-radar-hero"><div><Bell/><span><h3>Radar for this product</h3><p>Monitor only the signals you care about.</p></span></div><button className={relation.tracked?'active':''} onClick={track}>{relation.tracked?<><Check/>Tracking</>:<><Plus/>Start Tracking</>}</button></section>
-      <section className="vx-panel vxs-radar-rules"><div className="vxs-panel-head"><div><h3>Alert Rules</h3><p>Saved locally during the UI phase.</p></div><select value={radar.priority} onChange={e=>setRadar(r=>({...r,priority:e.target.value}))}><option>Normal</option><option>Important</option><option>Grail</option></select></div>
+      <section className="vx-panel vxs-radar-rules"><div className="vxs-panel-head"><div><h3>Alert Rules</h3><p>{wishlistRecord?'Synced with this item’s Wishlist alert rules.':'Standalone Radar preferences are local until the product is added to Wishlist.'}</p></div><select value={radar.priority} onChange={e=>setRadar(r=>({...r,priority:e.target.value}))}><option>Normal</option><option>Important</option><option>Grail</option></select></div>
         <RadarRow label="Target price" desc="Notify when price reaches your target." enabled={radar.price} onToggle={()=>setRadar(r=>({...r,price:!r.price}))}><input type="number" value={radar.target} onChange={e=>setRadar(r=>({...r,target:Number(e.target.value)}))}/><span>$</span></RadarRow>
         <RadarRow label="At or below MSRP" desc="Notify when a real offer appears at MSRP or less." enabled={radar.msrp} onToggle={()=>setRadar(r=>({...r,msrp:!r.msrp}))}/>
         <RadarRow label="Restock" desc="Notify when a connected retailer reports stock." enabled={radar.restock} onToggle={()=>setRadar(r=>({...r,restock:!r.restock}))}/>
@@ -172,7 +209,7 @@ export default function ProductIntelligence({product,relationship,onBack,onAddPo
         <RadarRow label="Release changes" desc="Announcement, preorder, ship or release date changes." enabled={radar.release} onToggle={()=>setRadar(r=>({...r,release:!r.release}))}/>
         <RadarRow label="New variant discovered" desc="Notify when the canonical catalog gains a related variant." enabled={radar.variant} onToggle={()=>setRadar(r=>({...r,variant:!r.variant}))}/>
       </section>
-      <section className="vx-panel vxs-smart-radar"><div className="vxs-panel-head"><div><h3>Smart Radar Context</h3><p>Why VEXUM can be more useful than a generic stock tracker.</p></div><Star/></div><div><span>COLLECTION</span><p>This product belongs to your <b>Movie Spider-Man</b> interest graph.</p></div><div><span>COMPLETION</span><p>Future: “Buying this would move No Way Home from 8/9 to 9/9.”</p></div><div><span>WISHLIST</span><p>{relation.targetPrice?'Your target is '+money(relation.targetPrice)+'.':'Set a target price to make alerts contextual.'}</p></div><small>These messages will be generated from real Portfolio/Wishlist/catalog data when those systems are connected to canonical product IDs.</small></section>
+      <section className="vx-panel vxs-smart-radar"><div className="vxs-panel-head"><div><h3>Smart Radar Context</h3><p>Why VEXUM can be more useful than a generic stock tracker.</p></div><Star/></div><div><span>PORTFOLIO</span><p>{relation.ownedQuantity?'You already own '+relation.ownedQuantity+' cop'+(relation.ownedQuantity===1?'y.':'ies.'):'No owned copy is currently linked.'}</p></div><div><span>COMPLETION</span><p>Exact set-completion impact is unavailable until canonical set membership is connected; VEXUM will not invent a count.</p></div><div><span>WISHLIST</span><p>{relation.targetPrice?'Your target is '+money(relation.targetPrice)+'.':'Set a target price to make alerts contextual.'}</p></div><small>Ownership and Wishlist target context are real. Completion, local stock, and marketplace supply remain unavailable until their canonical providers are connected.</small></section>
     </div>:null}
 
     <div className="vxs-demo-note"><span>{product.demo?'DEMO PRODUCT':'PRODUCT'}</span><p>{product.demo?'Identity and example value fields are isolated demo data. Live sales, listings, retailer inventory, community counts, and AI answers are not represented as real.':'Live product record.'}</p></div>
