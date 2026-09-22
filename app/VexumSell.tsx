@@ -1,6 +1,7 @@
 'use client';
 
 import {useEffect,useMemo,useState} from 'react';
+import type {ReactNode} from 'react';
 import {
   AlertTriangle,Archive,BarChart3,Box,Check,CircleDollarSign,Clock,CreditCard,ExternalLink,
   FileText,Layers3,PackageCheck,PackageOpen,Pause,Plus,RefreshCw,Search,ShoppingBag,
@@ -245,7 +246,7 @@ export default function VexumSell(){
   </div>;
 }
 
-function AttentionRow({icon,count,label,action}:{icon:React.ReactNode;count:number;label:string;action:string}){
+function AttentionRow({icon,count,label,action}:{icon:ReactNode;count:number;label:string;action:string}){
   return <div className={count?'active':''}>{icon}<span><strong>{label}</strong><small>{action}</small></span><b>{count}</b></div>;
 }
 function ImageIconFallback(){return <FileText/>}
@@ -344,6 +345,6 @@ function ShipmentComposer({order,onClose,onSave,busy}:{order?:SellOrder;onClose:
   return <Modal title="Shipment" subtitle="Tracking may be synced later when an authorized provider supports it." onClose={onClose}><div className="vxsel-form grid"><label>Carrier<input value={carrier} onChange={e=>setCarrier(e.target.value)} placeholder="USPS"/></label><label>Service<input value={service} onChange={e=>setService(e.target.value)} placeholder="Ground Advantage"/></label><label className="wide">Tracking number<input value={trackingNumber} onChange={e=>setTracking(e.target.value)}/></label><label>Actual shipping cost<input value={shippingCost} onChange={e=>setCost(e.target.value)} inputMode="decimal"/></label></div><footer className="vxsel-modal-footer"><span>Marking shipped does not claim carrier delivery.</span><button onClick={onClose}>Cancel</button><button className="red" disabled={busy||!order||!trackingNumber.trim()} onClick={()=>onSave({carrier,service,trackingNumber,shippingCost:Number(shippingCost)||0})}>Mark Shipped</button></footer></Modal>;
 }
 
-function Modal({title,subtitle,onClose,children}:{title:string;subtitle:string;onClose:()=>void;children:React.ReactNode}){
+function Modal({title,subtitle,onClose,children}:{title:string;subtitle:string;onClose:()=>void;children:ReactNode}){
   return <div className="vxsel-modal-backdrop" onMouseDown={e=>{if(e.currentTarget===e.target)onClose()}}><section className="vxsel-modal"><header><div><strong>{title}</strong><span>{subtitle}</span></div><button onClick={onClose}><X/></button></header>{children}</section></div>;
 }
