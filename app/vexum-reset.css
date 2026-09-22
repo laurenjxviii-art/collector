@@ -696,3 +696,15 @@ svg{stroke-width:1.8}
   .vxs-result-grid.is-list .vxs-result-main{grid-template-columns:82px 1fr}
   .vxs-result-grid.is-list .vxs-result-price{grid-column:2}
 }
+
+
+/* Workspace-backed Financial / Sell boundaries */
+.vx-fin-mid.truthful{grid-template-columns:1.15fr 1fr .85fr}
+.vx-fin-bottom.truthful{grid-template-columns:1.15fr 1fr 1fr}
+.vx-real-budget,.vx-truth-panel,.vx-fin-calendar{min-height:285px}
+.vx-budget-config{min-height:220px;display:grid;grid-template-columns:42px minmax(0,1fr) 110px 86px;gap:10px;align-items:center;padding:18px}.vx-budget-config>svg{width:25px;color:var(--vx-red)}.vx-budget-config>div{display:flex;flex-direction:column}.vx-budget-config strong{font-size:13px}.vx-budget-config p{font-size:9px;color:#7e828a;line-height:1.45;margin:5px 0 0}.vx-budget-config input,.vx-fin-budget-edit input{height:34px;border:1px solid #303239;border-radius:5px;background:#0d0e10;color:#fff;padding:0 8px;font-size:9px}.vx-budget-config button,.vx-fin-budget-edit button{height:34px;border:1px solid #8a1d29;border-radius:5px;background:#1d0d11;color:#fff;padding:0 9px;font-size:8px}
+.vx-real-budget>.vx-budget-number,.vx-real-budget>.vx-progress,.vx-real-budget>.vx-budget-cards,.vx-real-budget>.vx-fin-budget-edit{margin-left:14px;margin-right:14px}.vx-real-budget>.vx-budget-number{margin-top:12px}.vx-fin-budget-edit{display:flex;gap:7px;padding:4px 0 14px}.vx-fin-budget-edit input{flex:1}
+.vx-fin-empty{min-height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:18px;color:#777b83}.vx-fin-empty>svg{width:27px;color:#555960;margin-bottom:8px}.vx-fin-empty strong{font-size:11px;color:#c5c7cc}.vx-fin-empty p{max-width:440px;font-size:8px;line-height:1.5;margin:6px 0 0}.vx-fin-empty>span{font-size:8px}
+.vx-fin-calendar>.vx-fin-month{height:68px;border-bottom:1px solid #202126;padding:0 14px;display:flex;align-items:center;justify-content:space-between}.vx-fin-calendar>.vx-fin-month:last-child{border-bottom:0}.vx-fin-month>span{display:flex;flex-direction:column}.vx-fin-month b{font-size:10px}.vx-fin-month small{font-size:7px;color:#73777f;margin-top:3px}.vx-fin-month>strong{font-size:13px}
+.page-plain .vx-fin-stats{margin-top:12px}.vx-truth-panel .vx-panel-head{margin-bottom:0}
+@media(max-width:1350px){.vx-fin-mid.truthful,.vx-fin-bottom.truthful{grid-template-columns:1fr 1fr}.vx-fin-mid.truthful>.vx-fin-calendar{grid-column:1/-1}}
