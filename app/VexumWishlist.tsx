@@ -256,8 +256,11 @@ export default function VexumWishlist(){
   const planned=activeEntries.filter(entry=>Boolean(entry.record.plannedMonth));
   const currentMonthKey=new Date().toISOString().slice(0,7);
   const nextMonthKey=nextMonth();
-  const hobbyBudget=workspace.data.financialPreferences?.monthlyHobbyBudget;
-  const currentHobbySpend=workspace.data.items.filter(item=>item.status==='owned'&&item.purchaseDate.startsWith(currentMonthKey)).reduce((sum,item)=>sum+item.purchasePrice*item.quantity,0);
+  const hobbyBudget=workspace.data.financial?.budgets?.find(budget=>budget.active&&budget.period==='monthly'&&!budget.category)?.amount??workspace.data.financialPreferences?.monthlyHobbyBudget;
+  const linkedFinancialPurchaseIds=new Set((workspace.data.financial?.transactions||[]).filter(tx=>tx.portfolioItemId).map(tx=>tx.portfolioItemId!));
+  const financialHobbySpend=(workspace.data.financial?.transactions||[]).filter(tx=>tx.direction==='expense'&&tx.isHobby&&tx.date.startsWith(currentMonthKey)).reduce((sum,tx)=>sum+tx.amount,0);
+  const portfolioHobbySpend=workspace.data.items.filter(item=>item.status==='owned'&&item.purchaseDate.startsWith(currentMonthKey)&&!linkedFinancialPurchaseIds.has(item.id)).reduce((sum,item)=>sum+item.purchasePrice*item.quantity,0);
+  const currentHobbySpend=financialHobbySpend+portfolioHobbySpend;
   const plannedForMonth=(month:string)=>planned.filter(entry=>entry.record.plannedMonth===month).reduce((sum,entry)=>sum+(entry.market??entry.record.targetPrice??entry.record.maximumPrice??0)*entry.record.quantityWanted,0);
   const preorderDueForMonth=(month:string)=>preorders.filter(entry=>entry.record.preorder?.estimatedChargeDate?.startsWith(month)).reduce((sum,entry)=>sum+preorderCommitment(entry.record)*entry.record.quantityWanted,0);
   const financialContext={
@@ -552,7 +555,16 @@ export default function VexumWishlist(){
       setPurchasingId(null);setSelectedId(null);setTab('Archive');
     }}/>:null}
     {bulkOpen?<BulkModal entries={entries.filter(entry=>selectedIds.includes(entry.id))} onClose={()=>setBulkOpen(false)} onApply={applyBulk}/>:null}
-    {budgetModal?<BudgetModal value={hobbyBudget} onClose={()=>setBudgetModal(false)} onSave={value=>{workspace.update({...workspace.data,financialPreferences:{...(workspace.data.financialPreferences||{}),monthlyHobbyBudget:value}});setBudgetModal(false)}}/>:null}
+    {budgetModal?<BudgetModal value={hobbyBudget} onClose={()=>setBudgetModal(false)} onSave={value=>{
+      const stamp=new Date().toISOString();
+      const financial=workspace.data.financial||{accounts:[],transactions:[],budgets:[],bills:[],goals:[]};
+      const existing=financial.budgets.find(budget=>budget.active&&budget.period==='monthly'&&!budget.category);
+      const budgets=existing
+        ?financial.budgets.map(budget=>budget.id===existing.id?{...budget,amount:value,updatedAt:stamp}:budget)
+        :[...financial.budgets,{id:'budget_hobby_'+Date.now().toString(36),name:'Monthly Hobby Budget',period:'monthly' as const,amount:value,active:true,createdAt:stamp,updatedAt:stamp}];
+      workspace.update({...workspace.data,financial:{...financial,budgets},financialPreferences:{...(workspace.data.financialPreferences||{}),monthlyHobbyBudget:value}});
+      setBudgetModal(false);
+    }}/>:null}
   </div>;
 }
 
