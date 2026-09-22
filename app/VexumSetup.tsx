@@ -289,7 +289,7 @@ export default function VexumSetup(){
       <div className="vxsup-label-grid">{setup.objects.map(object=>{
         const space=setup.spaces.find(s=>s.id===object.setupId);
         const url='https://vexum.app/location/'+encodeURIComponent(object.id);
-        return <article key={object.id}><span>VEXUM</span><strong>{object.name}</strong><small>{space?.name} → {setupObjectPath(setup,object.id)}</small><div className="vxsup-qr-placeholder"><Tags/><b>QR renderer not configured</b><code>{url}</code></div><footer><button onClick={()=>navigator.clipboard?.writeText(url)}>Copy Location URL</button></footer></article>;
+        return <article key={object.id}><span>VEXUM</span><strong>{object.name}</strong><small>{space?.name} → {setupObjectPath(setup,object.id)}</small><div className="vxsup-qr-placeholder"><Tags/><b>Location link ready · QR renderer not configured</b><code>{url}</code></div><footer><button onClick={()=>navigator.clipboard?.writeText(url)}>Copy Location URL</button></footer></article>;
       })}{!setup.objects.length?<div className="vxsup-empty wide"><Tags/><strong>No labelable locations yet.</strong><p>Add a storage object first. VEXUM will never fake a QR pattern that cannot actually resolve.</p></div>:null}</div>
     </section>}
   </div>;
