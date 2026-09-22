@@ -808,6 +808,8 @@ function DetailDrawer({entry,tab,setTab,marketRefreshing,marketError,financial,o
             ['Target',money(entry.record.targetPrice)],['Maximum',money(entry.record.maximumPrice)],['Current market',money(entry.market)],['MSRP',money(entry.msrp)],
             ['Quantity wanted',String(entry.record.quantityWanted)],['Desired condition',entry.record.desiredCondition],['Marketplace preference',entry.record.marketplacePreference],
             ['Retailers',entry.record.retailers.join(', ')||'Any retailer'],['Deadline',entry.record.deadline||'None'],['Planned',plannedLabel(entry.record.plannedMonth)],
+            ['Max listing',money(entry.record.listingRules.maximumListingPrice)],['Shipping ceiling',money(entry.record.listingRules.shippingCeiling)],
+            ['Seller rating minimum',entry.record.listingRules.sellerRatingMinimum!==undefined?entry.record.listingRules.sellerRatingMinimum+'%':'Not set'],['Privacy',entry.record.visibility],
             ['Alerts',alertCount(entry.record)+' active rules'],['Ownership',entry.ownedQuantity?entry.ownedQuantity+' owned':'Not owned']
           ]}/>
           <section className="vxw-completion-boundary"><Target/><div><strong>Collection completion intelligence</strong><p>Ownership is linked now. Exact “8/9 → 9/9” completion requires a canonical set-membership catalog; VEXUM will not invent missing-set counts.</p></div></section>
@@ -821,16 +823,29 @@ function DetailDrawer({entry,tab,setTab,marketRefreshing,marketError,financial,o
           <WishlistPriceChart entry={entry}/>
           <InfoGrid rows={[
             ['Market source',sourceLabel(entry.marketSource,entry.record)],['Updated',entry.record.marketUpdatedAt?new Date(entry.record.marketUpdatedAt).toLocaleString():'Unavailable'],
-            ['Confidence',entry.record.marketConfidence!==undefined?Math.round(entry.record.marketConfidence*100)+'%':'Unavailable'],['History points',String(entry.marketHistory.length)]
+            ['Confidence',entry.record.marketConfidence!==undefined?Math.round(entry.record.marketConfidence*100)+'%':'Unavailable'],['History points',String(entry.marketHistory.length)],
+            ['Recent sold average','Provider unavailable'],['Quick-sale context','Provider unavailable']
           ]}/>
+          <div className="vxw-market-provider-grid">
+            <section><strong>Recent Sales</strong><span>Comparable-sale rows are unavailable until the shared market provider returns sold-listing data.</span></section>
+            <section><strong>Current Listings</strong><span>Active marketplace listings are not inferred from a guide value.</span></section>
+            <section><strong>Retail Offers</strong><span>Retail offer feeds are not connected.</span></section>
+            <section><strong>Marketplace Offers</strong><span>VEXUM/eBay supply adapters are not connected here yet.</span></section>
+          </div>
         </div>:null}
         {tab==='Availability'?<div className="vxw-detail-stack">
-          <section className="vxw-provider-state unavailable"><Store/><div><strong>Retail, marketplace, and local inventory adapters are not connected here</strong><p>Your acquisition preferences and alert rules are saved. Stock, seller, distance, listing freshness, and prices remain absent until a real provider returns them.</p></div></section>
+          <section className="vxw-provider-state unavailable"><Store/><div><strong>Availability providers fail independently</strong><p>Your conditions and alert rules are saved. VEXUM does not invent stock, seller, distance, freshness, or listing prices when a provider is absent.</p></div></section>
+          <div className="vxw-availability-grid">
+            <section><header><Store/><strong>Retail</strong></header><b>Provider unavailable</b><span>{entry.record.retailers.length?'Preferred: '+entry.record.retailers.join(', '):'Any retailer accepted'}</span><small>{ruleLabel(entry.record,'restock')} restock alerts</small></section>
+            <section><header><ShoppingBag/><strong>Marketplace</strong></header><b>Provider unavailable</b><span>{entry.record.marketplacePreference}</span><small>Max {money(entry.record.listingRules.maximumListingPrice)} · shipping {money(entry.record.listingRules.shippingCeiling)}</small></section>
+            <section><header><MapPin/><strong>Local</strong></header><b>Provider unavailable</b><span>{entry.record.alerts.localStock.radiusMiles?entry.record.alerts.localStock.radiusMiles+' mile radius':'Radius not set'}</span><small>{ruleLabel(entry.record,'localStock')} alerts</small></section>
+            <section><header><PackageCheck/><strong>Preorder</strong></header><b>{entry.record.preorder?.enabled?entry.record.preorder.status:'Not configured'}</b><span>{entry.record.preorder?.retailer||'No retailer set'}</span><small>{entry.record.preorder?.estimatedReleaseDate||entry.releaseDate||'Release date unknown'}</small></section>
+            <section><header><Check/><strong>Conditions</strong></header><b>{entry.record.desiredCondition}</b><span>{entry.record.marketplacePreference}</span><small>Seller min {entry.record.listingRules.sellerRatingMinimum!==undefined?entry.record.listingRules.sellerRatingMinimum+'%':'not set'}</small></section>
+          </div>
           <InfoGrid rows={[
-            ['Preferred retailers',entry.record.retailers.join(', ')||'Any retailer'],['Acquisition preference',entry.record.marketplacePreference],
-            ['Desired condition',entry.record.desiredCondition],['Local radius',String(entry.record.alerts.localStock.radiusMiles||'Not set')],
             ['Local alerts',ruleLabel(entry.record,'localStock')],['Restock alerts',ruleLabel(entry.record,'restock')],
-            ['Marketplace alerts',ruleLabel(entry.record,'marketplace')],['Used listing alerts',ruleLabel(entry.record,'usedListing')]
+            ['Marketplace alerts',ruleLabel(entry.record,'marketplace')],['Used listing alerts',ruleLabel(entry.record,'usedListing')],
+            ['New listing alerts',ruleLabel(entry.record,'newListing')],['Preorder-open alerts',ruleLabel(entry.record,'preorderOpen')]
           ]}/>
         </div>:null}
         {tab==='Planning'?<div className="vxw-detail-stack">
@@ -844,6 +859,7 @@ function DetailDrawer({entry,tab,setTab,marketRefreshing,marketError,financial,o
             <p>{(()=>{const projected=financial.currentSpend+(plannedAmount||0)*entry.record.quantityWanted;const delta=projected-financial.budget!;return delta>0?'This purchase would put recorded hobby spending '+money(delta)+' above your current monthly target.':'This purchase would leave '+money(Math.max(0,-delta))+' remaining against your current monthly target.'})()}</p>
             <small>Next month: {money(financial.nextPlanned)} planned Wishlist + {money(financial.nextPreorders)} known preorder balances.</small>
           </section>:<button className="vxw-budget-setup" onClick={onSetBudget}><WalletCards/>Set Hobby Budget</button>}
+          <InfoGrid rows={[['Deadline',entry.record.deadline||'None'],['Notes',entry.record.notes||'None'],['Privacy',entry.record.visibility],['Price-drop rule',entry.record.alerts.priceDrop.enabled?(entry.record.alerts.priceDrop.threshold||5)+'% · '+entry.record.alerts.priceDrop.frequency:'Off']]}/>
           {entry.record.priority==='Grail'?<section className="vxw-goal-block"><header><div><Gem/><strong>Grail savings goal</strong></div><b>{pct}%</b></header><div className="vxw-progress"><i style={{width:pct+'%'}}/></div><p>{money(entry.record.grail?.savedAmount)} saved of {money(entry.record.grail?.goalAmount??entry.record.targetPrice)} · {entry.record.grail?.status||'Not Started'}{entry.record.grail?.deadline?' · '+entry.record.grail.deadline:''}</p></section>:null}
           {entry.record.preorder?.enabled?<section className="vxw-preorder-block"><header><PackageCheck/><strong>Preorder commitment</strong><span>{entry.record.preorder.status}</span></header><InfoGrid rows={[
             ['Retailer',entry.record.preorder.retailer||'Unknown'],['Total price',money(entry.record.preorder.totalPrice)],['Deposit',money(entry.record.preorder.depositPaid)],
