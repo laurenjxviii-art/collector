@@ -13,6 +13,7 @@ import {normalizeFinancialData} from '../lib/financial';
 import {normalizeSetupData} from '../lib/setup';
 import {normalizePortfolioPreferences} from '../lib/portfolio';
 import {habitMomentum,normalizeLifeData,todayKey} from '../lib/life';
+import {normalizePlatformState,type VexumModuleId} from '../lib/platform';
 import type {Collection,Item,Store} from '../lib/model';
 
 type Tone='green'|'red'|'orange'|'muted';
@@ -98,6 +99,7 @@ function setupCapacityRows(store:Store){
 export default function VexumHome({onQuickAdd}:{onQuickAdd?:()=>void}={}){
   const workspace=useWorkspace();
   const state=normalizeHomeDashboard(workspace.data.homeDashboard);
+  const platform=normalizePlatformState(workspace.data.platform,true);
   const [editing,setEditing]=useState(false);
   const [dragged,setDragged]=useState<HomeWidgetId|null>(null);
   const [menuFor,setMenuFor]=useState<HomeWidgetId|null>(null);
@@ -216,8 +218,19 @@ export default function VexumHome({onQuickAdd}:{onQuickAdd?:()=>void}={}){
   };
   const reset=()=>{if(window.confirm('Reset Home to the official VEXUM default layout?'))workspace.update({...workspace.data,homeDashboard:defaultHomeDashboard()})};
 
-  const visible=state.widgets.filter(widget=>widget.visible);
-  const hidden=state.widgets.filter(widget=>!widget.visible);
+  const widgetModule=(id:HomeWidgetId):VexumModuleId|undefined=>{
+    if(['collectionValue','costBasis','profitLoss','portfolioPerformance','progress','purchases'].includes(id))return 'portfolio';
+    if(['monthlySpend','finance'].includes(id))return 'financial';
+    if(['wishlist','radar'].includes(id))return 'wishlist';
+    if(id==='sales')return 'sell';
+    if(id==='capacity')return 'setup';
+    if(id==='social')return 'social';
+    if(id==='calendar')return 'life';
+    return undefined;
+  };
+  const moduleAllows=(id:HomeWidgetId)=>{const required=widgetModule(id);return !required||platform.enabledModules.includes(required)};
+  const visible=state.widgets.filter(widget=>widget.visible&&moduleAllows(widget.id));
+  const hidden=state.widgets.filter(widget=>!widget.visible&&moduleAllows(widget.id));
   const profileName=workspace.data.profile?.name?.trim();
   const dateLabel=new Intl.DateTimeFormat('en-US',{weekday:'long',month:'long',day:'numeric'}).format(new Date());
 
@@ -304,7 +317,7 @@ export default function VexumHome({onQuickAdd}:{onQuickAdd?:()=>void}={}){
     <div className="vxh-editbar">
       {editing?<><span><GripVertical/>Drag to reorder. Resize, hide, or restore widgets without changing their data source.</span><button onClick={()=>setLibraryOpen(value=>!value)}><Plus/>Add Widget</button><button onClick={reset}><RefreshCw/>Reset Layout</button></>:<span>Each widget can move from DEMO → LIVE independently without rebuilding Home.</span>}
     </div>
-    {libraryOpen&&editing?<section className="vxh-library vx-panel"><header><div><strong>Widget Library</strong><span>Hidden widgets can be restored. Future Life/Fitness modules use the same registry.</span></div><button onClick={()=>setLibraryOpen(false)}><X/></button></header><div>{hidden.length?hidden.map(widget=><button key={widget.id} onClick={()=>show(widget.id)}><span>{widgetIcon(widget.id)}</span><strong>{HOME_WIDGET_TITLES[widget.id]}</strong><Plus/></button>):<p>Every current widget is visible.</p>}</div></section>:null}
+    {libraryOpen&&editing?<section className="vxh-library vx-panel"><header><div><strong>Widget Library</strong><span>Hidden widgets can be restored. Widgets for disabled modules stay out of the way until that module is enabled.</span></div><button onClick={()=>setLibraryOpen(false)}><X/></button></header><div>{hidden.length?hidden.map(widget=><button key={widget.id} onClick={()=>show(widget.id)}><span>{widgetIcon(widget.id)}</span><strong>{HOME_WIDGET_TITLES[widget.id]}</strong><Plus/></button>):<p>Every current widget is visible.</p>}</div></section>:null}
     <div className="vxh-grid">{visible.map(render)}</div>
   </div>;
 }
