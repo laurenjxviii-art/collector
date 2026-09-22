@@ -7,6 +7,7 @@ import {
   SlidersHorizontal,Star
 } from 'lucide-react';
 import VexumPortfolio from './VexumPortfolio';
+import VexumHome from './VexumHome';
 import VexumSearch from './search/VexumSearch';
 import VexumWishlist from './VexumWishlist';
 import VexumFinancial from './VexumFinancial';
@@ -147,148 +148,7 @@ function HomeWidgetShell({
   </section>;
 }
 
-function HomePage(){
-  const [customizing,setCustomizing]=useState(false);
-  const [order,setOrder]=useState<HomeWidgetId[]>(HOME_WIDGET_ORDER);
-  const [hidden,setHidden]=useState<HomeWidgetId[]>([]);
-  const [sizes,setSizes]=useState<Record<HomeWidgetId,HomeWidgetSize>>(HOME_WIDGET_SIZES);
-  const [dragged,setDragged]=useState<HomeWidgetId|null>(null);
-
-  useEffect(()=>{
-    try{
-      const saved=localStorage.getItem('vexum.home.layout.v1');
-      if(!saved)return;
-      const parsed=JSON.parse(saved) as {order?:HomeWidgetId[];hidden?:HomeWidgetId[];sizes?:Partial<Record<HomeWidgetId,HomeWidgetSize>>};
-      if(Array.isArray(parsed.order)&&parsed.order.length)setOrder(parsed.order.filter(id=>HOME_WIDGET_ORDER.includes(id)));
-      if(Array.isArray(parsed.hidden))setHidden(parsed.hidden.filter(id=>HOME_WIDGET_ORDER.includes(id)));
-      if(parsed.sizes)setSizes({...HOME_WIDGET_SIZES,...parsed.sizes});
-    }catch{}
-  },[]);
-  useEffect(()=>{
-    try{localStorage.setItem('vexum.home.layout.v1',JSON.stringify({order,hidden,sizes}))}catch{}
-  },[order,hidden,sizes]);
-
-  const hideWidget=(id:HomeWidgetId)=>setHidden(list=>list.includes(id)?list:[...list,id]);
-  const addWidget=(id:HomeWidgetId)=>setHidden(list=>list.filter(item=>item!==id));
-  const resizeWidget=(id:HomeWidgetId)=>setSizes(current=>{
-    const index=HOME_SIZE_CYCLE.indexOf(current[id]||HOME_WIDGET_SIZES[id]);
-    return {...current,[id]:HOME_SIZE_CYCLE[(index+1)%HOME_SIZE_CYCLE.length]};
-  });
-  const dropWidget=(target:HomeWidgetId)=>{
-    if(!dragged||dragged===target)return;
-    setOrder(current=>{
-      const next=current.filter(id=>id!==dragged);
-      const index=next.indexOf(target);
-      next.splice(index,0,dragged);
-      return next;
-    });
-    setDragged(null);
-  };
-  const resetLayout=()=>{setOrder(HOME_WIDGET_ORDER);setHidden([]);setSizes(HOME_WIDGET_SIZES)};
-
-  const briefItems=[
-    {tone:'green',text:'Your portfolio increased $42.18 yesterday.'},
-    {tone:'red',text:'3 wishlist items dropped in price overnight.'},
-    {tone:'green',text:'Marvel Legends Spider-Man is back in stock at MSRP.'},
-    {tone:'orange',text:'You have spent $182 of your $250 September hobby budget.'},
-    {tone:'red',text:'2 preorders release within the next 14 days.'},
-    {tone:'green',text:'Your Action Figures collection is 73% complete.'},
-    {tone:'orange',text:'1 possible duplicate was detected in your inventory.'},
-    {tone:'green',text:'2 packages are arriving today.'},
-    {tone:'muted',text:'4 relevant emails came in this morning.'},
-    {tone:'red',text:'3 tracked drops are happening today.'},
-  ];
-  const alerts=[
-    {title:'Restock',text:'Spider-Man Final Swing · MSRP $24.99',time:'8m ago',tone:'green'},
-    {title:'Price Drop',text:'Nike SB Dunk Low · down 12%',time:'26m ago',tone:'red'},
-    {title:'Preorder',text:'Hot Toys Venom charges in 7 days',time:'1h ago',tone:'orange'},
-    {title:'Bill',text:'Internet bill due Sep 24',time:'2h ago',tone:'muted'},
-  ];
-  const wishlist=[
-    {name:'Spider-Man Final Swing',price:'$24.99',meta:'Back at MSRP',tone:'green'},
-    {name:'Pokémon 151 ETB',price:'$89',meta:'$11 below target',tone:'green'},
-    {name:'Nike SB Dunk Low',price:'$118',meta:'2% below target',tone:'green'},
-  ];
-  const drops=[
-    {name:'Marvel Legends Wave 3',when:'Today · 12:00 PM',tag:'DROP'},
-    {name:'Supreme x Marvel',when:'Tomorrow · 11:00 AM',tag:'RELEASE'},
-    {name:'Pokémon Mega Evolution',when:'Sep 26',tag:'PREORDER'},
-  ];
-  const changes=[
-    {name:'ASM2 Spider-Man',delta:'+$18.40',tone:'green'},
-    {name:'Charizard ex',delta:'+$12.05',tone:'green'},
-    {name:'Hot Toys Batman',delta:'-$9.20',tone:'red'},
-    {name:'Jordan 1 Chicago',delta:'+$7.75',tone:'green'},
-  ];
-  const purchases=[
-    {name:'Marvel Legends Final Swing',price:'$24.99',time:'Today'},
-    {name:'Amazing Spider-Man #1',price:'$18.50',time:'Yesterday'},
-    {name:'Nike SB Dunk Low',price:'$118',time:'Sep 19'},
-  ];
-  const sales=[
-    {name:'Funko Pop! Miles Morales',price:'$38',gain:'+$14'},
-    {name:'Pokémon ETB',price:'$105',gain:'+$22'},
-    {name:'Marvel Legends Venom',price:'$54',gain:'+$9'},
-  ];
-  const calendar=[
-    {day:'21',month:'SEP',title:'Marvel Legends Wave 3',meta:'Release · 12:00 PM'},
-    {day:'22',month:'SEP',title:'Supreme x Marvel',meta:'Drop · 11:00 AM'},
-    {day:'25',month:'SEP',title:'Hot Toys Venom',meta:'Preorder window closes'},
-    {day:'26',month:'SEP',title:'Pokémon Mega Evolution',meta:'Preorders open'},
-  ];
-
-  const widgetTitle:Record<HomeWidgetId,string>={
-    collectionValue:'Total Collection Value',costBasis:'Cost Basis',profitLoss:'P / L',monthlySpend:'Monthly Hobby Spend',
-    brief:'Morning VEXUM Brief',wishlist:'Wishlist Opportunities',drops:'Drop Radar',changes:'Recent Collection Changes',
-    finance:'Debt / Savings Snapshot',capacity:'Setup Capacity',progress:'Collection Progress',
-    purchases:'Recent Purchases',sales:'Recent Sales',social:'Social Activity',calendar:'Release Calendar',alerts:'Alerts'
-  };
-  const widgetIcon:Record<HomeWidgetId,ReactNode>={
-    collectionValue:<CircleDollarSign/>,costBasis:<ShoppingBag/>,profitLoss:<Star/>,monthlySpend:<CircleDollarSign/>,
-    brief:<Star/>,wishlist:<Star/>,drops:<Eye/>,changes:<Layers3/>,finance:<CircleDollarSign/>,
-    capacity:<SlidersHorizontal/>,progress:<Layers3/>,purchases:<ShoppingBag/>,sales:<Share2/>,
-    social:<Share2/>,calendar:<Eye/>,alerts:<Star/>
-  };
-
-  const renderWidget=(id:HomeWidgetId)=>{
-    const frame=(body:ReactNode)=><HomeWidgetShell key={id} id={id} title={widgetTitle[id]} icon={widgetIcon[id]} size={sizes[id]} customizing={customizing} onHide={hideWidget} onResize={resizeWidget} onDragStart={setDragged} onDrop={dropWidget}>{body}</HomeWidgetShell>;
-    if(id==='collectionValue')return frame(<div className="vx-home-metric"><strong>$12,480</strong><span className="tone-green">↑ $42.18 yesterday</span><HomeSpark tone="green"/></div>);
-    if(id==='costBasis')return frame(<div className="vx-home-metric"><strong>$8,714</strong><span className="tone-muted">$3,766 unrealized gain</span><HomeSpark/></div>);
-    if(id==='profitLoss')return frame(<div className="vx-home-metric"><strong className="tone-green">+$3,766</strong><span className="tone-green">+43.2% overall</span><HomeSpark tone="green"/></div>);
-    if(id==='monthlySpend')return frame(<div className="vx-home-metric"><strong>$182</strong><span className="tone-orange">$68 remaining of $250</span><div className="vx-home-progress"><i style={{width:'73%'}}/></div></div>);
-    if(id==='brief')return frame(<div className="vx-morning-brief"><div className="vx-brief-intro"><span>VEXUM Intelligence</span><strong>Good morning, Jordan.</strong><p>Here’s what changed, what needs attention, and what’s happening next.</p></div><div className="vx-brief-list">{briefItems.map((item,index)=><div key={item.text}><i className={'tone-'+item.tone}>{index+1}</i><span>{item.text}</span></div>)}</div><footer><button>Open Intelligence</button><span>Updated 7:42 AM</span></footer></div>);
-    if(id==='alerts')return frame(<div className="vx-home-alerts">{alerts.map(item=><div key={item.text}><i className={'alert-'+item.tone}/><div><strong>{item.title}</strong><span>{item.text}</span></div><time>{item.time}</time></div>)}</div>);
-    if(id==='wishlist')return frame(<div className="vx-home-compact-list">{wishlist.map(item=><div key={item.name}><div className="vx-home-mini-art"><Star/></div><span><strong>{item.name}</strong><small className={'tone-'+item.tone}>{item.meta}</small></span><b>{item.price}</b></div>)}<button className="vx-home-inline-action">View all 11 opportunities →</button></div>);
-    if(id==='drops')return frame(<div className="vx-home-drop-list">{drops.map(item=><div key={item.name}><time>{item.when}</time><strong>{item.name}</strong><em>{item.tag}</em></div>)}<button className="vx-home-inline-action">Open Drop Radar →</button></div>);
-    if(id==='changes')return frame(<div className="vx-home-change-list">{changes.map(item=><div key={item.name}><div className="vx-home-mini-art"><Layers3/></div><strong>{item.name}</strong><span className={'tone-'+item.tone}>{item.delta}</span></div>)}</div>);
-    if(id==='finance')return frame(<div className="vx-home-finance"><div><span>Total Debt</span><strong>$4,220</strong><small className="tone-green">↓ $160 this month</small></div><div><span>Savings</span><strong>$2,470</strong><small className="tone-green">↑ $320 this month</small></div><div className="vx-home-finance-bars"><i style={{height:'72%'}}/><i style={{height:'51%'}}/><i style={{height:'63%'}}/><i style={{height:'44%'}}/><i style={{height:'58%'}}/></div></div>);
-    if(id==='capacity')return frame(<div className="vx-home-capacity"><div className="vx-capacity-ring"><strong>68%</strong><span>used</span></div><div><strong>32% display capacity remaining</strong><p>2 open shelves · 1 empty display case · 4 storage bins available</p><button className="vx-home-inline-action">Open Setup Planner →</button></div></div>);
-    if(id==='progress')return frame(<div className="vx-home-progress-list">{[
-      ['Action Figures','73%'],['Spider-Man Movie Legends','88%'],['JJK Union Arena Vol. 2','61%']
-    ].map(row=><div key={row[0]}><span><strong>{row[0]}</strong><b>{row[1]}</b></span><div className="vx-home-progress"><i style={{width:row[1]}}/></div></div>)}</div>);
-    if(id==='purchases')return frame(<div className="vx-home-table"><div className="vx-home-table-head"><span>Item</span><span>Price</span><span>Added</span></div>{purchases.map(item=><div key={item.name}><span><i className="vx-home-mini-art"><ShoppingBag/></i><strong>{item.name}</strong></span><b>{item.price}</b><time>{item.time}</time></div>)}</div>);
-    if(id==='sales')return frame(<div className="vx-home-table"><div className="vx-home-table-head"><span>Item</span><span>Sold</span><span>P/L</span></div>{sales.map(item=><div key={item.name}><span><i className="vx-home-mini-art"><Share2/></i><strong>{item.name}</strong></span><b>{item.price}</b><em className="tone-green">{item.gain}</em></div>)}</div>);
-    if(id==='social')return frame(<div className="vx-home-social"><div><span className="vx-avatar small">C</span><p><strong>Collector Talk</strong><br/><span>12 new posts · 4 replies to your threads</span></p></div><div><span className="vx-avatar small">V</span><p><strong>Spider-Man Collectors</strong><br/><span>New display setup trending today</span></p></div><div><span className="vx-avatar small">M</span><p><strong>Marketplace</strong><br/><span>3 offers on items you follow</span></p></div></div>);
-    if(id==='calendar')return frame(<div className="vx-home-calendar">{calendar.map(item=><div key={item.title}><time><b>{item.day}</b><span>{item.month}</span></time><div><strong>{item.title}</strong><span>{item.meta}</span></div><button>›</button></div>)}</div>);
-    return frame(<div/>);
-  };
-
-  return <PageFrame hero="home">
-    <section className="vx-home-hero">
-      <div><h1>Good Evening, Jordan.</h1><p>Your command center for everything you care about.</p></div>
-      <HeroMeta/>
-    </section>
-    <div className="vx-home-commandbar">
-      <Tabs items={['Overview','Collection','Financial','Activity']}/>
-      <div className="vx-home-custom-actions">
-        {customizing&&<><button onClick={resetLayout}>Reset Layout</button>{hidden.length>0&&<div className="vx-home-add-menu"><span>Add widgets:</span>{hidden.map(id=><button key={id} onClick={()=>addWidget(id)}><Plus/>{widgetTitle[id]}</button>)}</div>}</>}
-        <button className={customizing?'active':''} onClick={()=>setCustomizing(value=>!value)}><SlidersHorizontal/>{customizing?'Done':'Customize Dashboard'}</button>
-      </div>
-    </div>
-    {customizing&&<div className="vx-home-custom-tip"><span>Drag widgets to reorder · use ↔ to resize · × hides a widget · hidden widgets can be added back above.</span></div>}
-    <div className="vx-command-grid">{order.filter(id=>!hidden.includes(id)).map(renderWidget)}</div>
-  </PageFrame>;
-}
+function HomePage(){return <PageFrame hero="home"><VexumHome/></PageFrame>;}
 
 function WishlistPage(){return <PageFrame hero="wishlist"><VexumWishlist/></PageFrame>;}
 function SearchPage({initialQuery='',initialProductId=''}:{initialQuery?:string;initialProductId?:string}){
