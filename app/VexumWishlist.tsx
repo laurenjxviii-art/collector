@@ -154,6 +154,8 @@ export default function VexumWishlist(){
   const [condition,setCondition]=useState('All');
   const [retailer,setRetailer]=useState('All');
   const [targetState,setTargetState]=useState('All');
+  const [availabilityFilter,setAvailabilityFilter]=useState('All');
+  const [releaseFilter,setReleaseFilter]=useState('All');
   const [plannedFilter,setPlannedFilter]=useState('All');
   const [duplicateOnly,setDuplicateOnly]=useState(false);
   const [minPrice,setMinPrice]=useState('');
@@ -170,6 +172,7 @@ export default function VexumWishlist(){
   const [marketRefreshing,setMarketRefreshing]=useState(false);
   const [marketError,setMarketError]=useState('');
   const [budgetModal,setBudgetModal]=useState(false);
+  const [intelligenceAnswer,setIntelligenceAnswer]=useState('');
 
   const prefs=workspace.data.wishlistPreferences||{view:'table' as const,sort:'priority'};
   const view=prefs.view;
@@ -306,10 +309,17 @@ export default function VexumWishlist(){
       if(targetState==='Above target'&&!(entry.market!==undefined&&entry.record.targetPrice!==undefined&&entry.market>entry.record.targetPrice))return false;
       if(targetState==='Below MSRP'&&!(entry.market!==undefined&&entry.msrp!==undefined&&entry.market<entry.msrp))return false;
       if(targetState==='Preorder'&&!entry.record.preorder?.enabled)return false;
+      if(availabilityFilter==='Preorder'&&!entry.record.preorder?.enabled)return false;
+      if(availabilityFilter==='Marketplace'&&!entry.record.alerts.marketplace.enabled)return false;
+      if(availabilityFilter==='Local'&&!entry.record.alerts.localStock.enabled)return false;
+      if(availabilityFilter==='Provider unavailable'&&entry.marketSource!=='unavailable')return false;
+      if(releaseFilter==='Upcoming'&&!(entry.releaseDate&&Date.parse(entry.releaseDate)>Date.now()))return false;
+      if(releaseFilter==='Released'&&(entry.releaseDate&&Date.parse(entry.releaseDate)>Date.now()))return false;
+      if(releaseFilter==='Release soon'&&!dateSoon(entry.releaseDate||entry.record.preorder?.estimatedReleaseDate,30))return false;
       return true;
     });
     return rows.toSorted((a,b)=>sortEntries(a,b,sort));
-  },[baseForTab,query,category,manufacturer,line,condition,retailer,priorityFilter,plannedFilter,duplicateOnly,minPrice,maxPrice,targetState,sort]);
+  },[baseForTab,query,category,manufacturer,line,condition,retailer,priorityFilter,plannedFilter,duplicateOnly,minPrice,maxPrice,targetState,availabilityFilter,releaseFilter,sort]);
 
   const selected=selectedId?entries.find(entry=>entry.id===selectedId)||null:null;
   const editing=editingId?entries.find(entry=>entry.id===editingId)||null:null;
@@ -373,7 +383,7 @@ export default function VexumWishlist(){
     }catch(error){setMarketError(error instanceof Error?error.message:'Market provider unavailable.')}finally{setMarketRefreshing(false)}
   }
   function clearFilters(){
-    setQuery('');setCategory('All');setManufacturer('All');setLine('All');setCondition('All');setRetailer('All');setTargetState('All');setPlannedFilter('All');setDuplicateOnly(false);setMinPrice('');setMaxPrice('');setPriorityFilter([]);
+    setQuery('');setCategory('All');setManufacturer('All');setLine('All');setCondition('All');setRetailer('All');setTargetState('All');setAvailabilityFilter('All');setReleaseFilter('All');setPlannedFilter('All');setDuplicateOnly(false);setMinPrice('');setMaxPrice('');setPriorityFilter([]);
   }
   function toggleSelected(id:string){setSelectedIds(current=>current.includes(id)?current.filter(x=>x!==id):[...current,id])}
   function closeSelectMode(){setSelectMode(false);setSelectedIds([])}
@@ -436,6 +446,8 @@ export default function VexumWishlist(){
 
     {tab==='Overview'?<OverviewDashboard
       entries={activeEntries} opportunities={opportunityRows.slice(0,5)} grails={grails} preorders={preorders} planned={planned}
+      financial={financialContext} answer={intelligenceAnswer}
+      onAsk={kind=>setIntelligenceAnswer(answerWishlistQuestion(kind,activeEntries,financialContext))}
       onOpen={entry=>{setSelectedId(entry.id);setDetailTab('Overview')}} onPlan={entry=>setPlanningId(entry.id)}
     />:null}
 
@@ -450,6 +462,8 @@ export default function VexumWishlist(){
           <option value="market">Current market</option>
           <option value="msrp">MSRP</option>
           <option value="closest">Closest to target</option>
+          <option value="drop">Biggest price drop</option>
+          <option value="availability">Availability signal</option>
           <option value="release">Release date</option>
           <option value="planned">Planned purchase</option>
           <option value="grail">Grail progress</option>
@@ -467,6 +481,8 @@ export default function VexumWishlist(){
         <label>Condition<select value={condition} onChange={e=>setCondition(e.target.value)}>{conditions.map(value=><option key={value}>{value}</option>)}</select></label>
         <label>Retailer<select value={retailer} onChange={e=>setRetailer(e.target.value)}>{retailers.map(value=><option key={value}>{value}</option>)}</select></label>
         <label>State<select value={targetState} onChange={e=>setTargetState(e.target.value)}><option>All</option><option>Reached</option><option>Above target</option><option>Below MSRP</option><option>Preorder</option></select></label>
+        <label>Availability<select value={availabilityFilter} onChange={e=>setAvailabilityFilter(e.target.value)}><option>All</option><option>Preorder</option><option>Marketplace</option><option>Local</option><option>Provider unavailable</option></select></label>
+        <label>Release<select value={releaseFilter} onChange={e=>setReleaseFilter(e.target.value)}><option>All</option><option>Upcoming</option><option>Released</option><option>Release soon</option></select></label>
         <label>Planned<select value={plannedFilter} onChange={e=>setPlannedFilter(e.target.value)}>{plannedMonths.map(value=><option key={value} value={value}>{value==='All'?'All':plannedLabel(value)}</option>)}</select></label>
         <label>Market min<input value={minPrice} onChange={e=>setMinPrice(e.target.value)} inputMode="decimal" placeholder="$0"/></label>
         <label>Market max<input value={maxPrice} onChange={e=>setMaxPrice(e.target.value)} inputMode="decimal" placeholder="Any"/></label>
@@ -476,15 +492,16 @@ export default function VexumWishlist(){
       </section>:null}
 
       {tab==='Archive'?<ArchiveInsights entries={archivedEntries}/>:null}
+      {tab==='Planned'?<PlannedTimeline entries={planned}/>:null}
 
-      {visible.length===0?<EmptyState tab={tab} filtered={hasFilters({query,category,manufacturer,line,condition,retailer,targetState,plannedFilter,duplicateOnly,minPrice,maxPrice,priorityFilter})}/>:view==='table'?
+      {visible.length===0?<EmptyState tab={tab} filtered={hasFilters({query,category,manufacturer,line,condition,retailer,targetState,availabilityFilter,releaseFilter,plannedFilter,duplicateOnly,minPrice,maxPrice,priorityFilter})}/>:view==='table'?
         <WishlistTable entries={visible} selectMode={selectMode} selectedIds={selectedIds} onSelect={toggleSelected}
           onOpen={entry=>{if(selectMode){toggleSelected(entry.id);return}setSelectedId(entry.id);setDetailTab('Overview')}}
-          onEdit={entry=>setEditingId(entry.id)} onPlan={entry=>setPlanningId(entry.id)} onRestore={restoreEntry}
+          onEdit={entry=>setEditingId(entry.id)} onPlan={entry=>setPlanningId(entry.id)} onPurchase={entry=>setPurchasingId(entry.id)} onArchive={entry=>archiveEntry(entry)} onRestore={restoreEntry}
           onPriority={cyclePriority} onAlerts={toggleAlerts}/>:
         <WishlistGrid entries={visible} selectMode={selectMode} selectedIds={selectedIds} onSelect={toggleSelected}
           onOpen={entry=>{if(selectMode){toggleSelected(entry.id);return}setSelectedId(entry.id);setDetailTab('Overview')}}
-          onEdit={entry=>setEditingId(entry.id)} onPlan={entry=>setPlanningId(entry.id)} onRestore={restoreEntry}
+          onEdit={entry=>setEditingId(entry.id)} onPlan={entry=>setPlanningId(entry.id)} onPurchase={entry=>setPurchasingId(entry.id)} onArchive={entry=>archiveEntry(entry)} onRestore={restoreEntry}
           onPriority={cyclePriority} onAlerts={toggleAlerts}/>
       }
 
