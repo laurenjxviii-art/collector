@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import {useWorkspace} from '../lib/useWorkspace';
 import {
-  EMPTY_SETUP,newSetupId,normalizeSetupData,placementForPortfolioItem,
+  EMPTY_SETUP,newSetupId,normalizeSetupData,
   setupLocationLabel,setupObjectFit,setupObjectPath,
   type SetupCapacityType,type SetupData,type SetupMode,type SetupObject,type SetupPlacement,type SetupSpace,type SetupUnit
 } from '../lib/setup';
@@ -58,14 +58,13 @@ export default function VexumSetup(){
   const placements=setup.placements.filter(p=>p.setupId===activeSpaceId);
   const selectedObject=objects.find(object=>object.id===selectedObjectId);
   const owned=workspace.data.items.filter(item=>item.status==='owned');
-  const activeOwnedPlacements=setup.placements.filter(p=>p.kind==='owned'&&p.portfolioItemId);
-  const assignedOwnedIds=new Set(activeOwnedPlacements.map(p=>p.portfolioItemId!));
-  const unassigned=owned.filter(item=>!assignedOwnedIds.has(item.id));
   const wishlist=Object.values(workspace.data.wishlist||{}).filter(record=>!record.archived);
 
   const currentSpaces=setup.spaces.filter(space=>space.mode==='current');
   const currentSpaceIds=new Set(currentSpaces.map(space=>space.id));
-  const assignedCurrentIds=new Set(setup.placements.filter(p=>p.kind==='owned'&&p.portfolioItemId&&currentSpaceIds.has(p.setupId)).map(p=>p.portfolioItemId!));
+  const currentOwnedPlacements=setup.placements.filter(p=>p.kind==='owned'&&p.portfolioItemId&&currentSpaceIds.has(p.setupId));
+  const assignedCurrentIds=new Set(currentOwnedPlacements.map(p=>p.portfolioItemId!));
+  const unassigned=owned.filter(item=>!assignedCurrentIds.has(item.id));
   const currentAssignedValue=owned.filter(item=>assignedCurrentIds.has(item.id)).reduce((sum,item)=>sum+item.currentValue*item.quantity,0);
   const capacityObjects=setup.objects.filter(object=>['count','slots'].includes(object.capacityType)&&object.capacityValue);
   const capacityUsed=capacityObjects.reduce((sum,object)=>sum+objectContents(setup,object.id).length,0);
@@ -274,7 +273,7 @@ export default function VexumSetup(){
     {tab==='Items'&&<section className="vxsup-panel vxsup-full">
       <header><div><h3>Items + Locations</h3><p>Current Setup placement is the physical-location source of truth. The legacy Portfolio location string is updated as a compatibility mirror.</p></div><label className="vxsup-search"><Search/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search item or location…"/></label></header>
       <div className="vxsup-item-table"><div className="head"><span>Item</span><span>Category</span><span>Physical Location</span><span>Dimensions</span><span>Value</span><span>Action</span></div>{filteredItems.map(item=>{
-        const placement=placementForPortfolioItem(setup,item.id);
+        const placement=currentOwnedPlacements.find(p=>p.portfolioItemId===item.id);
         const dims=itemDimensions(item);
         const path=placement?setupLocationLabel(setup,placement.setupId,placement.setupObjectId):'Unassigned';
         return <div key={item.id}><span><strong>{item.name}</strong><small>{item.condition}</small></span><span>{item.category}</span><span className={placement?'':'unassigned'}>{path}</span><span>{dims.width&&dims.height&&dims.depth?dims.width+' × '+dims.height+' × '+dims.depth:'Unknown'}</span><b>{money(item.currentValue*item.quantity)}</b><span>{placement?<button onClick={()=>unassign(placement.id)}>Unassign</button>:activeSpace?<button onClick={()=>assignOwned(item.id,selectedObjectId||undefined)}>Assign to {selectedObject?.name||activeSpace.name}</button>:<button onClick={()=>setTab('Spaces')}>Create Space</button>}</span></div>;
@@ -333,7 +332,7 @@ function StorageTree({objects,setup,selected,onSelect}:{objects:SetupObject[];se
 
 function ObjectInspector({object,space,setup,items,onUpdate,onRemove,onAddChild}:{object:SetupObject;space:SetupSpace;setup:SetupData;items:Array<{id:string;name:string;currentValue:number;quantity:number}>;onUpdate:(object:SetupObject)=>void;onRemove:()=>void;onAddChild:()=>void}){
   const placements=objectContents(setup,object.id);
-  const value=placements.filter(p=>p.portfolioItemId).reduce((sum,p)=>sum+(items.find(item=>item.id===p.portfolioItemId)?.currentValue||0),0);
+  const value=placements.filter(p=>p.portfolioItemId).reduce((sum,p)=>{const item=items.find(entry=>entry.id===p.portfolioItemId);return sum+(item?item.currentValue*item.quantity:0)},0);
   const cap=object.capacityValue;
   const capPct=cap?pct(placements.length,cap):undefined;
   const fit=setupObjectFit(space,object,'top');
