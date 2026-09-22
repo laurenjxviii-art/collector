@@ -22,7 +22,8 @@ import {challengeMfa,mfaState,verifyMfa,type CloudConfig,type Session} from '../
 import {
   MODULE_GROUPS,MODULE_LABELS,normalizePlatformState,type VexumModuleId
 } from '../lib/platform';
-import {buildVexumNotifications} from '../lib/platformNotifications';
+import {buildSellNotifications,buildVexumNotifications,type VexumNotification} from '../lib/platformNotifications';
+import {loadSellWorkspace} from '../lib/sellCloud';
 import {
   CommandCenter,NotificationCenter,QuickAddPanel,type QuickAddType
 } from './platform/VexumPlatformPanels';
@@ -125,11 +126,12 @@ export default function VexumApp({
   const [commandOpen,setCommandOpen]=useState(false);
   const [profileOpen,setProfileOpen]=useState(false);
   const [onboardingPending,setOnboardingPending]=useState(false);
+  const [sellNotifications,setSellNotifications]=useState<VexumNotification[]>([]);
 
   const platform=normalizePlatformState(workspace.data.platform,true);
   const displayName=platform.identity.displayName||workspace.data.profile?.name||workspace.session?.user.email?.split('@')[0]||'VEXUM User';
   const enabled:VexumModuleId[]=platform.enabledModules.includes('home')?[...platform.enabledModules]:['home',...platform.enabledModules.filter(module=>module!=='home')];
-  const notificationRows=useMemo(()=>buildVexumNotifications(workspace.data,platform),[workspace.data,platform]);
+  const notificationRows=useMemo(()=>[...buildVexumNotifications(workspace.data,platform),...sellNotifications],[workspace.data,platform,sellNotifications]);
   const readIds=new Set(platform.notifications.readIds);
   const unread=notificationRows.filter(row=>!readIds.has(row.id)).length;
 
@@ -137,6 +139,12 @@ export default function VexumApp({
     if(!workspace.ready)return;
     try{setOnboardingPending(localStorage.getItem('vexum.onboarding.pending')==='1'||platform.onboardingComplete===false)}catch{setOnboardingPending(platform.onboardingComplete===false)}
   },[workspace.ready,platform.onboardingComplete]);
+  useEffect(()=>{
+    if(!platform.notifications.marketplace||!workspace.config?.configured||!workspace.session){setSellNotifications([]);return}
+    let alive=true;
+    loadSellWorkspace(workspace.config,workspace.session).then(data=>{if(alive)setSellNotifications(buildSellNotifications(data))}).catch(()=>{if(alive)setSellNotifications([])});
+    return()=>{alive=false};
+  },[platform.notifications.marketplace,workspace.config?.configured,workspace.session?.user.id]);
 
   useEffect(()=>{
     const onKey=(event:KeyboardEvent)=>{
