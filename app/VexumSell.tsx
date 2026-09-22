@@ -76,6 +76,7 @@ export default function VexumSell(){
   const orderItemByOrder=new Map(data.orderItems.map(item=>[item.order_id,item]));
   const canonicalProductIdForItem=(item?:Item)=>{
     if(!item)return undefined;
+    if(item.productId)return item.productId;
     const name=norm(item.name);
     const records=Object.values(workspace.data.wishlist||{}).filter(record=>record.source==='catalog');
     const matched=records.find(record=>{
