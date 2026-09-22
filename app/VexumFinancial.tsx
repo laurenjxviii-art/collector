@@ -3,7 +3,7 @@
 import {useMemo,useState} from 'react';
 import {
   AlertTriangle,ArrowDownRight,ArrowUpRight,CalendarDays,CircleDollarSign,
-  CreditCard,Landmark,Plus,Receipt,Target,WalletCards
+  CreditCard,Landmark,Link2,LockKeyhole,Plus,Receipt,ShieldCheck,Target,WalletCards
 } from 'lucide-react';
 import {useWorkspace} from '../lib/useWorkspace';
 import {
@@ -13,6 +13,7 @@ import {
   type FinancialGoal,type FinancialTransaction,type TransactionDirection
 } from '../lib/financial';
 import {preorderCommitment,grailProgress} from '../lib/wishlist';
+import {normalizePlatformState} from '../lib/platform';
 
 type Tab='Overview'|'Accounts'|'Spending'|'Budget'|'Debt'|'Bills'|'Goals'|'Collection'|'Reports';
 type Composer='account'|'transaction'|'budget'|'bill'|'goal'|null;
@@ -57,6 +58,9 @@ export default function VexumFinancial(){
   const [debtExtra,setDebtExtra]=useState('100');
 
   const financial=normalizeFinancialData(workspace.data.financial||EMPTY_FINANCIAL);
+  const platform=normalizePlatformState(workspace.data.platform,true);
+  const externalFinanceConnected=platform.connections.financial.status==='connected'&&platform.connections.financial.provider==='plaid';
+  const externalFinanceLocked=platform.security.requireMfaForExternalFinancial&&platform.security.mfaStatus!=='verified';
   const owned=workspace.data.items.filter(item=>item.status==='owned');
   const sold=workspace.data.items.filter(item=>item.status==='sold');
   const wishlist=Object.values(workspace.data.wishlist||{}).filter(record=>!record.archived);
@@ -129,6 +133,12 @@ export default function VexumFinancial(){
     <section className="vxf-title">
       <div><span>FINANCIAL</span><h1>Collector Finance</h1><p>Money, obligations, hobby spending, collection economics, and future commitments—without pretending collectibles are cash.</p></div>
       <aside><strong>Private by default</strong><small>Financial records never feed Social automatically.</small></aside>
+    </section>
+
+    <section className={'vxf-security-gate '+(externalFinanceConnected?'connected':'')}>
+      <div className="icon">{externalFinanceConnected?<ShieldCheck/>:externalFinanceLocked?<LockKeyhole/>:<Link2/>}</div>
+      <div><strong>{externalFinanceConnected?'External financial accounts connected':externalFinanceLocked?'External accounts locked until MFA is verified':'External financial connection not configured'}</strong><p>{externalFinanceConnected?'Connected account state is recorded in VEXUM Settings.':'Your manual Financial ledger remains fully usable. VEXUM will not fabricate Plaid balances or bank transactions; external connections require a real provider flow'+(externalFinanceLocked?' and verified MFA.':'.')}</p></div>
+      <button onClick={()=>location.assign('/settings')}>Security & Connections</button>
     </section>
 
     <nav className="vxf-tabs">{(['Overview','Accounts','Spending','Budget','Debt','Bills','Goals','Collection','Reports'] as Tab[]).map(name=><button key={name} className={tab===name?'active':''} onClick={()=>{setTab(name);setComposer(null)}}>{name}</button>)}</nav>
