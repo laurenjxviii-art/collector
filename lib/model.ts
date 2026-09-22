@@ -34,6 +34,7 @@ export type Item = {
   marketLink?:MarketLink;
   packagingState?:PackagingState;
   id:string;
+  productId?:string;
   collectionId:string;
   name:string;
   category:string;
@@ -204,6 +205,7 @@ export function validStore(value:unknown):value is Store {
 
   if(!s.items.every(item=>{
     if(!item||!validMarketFields(item)||typeof item.id!=='string'||typeof item.name!=='string')return false;
+    if(item.productId!==undefined&&typeof item.productId!=='string')return false;
     if(item.collectionId!==''&&!collectionIds.has(item.collectionId))return false;
     if(!['owned','wishlist','sold'].includes(item.status))return false;
     if(![item.purchasePrice,item.currentValue,item.quantity].every(n=>typeof n==='number'&&Number.isFinite(n)&&n>=0)||!Number.isInteger(item.quantity)||item.quantity<1)return false;
