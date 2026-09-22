@@ -9,7 +9,7 @@ import {
 import {useWorkspace} from '../lib/useWorkspace';
 import {challengeMfa,enrollTotp,mfaState,unenrollMfa,updatePassword,verifyMfa,type MfaEnrollment,type MfaState} from '../lib/cloud';
 import {
-  ALL_MODULES,MODULE_GROUPS,MODULE_LABELS,normalizePlatformState,type PlatformState,type VexumModuleId,type Visibility
+  ALL_LIFE_SECTIONS,ALL_MODULES,MODULE_GROUPS,MODULE_LABELS,normalizePlatformState,type LifeSectionId,type PlatformState,type VexumModuleId,type Visibility
 } from '../lib/platform';
 import VexumOnboarding from './VexumOnboarding';
 
@@ -132,9 +132,15 @@ function ModuleSettings({platform,onSave,onOnboarding}:{platform:PlatformState;o
     const list=[...platform.moduleOrder],index=list.indexOf(module),target=index+direction;if(index<0||target<0||target>=list.length)return;
     [list[index],list[target]]=[list[target],list[index]];onSave({...platform,moduleOrder:list});
   };
+  const toggleLifeSection=(section:LifeSectionId)=>{
+    const enabled=platform.lifeSections.includes(section);
+    const next=enabled?platform.lifeSections.filter(item=>item!==section):ALL_LIFE_SECTIONS.filter(item=>item===section||platform.lifeSections.includes(item));
+    onSave({...platform,lifeSections:next.length?next:['Today']});
+  };
   return <><SectionHead title="Modules & Sidebar" subtitle="A user builds their version of VEXUM. Hide what you do not use and reorder what remains."/>
     <div className="vxt-module-list">{platform.moduleOrder.map((module,index)=><div key={module}><GripVertical/><Toggle checked={platform.enabledModules.includes(module)} disabled={module==='home'} onChange={()=>toggle(module)}/><span><strong>{MODULE_LABELS[module]}</strong><small>{MODULE_GROUPS.find(group=>group.modules.includes(module))?.label||'MODULE'}</small></span><div><button disabled={index===0} onClick={()=>move(module,-1)}><ArrowUp/></button><button disabled={index===platform.moduleOrder.length-1} onClick={()=>move(module,1)}><ArrowDown/></button></div></div>)}</div>
-    <footer className="vxt-actions"><button onClick={()=>onSave({...platform,enabledModules:[...ALL_MODULES],moduleOrder:[...ALL_MODULES]})}><RefreshCw/>Reset Modules</button><button className="primary" onClick={onOnboarding}>Run Build Your VEXUM Again</button></footer>
+    {platform.enabledModules.includes('life')?<section className="vxt-life-sections"><header><strong>Life Sections</strong><span>Fitness is optional. Hide any Life surface you do not want in your workspace.</span></header><div>{ALL_LIFE_SECTIONS.map(section=><label key={section}><Toggle checked={platform.lifeSections.includes(section)} onChange={()=>toggleLifeSection(section)}/><span>{section}</span></label>)}</div></section>:null}
+    <footer className="vxt-actions"><button onClick={()=>onSave({...platform,enabledModules:[...ALL_MODULES],moduleOrder:[...ALL_MODULES],lifeSections:[...ALL_LIFE_SECTIONS]})}><RefreshCw/>Reset Modules</button><button className="primary" onClick={onOnboarding}>Run Build Your VEXUM Again</button></footer>
   </>;
 }
 
