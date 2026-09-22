@@ -118,7 +118,7 @@ export function CommandCenter({open,onClose,workspace,navigate,onQuickAdd}:{open
     for(const plan of life.workoutPlans)rows.push({id:'workout:'+plan.id,kind:'Workout',title:plan.name,detail:plan.exercises.length+' exercises',route:'life',keywords:plan.name+' '+plan.exercises.map(x=>x.name).join(' ')});
     for(const item of workspace.data.items.filter(i=>!i.archivedAt))rows.push({id:'item:'+item.id,kind:'Portfolio',title:item.name,detail:item.category,route:'portfolio',keywords:[item.name,item.category,item.condition,item.location,...Object.values(item.customFields||{})].join(' ')});
     for(const collection of workspace.data.collections.filter(c=>!c.archivedAt))rows.push({id:'collection:'+collection.id,kind:'Collection',title:collection.name,detail:'Portfolio collection',route:'portfolio',keywords:collection.name+' '+(collection.description||'')});
-    for(const tx of financial.transactions)rows.push({id:'tx:'+tx.id,kind:'Transaction',title:tx.merchant||tx.category,detail:'$'+tx.amount.toFixed(2)+' · '+tx.date,route:'financial',keywords:[tx.merchant,tx.category,tx.subcategory,tx.notes].join(' ')});
+    for(const tx of financial.transactions)rows.push({id:'tx:'+tx.id,kind:'Transaction',title:tx.merchant||tx.category,detail:'$'+tx.amount.toFixed(2)+' · '+tx.date,route:'financial',keywords:[tx.merchant,tx.category,tx.subcategory,tx.description].join(' ')});
     for(const object of workspace.data.setup?.objects||[])rows.push({id:'setup:'+object.id,kind:'Setup',title:object.name,detail:object.type,route:'setup',keywords:object.name+' '+object.type});
     return rows;
   },[life,workspace.data.items,workspace.data.collections,workspace.data.setup,financial.transactions]);
