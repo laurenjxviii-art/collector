@@ -4,7 +4,7 @@ import {useEffect,useState} from 'react';
 import type {ReactNode} from 'react';
 import {
   CircleDollarSign,Eye,FileUp,Layers3,Plus,Search,Share2,ShoppingBag,
-  SlidersHorizontal,Star
+  SlidersHorizontal,Star,WalletCards
 } from 'lucide-react';
 import VexumPortfolio from './VexumPortfolio';
 import VexumSearch from './search/VexumSearch';
