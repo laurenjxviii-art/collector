@@ -4,6 +4,8 @@ import {FinancialData,validFinancialData} from './financial';
 import {SetupData,validSetupData} from './setup';
 import {HomeDashboardState,validHomeDashboard} from './home';
 import {PortfolioDocument,PortfolioHistoryEvent,PortfolioItemMedia,PortfolioPreferences,PortfolioViewMode,PortfolioVisibility,validPortfolioPreferences} from './portfolio';
+import {PlatformState,validPlatformState} from './platform';
+import {LifeData,validLifeData} from './life';
 export type Status = 'owned' | 'wishlist' | 'sold';
 export type Collection = {
   id:string;
@@ -75,6 +77,8 @@ export type Store = {
   setup?:SetupData;
   homeDashboard?:HomeDashboardState;
   portfolioPreferences?:PortfolioPreferences;
+  platform?:PlatformState;
+  life?:LifeData;
 };
 export const money = (n:number) => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:2}).format(n);
 
@@ -151,6 +155,8 @@ export function validStore(value:unknown):value is Store {
   if(s.setup&&!validSetupData(s.setup))return false;
   if(s.homeDashboard&&!validHomeDashboard(s.homeDashboard))return false;
   if(s.portfolioPreferences&&!validPortfolioPreferences(s.portfolioPreferences))return false;
+  if(s.platform&&!validPlatformState(s.platform))return false;
+  if(s.life&&!validLifeData(s.life))return false;
   if(s.wishlistPreferences&&(
     typeof s.wishlistPreferences!=='object'||Array.isArray(s.wishlistPreferences)||
     !['table','grid'].includes(s.wishlistPreferences.view)||typeof s.wishlistPreferences.sort!=='string'
