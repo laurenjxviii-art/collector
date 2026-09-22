@@ -13,6 +13,7 @@ export type PlatformIdentity={
   birthday:string;
   country:string;
   currency:string;
+  language:string;
 };
 
 export type PlatformAppearance={
@@ -135,7 +136,7 @@ export function defaultPlatformState(legacy=true):PlatformState{
     moduleOrder:[...ALL_MODULES],
     collectorCategories:[],
     collectorInterests:[],
-    identity:{username:'',displayName:'',birthday:'',country:'United States',currency:'USD'},
+    identity:{username:'',displayName:'',birthday:'',country:'United States',currency:'USD',language:'English'},
     appearance:{density:'compact',textSize:'medium',motion:'full',glow:'subtle',sidebarWidth:'standard',numberFormat:'full'},
     notifications:{
       push:true,email:false,taskReminders:true,radar:true,marketplace:true,financial:true,social:true,
@@ -196,7 +197,8 @@ export function normalizePlatformState(value?:PlatformState,legacy=true):Platfor
       displayName:typeof identity.displayName==='string'?identity.displayName:'',
       birthday:typeof identity.birthday==='string'?identity.birthday:'',
       country:typeof identity.country==='string'?identity.country:'United States',
-      currency:typeof identity.currency==='string'?identity.currency:'USD'
+      currency:typeof identity.currency==='string'?identity.currency:'USD',
+      language:typeof identity.language==='string'?identity.language:'English'
     },
     appearance:{
       density:['compact','standard','comfortable'].includes(appearance.density)?appearance.density:'compact',
