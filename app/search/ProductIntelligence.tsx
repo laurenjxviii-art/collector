@@ -5,9 +5,10 @@ import type {ReactNode} from 'react';
 import {Bell,Check,CircleDollarSign,Eye,FileUp,Layers3,MapPin,Plus,Search,Share2,ShoppingBag,Star} from 'lucide-react';
 import type {NormalizedProduct,UserProductRelationship} from '../../lib/search/types';
 import {useWorkspace} from '../../lib/useWorkspace';
-import {wishlistEvent,type WishlistRecord} from '../../lib/wishlist';
+import {wishlistEvent,type WishlistAlertFrequency,type WishlistRecord} from '../../lib/wishlist';
 
 type Tab='product'|'market'|'local'|'vexum'|'radar';
+type RadarState={price:boolean;target:number;msrp:boolean;restock:boolean;local:boolean;radius:number;marketplace:boolean;release:boolean;variant:boolean;priority:string};
 type Props={
   product:NormalizedProduct;
   relationship?:UserProductRelationship;
@@ -38,7 +39,7 @@ export default function ProductIntelligence({product,relationship,onBack,onAddPo
   const [tab,setTab]=useState<Tab>('product');
   const [range,setRange]=useState('30D');
   const [location,setLocation]=useState('');
-  const [radar,setRadar]=useState({
+  const [radar,setRadar]=useState<RadarState>({
     price:wishlistRecord?.alerts.priceTarget.enabled??Boolean(relationship?.tracked),
     target:wishlistRecord?.targetPrice||relationship?.targetPrice||30,
     msrp:wishlistRecord?.alerts.msrp.enabled??true,
@@ -74,15 +75,16 @@ export default function ProductIntelligence({product,relationship,onBack,onAddPo
       try{localStorage.setItem('vexum.radar.'+product.id,JSON.stringify(radar))}catch{}
       return;
     }
-    const frequency=wishlistRecord.priority==='Grail'||wishlistRecord.priority==='High'?'Immediate':'Daily Digest';
+    const frequency:WishlistAlertFrequency=wishlistRecord.priority==='Grail'||wishlistRecord.priority==='High'?'Immediate':'Daily Digest';
+    const ruleFrequency=(enabled:boolean):WishlistAlertFrequency=>enabled?frequency:'Off';
     const alerts={...wishlistRecord.alerts,
-      priceTarget:{...wishlistRecord.alerts.priceTarget,enabled:radar.price,frequency:radar.price?frequency:'Off' as const},
-      msrp:{...wishlistRecord.alerts.msrp,enabled:radar.msrp,frequency:radar.msrp?frequency:'Off' as const},
-      restock:{...wishlistRecord.alerts.restock,enabled:radar.restock,frequency:radar.restock?frequency:'Off' as const},
-      localStock:{...wishlistRecord.alerts.localStock,enabled:radar.local,frequency:radar.local?frequency:'Off' as const,radiusMiles:[5,10,25,50].includes(radar.radius)?radar.radius as 5|10|25|50:25},
-      marketplace:{...wishlistRecord.alerts.marketplace,enabled:radar.marketplace,frequency:radar.marketplace?frequency:'Off' as const},
-      releaseChange:{...wishlistRecord.alerts.releaseChange,enabled:radar.release,frequency:radar.release?frequency:'Off' as const},
-      newVariant:{...wishlistRecord.alerts.newVariant,enabled:radar.variant,frequency:radar.variant?frequency:'Off' as const}
+      priceTarget:{...wishlistRecord.alerts.priceTarget,enabled:radar.price,frequency:ruleFrequency(radar.price)},
+      msrp:{...wishlistRecord.alerts.msrp,enabled:radar.msrp,frequency:ruleFrequency(radar.msrp)},
+      restock:{...wishlistRecord.alerts.restock,enabled:radar.restock,frequency:ruleFrequency(radar.restock)},
+      localStock:{...wishlistRecord.alerts.localStock,enabled:radar.local,frequency:ruleFrequency(radar.local),radiusMiles:[5,10,25,50].includes(radar.radius)?radar.radius as 5|10|25|50:25},
+      marketplace:{...wishlistRecord.alerts.marketplace,enabled:radar.marketplace,frequency:ruleFrequency(radar.marketplace)},
+      releaseChange:{...wishlistRecord.alerts.releaseChange,enabled:radar.release,frequency:ruleFrequency(radar.release)},
+      newVariant:{...wishlistRecord.alerts.newVariant,enabled:radar.variant,frequency:ruleFrequency(radar.variant)}
     };
     const target=radar.price&&radar.target>0?radar.target:wishlistRecord.targetPrice;
     const signature=JSON.stringify([alerts.priceTarget,alerts.msrp,alerts.restock,alerts.localStock,alerts.marketplace,alerts.releaseChange,alerts.newVariant,target]);
