@@ -109,7 +109,7 @@ export function portfolioAudit(store:Store):AuditIssue[]{
     if(item.purchasePrice<=0)add(item,'missing-price','Missing purchase price','Cost basis is not recorded.','medium');
     if(!item.purchaseDate||!Number.isFinite(Date.parse(item.purchaseDate)))add(item,'missing-date','Missing purchase date','Purchase date is not recorded.','low');
     if(!item.condition.trim())add(item,'missing-condition','Missing condition','Condition is blank.','medium');
-    if(!item.identity||!Object.values(item.identity).some(Boolean))add(item,'missing-match','Missing product match','No canonical product identity is linked.','medium');
+    if(!item.productId&&(!item.identity||!Object.values(item.identity).some(Boolean)))add(item,'missing-match','Missing product match','No canonical product identity is linked.','medium');
     if(!item.identity?.upc)add(item,'missing-upc','Missing UPC','UPC is unavailable or not linked.','low');
     if(!item.identity?.sku)add(item,'missing-sku','Missing SKU','SKU is unavailable or not linked.','low');
     if(!placementForPortfolioItem(setup,item.id)&&!item.location.trim())add(item,'missing-location','Missing Setup location','This owned item has no current physical placement.','medium');
