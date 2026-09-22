@@ -257,23 +257,23 @@ export default function VexumHome(){
       ];
       return shell(<div className="vxh-brief"><div className="vxh-brief-lead"><Sparkles/><span><strong>{greeting()}{profileName?', '+profileName:''}.</strong><small>What changed and what needs attention.</small></span></div>{rows.map(([label,value,tone])=><div className="vxh-brief-row" key={label}><span>{label}</span><strong className={'tone-'+tone}>{value}</strong></div>)}</div>);
     }
-    if(layout.id==='wishlist')return shell(<div className="vxh-list">{(liveWishlist.length?liveWishlist.map(record=>({name:record.snapshot?.name||record.productId,sub:'Target '+money(record.targetPrice||record.maximumPrice||0),value:money(record.currentMarket||0),tone:'green' as Tone})):DEMO_HOME_DATA.wishlist.map(row=>({name:row[0],sub:'Target '+row[2]+' · '+row[4],value:row[3],tone:'green' as Tone}))).map(row=><div key={row.name}><Star/><span><strong>{row.name}</strong><small>{row.sub}</small></span><b className={'tone-'+row.tone}>{row.value}</b></div>)}<button onClick={()=>location.assign('/wishlist')}>Open Wishlist <ChevronRight/></button></div>);
-    if(layout.id==='radar')return shell(<div className="vxh-radar">{DEMO_HOME_DATA.radar.map(row=><div key={row[1]}><em>{row[0]}</em><span><strong>{row[1]}</strong><small>{row[3]}</small></span><b>{row[2]}</b></div>)}<p>Demo fixture until Radar/provider events are wired to Home.</p></div>);
+    if(layout.id==='wishlist')return shell(liveWishlist.length?<div className="vxh-list">{liveWishlist.map(record=>({name:record.snapshot?.name||record.productId,sub:'Target '+money(record.targetPrice||record.maximumPrice||0),value:money(record.currentMarket||0),tone:'green' as Tone})).map(row=><div key={row.name}><Star/><span><strong>{row.name}</strong><small>{row.sub}</small></span><b className={'tone-'+row.tone}>{row.value}</b></div>)}<button onClick={()=>location.assign('/wishlist')}>Open Wishlist <ChevronRight/></button></div>:<EmptyWidget text="No Wishlist item currently has verified market data at or below its target." action="Open Wishlist" route="/wishlist"/>);
+    if(layout.id==='radar')return shell(<EmptyWidget text="Radar has no verified provider events to show. VEXUM will not fabricate restocks, prices, or availability." action="Open Wishlist" route="/wishlist"/>);
     if(layout.id==='progress'){
-      const rows=progressRows.length?progressRows:DEMO_HOME_DATA.progress.map(row=>({name:row[0],count:row[1],total:row[2]}));
-      return shell(<div className="vxh-progress-list">{rows.slice(0,Number(layout.config.count)||3).map(row=>{const pct=row.total?Math.min(100,Math.round(row.count/row.total*100)):0;return <div key={row.name}><span><strong>{row.name}</strong><b>{row.count} / {row.total} · {pct}%</b></span><div className="vxh-progress"><i style={{width:pct+'%'}}/></div></div>})}</div>);
+      const rows=progressRows;
+      return shell(rows.length?<div className="vxh-progress-list">{rows.slice(0,Number(layout.config.count)||3).map(row=>{const pct=row.total?Math.min(100,Math.round(row.count/row.total*100)):0;return <div key={row.name}><span><strong>{row.name}</strong><b>{row.count} / {row.total} · {pct}%</b></span><div className="vxh-progress"><i style={{width:pct+'%'}}/></div></div>})}</div>:<EmptyWidget text="Mark a Portfolio collection measurable and set its target count to track progress here." action="Open Portfolio" route="/portfolio"/>);
     }
     if(layout.id==='purchases'){
-      const rows=recentPurchases.length?recentPurchases.map(item=>({name:item.name,date:item.purchaseDate||item.createdAt,paid:item.purchasePrice,market:item.currentValue,image:item.image})):DEMO_HOME_DATA.purchases.map(row=>({name:row[0],date:row[1],paid:row[2],market:row[3],image:''}));
-      return shell(<HomeTable headers={['Product','Date','Paid','Market']} rows={rows.slice(0,Number(layout.config.count)||5).map(row=>[<ItemLabel key={row.name} name={row.name} image={row.image}/>,row.date.includes('-')?shortDate(row.date):row.date,money(row.paid),money(row.market)])}/>);
+      const rows=recentPurchases.map(item=>({name:item.name,date:item.purchaseDate||item.createdAt,paid:item.purchasePrice,market:item.currentValue,image:item.image}));
+      return shell(rows.length?<HomeTable headers={['Product','Date','Paid','Market']} rows={rows.slice(0,Number(layout.config.count)||5).map(row=>[<ItemLabel key={row.name} name={row.name} image={row.image}/>,row.date.includes('-')?shortDate(row.date):row.date,money(row.paid),money(row.market)])}/>:<EmptyWidget text="Recent purchases appear from real owned Portfolio records." action="Open Portfolio" route="/portfolio"/>);
     }
     if(layout.id==='sales'){
-      const rows=recentSales.length?recentSales.map(item=>[<ItemLabel key={item.id} name={item.name} image={item.image}/>,money(item.currentValue*item.quantity),money((item.currentValue-item.purchasePrice)*item.quantity),'Sold']):DEMO_HOME_DATA.sales.map(row=>[row[0],money(row[1]),'+'+money(row[2]),row[3]]);
-      return shell(<HomeTable headers={['Product','Sold','Profit','Platform']} rows={rows.slice(0,Number(layout.config.count)||5)}/>);
+      const rows=recentSales.map(item=>[<ItemLabel key={item.id} name={item.name} image={item.image}/>,money(item.currentValue*item.quantity),money((item.currentValue-item.purchasePrice)*item.quantity),'Sold']);
+      return shell(rows.length?<HomeTable headers={['Product','Sold','Profit','Platform']} rows={rows.slice(0,Number(layout.config.count)||5)}/>:<EmptyWidget text="Completed real sales will appear here." action="Open Sell" route="/sell"/>);
     }
     if(layout.id==='capacity'){
-      const rows=capacityRows.length?capacityRows:DEMO_HOME_DATA.capacity.map(row=>({name:row[0],pct:row[1],label:row[2]}));
-      return shell(<div className="vxh-capacity-list">{rows.map(row=><div key={row.name}><span><strong>{row.name}</strong><b>{row.label}</b></span><div className="vxh-progress"><i style={{width:row.pct+'%'}}/></div></div>)}<button onClick={()=>location.assign('/setup')}>Open Setup <ChevronRight/></button></div>);
+      const rows=capacityRows;
+      return shell(rows.length?<div className="vxh-capacity-list">{rows.map(row=><div key={row.name}><span><strong>{row.name}</strong><b>{row.label}</b></span><div className="vxh-progress"><i style={{width:row.pct+'%'}}/></div></div>)}<button onClick={()=>location.assign('/setup')}>Open Setup <ChevronRight/></button></div>:<EmptyWidget text="Add capacity values to Setup objects to monitor physical storage here." action="Open Setup" route="/setup"/>);
     }
     if(layout.id==='alerts'){
       const liveRows=auditCounts.total?[
@@ -281,18 +281,18 @@ export default function VexumHome(){
         auditCounts.missingLocation?['Missing Setup location',auditCounts.missingLocation+' owned items']:null,
         auditCounts.missingImages?['Missing images',auditCounts.missingImages+' owned items']:null,
         auditCounts.missingCost?['Missing cost basis',auditCounts.missingCost+' owned items']:null
-      ].filter(Boolean) as string[][]:DEMO_HOME_DATA.alerts.map(row=>[row[0],row[1]]);
-      return shell(<div className="vxh-alert-list">{liveRows.map(row=><div key={row[0]}><AlertTriangle/><span><strong>{row[0]}</strong><small>{row[1]}</small></span></div>)}<button onClick={()=>location.assign('/portfolio')}>Review Portfolio Audit <ChevronRight/></button></div>);
+      ].filter(Boolean) as string[][]:[];
+      return shell(liveRows.length?<div className="vxh-alert-list">{liveRows.map(row=><div key={row[0]}><AlertTriangle/><span><strong>{row[0]}</strong><small>{row[1]}</small></span></div>)}<button onClick={()=>location.assign('/portfolio')}>Review Portfolio Audit <ChevronRight/></button></div>:<EmptyWidget text="No current Portfolio audit issues were detected." action="Open Portfolio" route="/portfolio"/>);
     }
     if(layout.id==='finance'){
       const debt=financial.accounts.filter(a=>['credit_card','student_loan','auto_loan','mortgage','personal_loan','other_liability'].includes(a.type)).reduce((sum,a)=>sum+Math.max(0,a.currentBalance),0);
       const cash=financial.accounts.filter(a=>['checking','savings','cash'].includes(a.type)).reduce((sum,a)=>sum+a.currentBalance,0);
-      return shell(<div className="vxh-finance"><div><span>Cash</span><strong>{source==='live'?money(cash):'$2,470'}</strong></div><div><span>Debt</span><strong>{source==='live'?money(debt):'$4,220'}</strong></div><div><span>Hobby spend</span><strong>{money(monthSpend)}</strong></div><button onClick={()=>location.assign('/financial')}>Open Financial <ChevronRight/></button></div>);
+      return shell(financial.accounts.length||hasSpend?<div className="vxh-finance"><div><span>Cash</span><strong>{financial.accounts.length?money(cash):'Not set'}</strong></div><div><span>Debt</span><strong>{financial.accounts.length?money(debt):'Not set'}</strong></div><div><span>Hobby spend</span><strong>{hasSpend?money(monthSpend):'Not set'}</strong></div><button onClick={()=>location.assign('/financial')}>Open Financial <ChevronRight/></button></div>:<EmptyWidget text="Financial stays empty until you record real accounts, transactions, or a budget." action="Open Financial" route="/financial"/>);
     }
-    if(layout.id==='social')return shell(<div className="vxh-social-list">{DEMO_HOME_DATA.social.map(row=><div key={row[0]}><span className="vxh-avatar">{row[0][0]}</span><span><strong>{row[0]}</strong><small>{row[1]}</small></span></div>)}<p>Demo summary until a Social Home adapter is enabled.</p><button onClick={()=>location.assign('/social')}>Open Social <ChevronRight/></button></div>);
+    if(layout.id==='social')return shell(<EmptyWidget text="The Social Home adapter is not connected yet. Open Social for the real network feed." action="Open Social" route="/social"/>);
     if(layout.id==='calendar'){
-      const rows=lifeCalendarRows.length?lifeCalendarRows.map(row=>[new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric'}).format(new Date(row.date+'T12:00:00')),row.title,row.kind] as const):DEMO_HOME_DATA.calendar;
-      return shell(<div className="vxh-calendar">{rows.map(row=><div key={row[0]+row[1]}><time>{row[0]}</time><span><strong>{row[1]}</strong><small>{row[2]}</small></span></div>)}<p>{lifeCalendarRows.length?'Live from Life tasks, events, and workout plans.':'Demo release fixture until Life has scheduled data.'}</p><button onClick={()=>location.assign('/life')}>Open Life <ChevronRight/></button></div>);
+      const rows=lifeCalendarRows.map(row=>[new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric'}).format(new Date(row.date+'T12:00:00')),row.title,row.kind] as const);
+      return shell(rows.length?<div className="vxh-calendar">{rows.map(row=><div key={row[0]+row[1]}><time>{row[0]}</time><span><strong>{row[1]}</strong><small>{row[2]}</small></span></div>)}<p>Live from Life tasks, events, and workout plans.</p><button onClick={()=>location.assign('/life')}>Open Life <ChevronRight/></button></div>:<EmptyWidget text="Schedule a Life task, event, or workout to activate this calendar widget." action="Open Life" route="/life"/>);
     }
     return shell(<div/>);
   };
@@ -303,7 +303,7 @@ export default function VexumHome(){
       <div className="vxh-title-actions"><button onClick={()=>location.assign('/search')}><Search/>Quick Add</button><button className={editing?'active':''} onClick={()=>setEditing(value=>!value)}><SlidersHorizontal/>{editing?'Done Editing':'Edit Widgets'}</button></div>
     </section>
     <div className="vxh-editbar">
-      {editing?<><span><GripVertical/>Drag to reorder. Resize, hide, or restore widgets without changing their data source.</span><button onClick={()=>setLibraryOpen(value=>!value)}><Plus/>Add Widget</button><button onClick={reset}><RefreshCw/>Reset Layout</button></>:<span>Each widget can move from DEMO → LIVE independently without rebuilding Home.</span>}
+      {editing?<><span><GripVertical/>Drag to reorder. Resize, hide, or restore widgets without changing their data source.</span><button onClick={()=>setLibraryOpen(value=>!value)}><Plus/>Add Widget</button><button onClick={reset}><RefreshCw/>Reset Layout</button></>:<span>Widgets only show workspace data VEXUM can actually verify. Unavailable sources stay explicit.</span>}
     </div>
     {libraryOpen&&editing?<section className="vxh-library vx-panel"><header><div><strong>Widget Library</strong><span>Hidden widgets can be restored. Future Life/Fitness modules use the same registry.</span></div><button onClick={()=>setLibraryOpen(false)}><X/></button></header><div>{hidden.length?hidden.map(widget=><button key={widget.id} onClick={()=>show(widget.id)}><span>{widgetIcon(widget.id)}</span><strong>{HOME_WIDGET_TITLES[widget.id]}</strong><Plus/></button>):<p>Every current widget is visible.</p>}</div></section>:null}
     <div className="vxh-grid">{visible.map(render)}</div>
@@ -312,6 +312,10 @@ export default function VexumHome(){
 
 function ItemLabel({name,image}:{name:string;image:string}){
   return <span className="vxh-item-label"><i style={image?{backgroundImage:'url("'+image.replaceAll('"','')+'")'}:undefined}>{image?'':<Layers3/>}</i><strong>{name}</strong></span>;
+}
+
+function EmptyWidget({text,action,route}:{text:string;action?:string;route?:string}){
+  return <div className="vxh-empty-widget"><span>{text}</span>{action&&route?<button onClick={()=>location.assign(route)}>{action}<ChevronRight/></button>:null}</div>;
 }
 
 function HomeTable({headers,rows}:{headers:string[];rows:Array<Array<ReactNode|string|number>>}){
