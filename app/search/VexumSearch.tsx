@@ -97,15 +97,17 @@ export default function VexumSearch({initialQuery='',initialProductId=''}:Props)
     const next={...relationships};
     const normalize=(value:string)=>value.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
     for(const product of DEMO_PRODUCTS){
-      const owned=workspace.data.items.filter(item=>item.status==='owned'&&(
+      const matchedOwned=workspace.data.items.filter(item=>item.status==='owned'&&(
         normalize(item.name)===normalize(product.canonicalName)||
         (!!product.upc&&item.identity?.upc===product.upc)||
         (!!product.sku&&item.identity?.sku===product.sku)||
         (!!product.modelNumber&&item.identity?.modelNumber===product.modelNumber)
-      )).reduce((sum,item)=>sum+item.quantity,0);
+      ));
+      const owned=matchedOwned.reduce((sum,item)=>sum+item.quantity,0);
       if(owned>0){
         const current=next[product.id]||{productId:product.id,ownedQuantity:0,wishlisted:false,tracked:false,grail:false};
-        next[product.id]={...current,ownedQuantity:Math.max(current.ownedQuantity||0,owned)};
+        const setupLocation=matchedOwned.find(item=>item.location.trim())?.location||current.setupLocation;
+        next[product.id]={...current,ownedQuantity:Math.max(current.ownedQuantity||0,owned),setupLocation};
       }
     }
     Object.entries(workspace.data.wishlist||{}).forEach(([productId,record])=>{
