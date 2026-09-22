@@ -1,4 +1,8 @@
 import './vexum-reset.css';
+import './vexum-platform.css';
+import './vexum-onboarding.css';
+import './vexum-settings.css';
+import './vexum-life.css';
 import './vexum-home.css';
 import './vexum-portfolio.css';
 import './vexum-wishlist.css';
@@ -10,7 +14,7 @@ import type {Metadata} from 'next';
 
 export const metadata:Metadata={
   title:'VEXUM',
-  description:'Collect. Track. Plan. Connect.',
+  description:'VEXUM — modular personal operating system for life, ownership, money, space, commerce, community, and fitness.',
   manifest:'/manifest.webmanifest',
   appleWebApp:{capable:true,title:'VEXUM',statusBarStyle:'black-translucent'}
 };
