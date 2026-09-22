@@ -13,7 +13,7 @@ import {
   type ExerciseDefinition,type LifeData,type LifeEvent,type LifeGoal,type LifeHabit,type LifeProject,type LifeTask,
   type LifeTab,type TaskPriority,type WorkoutPlan,type WorkoutSession
 } from '../lib/life';
-import {normalizeFinancialData} from '../lib/financial';
+import {normalizeFinancialData,type FinancialBill} from '../lib/financial';
 import {loadSellWorkspace,type SellOrder} from '../lib/sellCloud';
 
 const money=(value:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:value<100?2:0}).format(value);
@@ -76,7 +76,8 @@ export default function VexumLife(){
   const todaysWorkoutPlans=life.workoutPlans.filter(plan=>plan.active&&plan.days.includes(todayDate.getDay()));
   const financial=normalizeFinancialData(workspace.data.financial);
   const billsDue=financial.bills.filter(bill=>bill.active&&bill.nextDueDate&&bill.nextDueDate>=today&&bill.nextDueDate<=dateKeyOffset(2));
-  const preorders=Object.values(workspace.data.wishlist||{}).filter(record=>!record.archived&&record.preorder?.enabled&&record.preorder.estimatedChargeDate&&record.preorder.estimatedChargeDate>=today&&record.preorder.estimatedChargeDate<=dateKeyOffset(7));
+  const calendarPreorders=Object.values(workspace.data.wishlist||{}).filter(record=>!record.archived&&record.preorder?.enabled&&record.preorder.estimatedChargeDate);
+  const preorders=calendarPreorders.filter(record=>record.preorder!.estimatedChargeDate!>=today&&record.preorder!.estimatedChargeDate!<=dateKeyOffset(7));
   const activeGoals=life.goals.filter(goal=>goal.status==='active');
   const ordersNeedingShipping=sellOrders.filter(order=>['paid','preparing_shipment'].includes(order.status));
   const completedThisWeek=life.tasks.filter(task=>task.completedAt&&Date.now()-Date.parse(task.completedAt)<7*86400000).length;
@@ -132,7 +133,7 @@ export default function VexumLife(){
 
     {tab==='Tasks'?<TasksView life={life} query={query} setQuery={setQuery} filter={taskFilter} setFilter={setTaskFilter} onComplete={completeTask} onUpdate={updateTask} onSchedule={scheduleTask} onAdd={()=>setTaskComposer(true)} onPersist={persist}/>:null}
 
-    {tab==='Calendar'?<CalendarView life={life} cursor={calendarCursor} setCursor={setCalendarCursor} onPersist={persist} onScheduleTask={scheduleTask}/>:null}
+    {tab==='Calendar'?<CalendarView life={life} cursor={calendarCursor} setCursor={setCalendarCursor} onPersist={persist} onScheduleTask={scheduleTask} bills={financial.bills} preorders={calendarPreorders} sellOrders={ordersNeedingShipping}/>:null}
 
     {tab==='Habits'?<HabitsView life={life} onToggle={toggleHabit} onUpdate={updateHabit} onAdd={()=>setHabitComposer(true)}/>:null}
 
@@ -225,7 +226,7 @@ function TaskInspector({task,life,onUpdate,onSchedule,onDelete}:{task:LifeTask;l
   </div>;
 }
 
-function CalendarView({life,cursor,setCursor,onPersist,onScheduleTask}:{life:LifeData;cursor:Date;setCursor:(d:Date)=>void;onPersist:(d:LifeData)=>void;onScheduleTask:(t:LifeTask)=>void}){
+function CalendarView({life,cursor,setCursor,onPersist,onScheduleTask,bills,preorders,sellOrders}:{life:LifeData;cursor:Date;setCursor:(d:Date)=>void;onPersist:(d:LifeData)=>void;onScheduleTask:(t:LifeTask)=>void;bills:FinancialBill[];preorders:any[];sellOrders:SellOrder[]}){
   const pref=life.calendar;
   const view=pref.view;
   const setView=(next:LifeData['calendar']['view'])=>onPersist({...life,calendar:{...life.calendar,view:next}});
@@ -237,6 +238,9 @@ function CalendarView({life,cursor,setCursor,onPersist,onScheduleTask}:{life:Lif
     if(pref.layers.tasks)life.tasks.filter(t=>t.status!=='completed'&&(t.dueDate===key||t.scheduledStart?.startsWith(key))).forEach(t=>rows.push({type:'task',title:t.title,time:t.dueTime}));
     if(pref.layers.events)life.events.filter(e=>e.start.startsWith(key)).forEach(e=>rows.push({type:'event',title:e.title,time:e.allDay?'':new Date(e.start).toTimeString().slice(0,5)}));
     if(pref.layers.workouts)life.workoutPlans.filter(p=>p.active&&p.days.includes(new Date(key+'T12:00:00').getDay())).forEach(p=>rows.push({type:'workout',title:p.name,time:p.time}));
+    if(pref.layers.bills)bills.filter(b=>b.active&&b.nextDueDate===key).forEach(b=>rows.push({type:'bill',title:b.name+' · '+money(b.amount)}));
+    if(pref.layers.preorders)preorders.filter(record=>record.preorder?.estimatedChargeDate===key).forEach(record=>rows.push({type:'preorder',title:(record.snapshot?.name||record.productId)+' preorder'}));
+    if(pref.layers.orders&&key===todayKey())sellOrders.forEach(order=>rows.push({type:'order',title:'Ship '+(order.buyer_label||order.provider||'marketplace order')}));
     if(pref.layers.goals)life.goals.filter(g=>g.status==='active'&&g.deadline===key).forEach(g=>rows.push({type:'goal',title:g.title}));
     return rows;
   };
