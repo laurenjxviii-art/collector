@@ -2,6 +2,8 @@ import './vexum-reset.css';
 import './vexum-wishlist.css';
 import './vexum-financial.css';
 import './vexum-setup.css';
+import './vexum-social.css';
+import './vexum-sell.css';
 import type {Metadata} from 'next';
 
 export const metadata:Metadata={
