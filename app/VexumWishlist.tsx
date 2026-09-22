@@ -655,35 +655,72 @@ function PriorityBadge({priority}:{priority:WishlistPriority}){return <span clas
 function ItemArt({entry}:{entry:WishlistEntry}){return <div className="vxw-art">{entry.imageUrl?<img src={entry.imageUrl} alt=""/>:<ShoppingBag/>}</div>}
 function StateBadge({state}:{state:OpportunityState}){return <span className={'vxw-state '+state.tone}>{state.label}</span>}
 
-function OverviewDashboard({entries,opportunities,grails,preorders,planned,onOpen,onPlan}:{
+function answerWishlistQuestion(kind:string,entries:WishlistEntry[],financial:{budget?:number;currentSpend:number;currentPlanned:number;currentPreorders:number;nextPlanned:number;nextPreorders:number}){
+  if(kind==='targets'){
+    const rows=entries.filter(e=>e.market!==undefined&&e.record.targetPrice!==undefined&&e.market<=e.record.targetPrice).toSorted((x,y)=>(x.market!-x.record.targetPrice!)-(y.market!-y.record.targetPrice!));
+    return rows.length?rows.slice(0,5).map(e=>e.name+' · '+money(e.market)+' vs '+money(e.record.targetPrice)+' target').join('\n'):'No Wishlist item with supported market data is currently at or below target.';
+  }
+  if(kind==='grail'){
+    const rows=entries.filter(e=>e.record.priority==='Grail'&&grailProgress(e.record)<100).toSorted((x,y)=>grailProgress(y.record)-grailProgress(x.record));
+    return rows.length?rows[0].name+' is closest at '+grailProgress(rows[0].record)+'% funded.':'No unfinished Grail goal is currently available.';
+  }
+  if(kind==='preorders'){
+    const rows=entries.filter(e=>e.record.preorder?.enabled&&e.record.preorder.status!=='Cancelled'&&e.record.preorder.status!=='Delivered').toSorted((x,y)=>(x.record.preorder?.estimatedChargeDate||'9999').localeCompare(y.record.preorder?.estimatedChargeDate||'9999'));
+    return rows.length?rows.slice(0,5).map(e=>e.name+' · '+money(preorderCommitment(e.record))+' · '+(e.record.preorder?.estimatedChargeDate||'charge date unknown')).join('\n'):'No active preorder commitment is recorded.';
+  }
+  if(kind==='duplicates'){
+    const rows=entries.filter(e=>e.ownedQuantity>0);
+    return rows.length?rows.slice(0,8).map(e=>e.name+' · already own '+e.ownedQuantity).join('\n'):'No active Wishlist item matches an owned Portfolio item.';
+  }
+  if(kind==='stale'){
+    const cutoff=Date.now()-180*86400000;
+    const rows=entries.filter(e=>!e.record.marketUpdatedAt||Date.parse(e.record.marketUpdatedAt)<cutoff);
+    return rows.length?rows.slice(0,8).map(e=>e.name+' · '+(e.record.marketUpdatedAt?'last market update '+new Date(e.record.marketUpdatedAt).toLocaleDateString():'no saved market update')).join('\n'):'Every active item has a market update within the last six months.';
+  }
+  if(kind==='budget'){
+    if(financial.budget===undefined)return 'Set a monthly hobby budget before VEXUM calculates budget impact.';
+    const projected=financial.currentSpend+financial.currentPlanned+financial.currentPreorders;
+    const delta=financial.budget-projected;
+    return 'Recorded spend: '+money(financial.currentSpend)+'. Planned this month: '+money(financial.currentPlanned)+'. Preorders this month: '+money(financial.currentPreorders)+'. Projected against target: '+(delta>=0?money(delta)+' remaining.':money(Math.abs(delta))+' above target.');
+  }
+  return 'That intelligence question needs a data source that is not connected yet.';
+}
+
+function OverviewDashboard({entries,opportunities,grails,preorders,planned,financial,answer,onAsk,onOpen,onPlan}:{
   entries:WishlistEntry[];opportunities:Array<{entry:WishlistEntry;states:OpportunityState[];score:number}>;
   grails:WishlistEntry[];preorders:WishlistEntry[];planned:WishlistEntry[];
-  onOpen:(entry:WishlistEntry)=>void;onPlan:(entry:WishlistEntry)=>void;
+  financial:{budget?:number;currentSpend:number;currentPlanned:number;currentPreorders:number;nextPlanned:number;nextPreorders:number};
+  answer:string;onAsk:(kind:string)=>void;onOpen:(entry:WishlistEntry)=>void;onPlan:(entry:WishlistEntry)=>void;
 }){
   const months=Array.from(new Set(planned.map(entry=>entry.record.plannedMonth).filter(Boolean) as string[])).sort().slice(0,4);
   return <div className="vxw-overview-grid">
     <section className="vx-panel vxw-overview-opportunities">
-      <header><div><TrendingDown/><span><strong>Opportunities</strong><small>Ranked from your targets, priority, MSRP context, release timing, and goal state.</small></span></div><b>{opportunities.length}</b></header>
-      {opportunities.length?opportunities.map(({entry,states})=><button key={entry.id} onClick={()=>onOpen(entry)}><ItemArt entry={entry}/><span><strong>{entry.name}</strong><small>{money(entry.market)} current · {money(entry.record.targetPrice)} target</small><em>{states.slice(0,3).map(state=><StateBadge key={state.label} state={state}/>)}</em></span><ChevronRight/></button>):<OverviewEmpty text="No strong target/MSRP/release opportunities are supported by the current data."/>}
+      <header><div><TrendingDown/><span><strong>Opportunities</strong><small>Ranked from targets, price movement, priority, MSRP, release timing, and goal state.</small></span></div><b>{opportunities.length}</b></header>
+      {opportunities.length?opportunities.map(({entry,states})=><button key={entry.id} onClick={()=>onOpen(entry)}><ItemArt entry={entry}/><span><strong>{entry.name}</strong><small>{money(entry.market)} current · {money(entry.record.targetPrice)} target</small><em>{states.slice(0,3).map(state=><StateBadge key={state.label} state={state}/>)}</em></span><ChevronRight/></button>):<OverviewEmpty text="No strong target/MSRP/price-drop/release opportunity is supported by the current data."/>}
     </section>
-    <section className="vx-panel vxw-overview-plan"><header><div><CalendarDays/><span><strong>Purchase Plan</strong><small>Wishlist planning source of truth.</small></span></div></header>
+    <section className="vx-panel vxw-overview-plan"><header><div><CalendarDays/><span><strong>Purchase Plan</strong><small>Wishlist is the spending-plan source of truth.</small></span></div></header>
       {months.length?months.map(month=>{const rows=planned.filter(entry=>entry.record.plannedMonth===month);const total=rows.reduce((sum,entry)=>sum+(entry.market??entry.record.targetPrice??entry.record.maximumPrice??0)*entry.record.quantityWanted,0);return <button key={month} onClick={()=>onOpen(rows[0])}><span><b>{plannedLabel(month)}</b><small>{rows.length} item{rows.length===1?'':'s'}</small></span><strong>{money(total)}</strong></button>}):<OverviewEmpty text="Nothing is planned yet. Assign a month without committing to a purchase."/>}
     </section>
     <section className="vx-panel vxw-overview-preorders"><header><div><PackageCheck/><span><strong>Preorder Commitments</strong><small>Only balances you explicitly entered.</small></span></div></header>
       {preorders.length?preorders.slice(0,5).map(entry=><button key={entry.id} onClick={()=>onOpen(entry)}><ItemArt entry={entry}/><span><strong>{entry.name}</strong><small>{entry.record.preorder?.status} · charge {entry.record.preorder?.estimatedChargeDate||'unknown'}</small></span><b>{money(preorderCommitment(entry.record))}</b></button>):<OverviewEmpty text="No active preorder commitments."/>}
     </section>
-    <section className="vx-panel vxw-overview-grails"><header><div><Gem/><span><strong>Grail Goals</strong><small>Savings stays separate from normal hobby spending.</small></span></div></header>
+    <section className="vx-panel vxw-overview-grails"><header><div><Gem/><span><strong>Grail Goals</strong><small>Savings remains separate from ordinary hobby spending.</small></span></div></header>
       {grails.length?grails.slice(0,5).map(entry=>{const pct=grailProgress(entry.record);return <button key={entry.id} onClick={()=>onOpen(entry)}><ItemArt entry={entry}/><span><strong>{entry.name}</strong><small>{money(entry.record.grail?.savedAmount)} / {money(entry.record.grail?.goalAmount??entry.record.targetPrice)}</small><i><em style={{width:pct+'%'}}/></i></span><b>{pct}%</b></button>}):<OverviewEmpty text="Mark a Wishlist item as Grail to create a focused goal."/>}
     </section>
-    <section className="vx-panel vxw-overview-coverage"><header><div><Star/><span><strong>Wishlist Coverage</strong><small>Core data loads independently from providers.</small></span></div></header><div className="vxw-coverage-grid">
+    <section className="vx-panel vxw-overview-coverage"><header><div><Star/><span><strong>Wishlist Coverage</strong><small>Core user data loads independently from providers.</small></span></div></header><div className="vxw-coverage-grid">
       <span><b>{entries.filter(e=>e.marketSource==='live').length}</b><small>Live provider</small></span>
       <span><b>{entries.filter(e=>e.marketSource==='saved').length}</b><small>Saved values</small></span>
       <span><b>{entries.filter(e=>e.marketSource==='demo').length}</b><small>Demo-labeled</small></span>
       <span><b>{entries.filter(e=>e.marketSource==='unavailable').length}</b><small>Unavailable</small></span>
     </div></section>
-    <section className="vx-panel vxw-overview-intel"><header><div><Eye/><span><strong>VEXUM Intelligence</strong><small>Cross-system questions are ready for real data adapters.</small></span></div></header><div className="vxw-ai-questions">
-      <button>Which items are under my target right now?</button><button>Which Grail is closest to funded?</button><button>What preorders charge next?</button><button>Which Wishlist items do I already own?</button>
-    </div><small className="vxw-ai-boundary">AI execution is not connected on this page yet. These prompts are not answered with fabricated data.</small></section>
+    <section className="vx-panel vxw-overview-intel"><header><div><Eye/><span><strong>VEXUM Intelligence</strong><small>These answers are computed from your current Wishlist, Portfolio, and Financial workspace data.</small></span></div></header><div className="vxw-ai-questions">
+      <button onClick={()=>onAsk('targets')}>Which items are under my target?</button>
+      <button onClick={()=>onAsk('grail')}>Which Grail is closest to funded?</button>
+      <button onClick={()=>onAsk('preorders')}>What preorders charge next?</button>
+      <button onClick={()=>onAsk('duplicates')}>Which Wishlist items do I own?</button>
+      <button onClick={()=>onAsk('stale')}>What hasn't updated in six months?</button>
+      <button onClick={()=>onAsk('budget')}>What is this month's purchase-plan impact?</button>
+    </div>{answer?<pre className="vxw-ai-answer">{answer}</pre>:<small className="vxw-ai-boundary">Completion, local stock, Social supply, Setup fit, and seller-quality questions remain unavailable until those real sources are connected.</small>}</section>
   </div>;
 }
 function OverviewEmpty({text}:{text:string}){return <div className="vxw-overview-empty"><span>{text}</span></div>}
