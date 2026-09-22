@@ -172,7 +172,7 @@ export default function VexumApp({
   const closeQuick=()=>{setQuickOpen(false);setQuickType(undefined)};
   const openCommand=()=>{setCommandOpen(true);setProfileOpen(false);setNotificationsOpen(false)};
   const openNotifications=()=>{setNotificationsOpen(v=>!v);setProfileOpen(false);setCommandOpen(false)};
-  const openProfile=()=>{setProfileOpen(v=>!v);setNotificationsOpen(false);setCommandOpen(false)};
+  const openProfile=()=>{setNotificationsOpen(false);setCommandOpen(false);if(!workspace.session){setProfileOpen(false);setAccountOpen(true);return}setProfileOpen(v=>!v)};
 
   const frame=(hero:string,children:ReactNode)=><PageFrame hero={hero} displayName={displayName} unread={unread} onCommand={openCommand} onQuick={()=>openQuick()} onNotifications={openNotifications} onProfile={openProfile}>{children}</PageFrame>;
 
