@@ -4,7 +4,7 @@ import {useEffect,useMemo,useState} from 'react';
 import type {ReactNode} from 'react';
 import {
   Bell,CalendarCheck,ChevronDown,CircleDollarSign,HelpCircle,Home,Layers3,LifeBuoy,LogOut,
-  MessageSquare,Plus,Search,Settings,Share2,ShoppingBag,SlidersHorizontal,Star,UserRound,X
+  LockKeyhole,MessageSquare,Plus,Search,Settings,Share2,ShoppingBag,SlidersHorizontal,Star,UserRound,X
 } from 'lucide-react';
 import VexumHome from './VexumHome';
 import VexumLife from './VexumLife';
