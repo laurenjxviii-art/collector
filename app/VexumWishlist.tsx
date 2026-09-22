@@ -570,11 +570,31 @@ function sortEntries(a:WishlistEntry,b:WishlistEntry,sort:string){
     const gb=b.market!==undefined&&b.record.targetPrice!==undefined?Math.abs(b.market-b.record.targetPrice):Infinity;
     return ga-gb;
   }
+  if(sort==='drop')return priceDropPercent(b)-priceDropPercent(a);
+  if(sort==='availability')return availabilityScore(b)-availabilityScore(a);
   if(sort==='release')return (a.releaseDate||'9999').localeCompare(b.releaseDate||'9999');
   if(sort==='planned')return (a.record.plannedMonth||'9999').localeCompare(b.record.plannedMonth||'9999');
   if(sort==='grail')return grailProgress(b.record)-grailProgress(a.record);
   if(sort==='freshness')return (b.record.marketUpdatedAt||'').localeCompare(a.record.marketUpdatedAt||'');
   return PRIORITY_ORDER[a.record.priority]-PRIORITY_ORDER[b.record.priority]||a.name.localeCompare(b.name);
+}
+
+function priceDropPercent(entry:WishlistEntry){
+  const values=entry.marketHistory.map(point=>point.value).filter(value=>Number.isFinite(value)&&value>0);
+  if(entry.market!==undefined&&(!values.length||values.at(-1)!==entry.market))values.push(entry.market);
+  if(values.length<2)return 0;
+  const latest=values.at(-1)!;
+  let previous=values.at(-2)!;
+  for(let i=values.length-2;i>=0;i--){if(Math.abs(values[i]-latest)>.009){previous=values[i];break}}
+  if(previous<=0||latest>=previous)return 0;
+  return (previous-latest)/previous*100;
+}
+function availabilityScore(entry:WishlistEntry){
+  let score=0;
+  if(entry.record.preorder?.enabled&&entry.record.preorder.status!=='Cancelled')score+=3;
+  if(entry.record.alerts.localStock.enabled)score+=2;
+  if(entry.record.alerts.marketplace.enabled||entry.record.alerts.newListing.enabled||entry.record.alerts.usedListing.enabled)score+=1;
+  return score;
 }
 
 function opportunityFor(entry:WishlistEntry){
@@ -591,6 +611,8 @@ function opportunityFor(entry:WishlistEntry){
     if(entry.market<entry.msrp){states.push({label:'Below MSRP',tone:'green'});score+=20}
     else if(Math.abs(entry.market-entry.msrp)<.01){states.push({label:'At MSRP',tone:'green'});score+=15}
   }
+  const drop=priceDropPercent(entry);
+  if(drop>=5){states.push({label:'Price drop '+drop.toFixed(0)+'%',tone:'green'});score+=Math.min(25,drop)}
   if(entry.record.preorder?.enabled&&entry.record.preorder.status!=='Cancelled'){states.push({label:'Preorder tracked',tone:'muted'});score+=7}
   if(dateSoon(entry.releaseDate||entry.record.preorder?.estimatedReleaseDate,30)){states.push({label:'Release soon',tone:'orange'});score+=10}
   if(entry.ownedQuantity>0){states.push({label:'Already owned',tone:'orange'});score-=5}
@@ -620,7 +642,7 @@ function marketCoverage(entries:WishlistEntry[]){
   return covered+' / '+entries.length;
 }
 function today(){return new Date().toISOString().slice(0,10)}
-function hasFilters(v:any){return Boolean(v.query||v.category!=='All'||v.manufacturer!=='All'||v.line!=='All'||v.condition!=='All'||v.retailer!=='All'||v.targetState!=='All'||v.plannedFilter!=='All'||v.duplicateOnly||v.minPrice||v.maxPrice||v.priorityFilter.length)}
+function hasFilters(v:any){return Boolean(v.query||v.category!=='All'||v.manufacturer!=='All'||v.line!=='All'||v.condition!=='All'||v.retailer!=='All'||v.targetState!=='All'||v.availabilityFilter!=='All'||v.releaseFilter!=='All'||v.plannedFilter!=='All'||v.duplicateOnly||v.minPrice||v.maxPrice||v.priorityFilter.length)}
 
 function StatCard({label,value,note,icon}:{label:string;value:string;note:string;icon:React.ReactNode}){
   return <div className="vxw-stat"><span>{icon}{label}</span><strong>{value}</strong><small>{note}</small></div>;
