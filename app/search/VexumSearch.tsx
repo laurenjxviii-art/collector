@@ -9,6 +9,8 @@ import IdentifyItem from './IdentifyItem';
 import {DEMO_PRODUCTS,DEMO_RECENT_IDS,DEMO_RELATIONSHIPS} from '../../lib/search/demo';
 import {resolveSearch} from '../../lib/search/providers';
 import type {NormalizedProduct,UserProductRelationship} from '../../lib/search/types';
+import {useWorkspace} from '../../lib/useWorkspace';
+import {alertDefaults,conditionOptions,newWishlistRecord,snapshotFromProduct,wishlistEvent,type WishlistPriority,type WishlistRecord} from '../../lib/wishlist';
 
 type IdentifyMethod='camera'|'image'|'barcode'|'receipt'|'url';
 
@@ -34,6 +36,7 @@ function saveRelationships(value:Record<string,UserProductRelationship>){
 function money(n?:number){return typeof n==='number'?'$'+n.toFixed(2):'—'}
 
 export default function VexumSearch({initialQuery='',initialProductId=''}:Props){
+  const workspace=useWorkspace();
   const [query,setQuery]=useState(initialQuery);
   const [submittedQuery,setSubmittedQuery]=useState(initialQuery);
   const [results,setResults]=useState<NormalizedProduct[]>([]);
@@ -90,7 +93,22 @@ export default function VexumSearch({initialQuery='',initialProductId=''}:Props)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
-  const relationFor=(product:NormalizedProduct)=>relationships[product.id]||{
+  const effectiveRelationships=useMemo(()=>{
+    const next={...relationships};
+    Object.entries(workspace.data.wishlist||{}).forEach(([productId,record])=>{
+      if(record.source!=='catalog')return;
+      const owned=next[productId]?.ownedQuantity||0;
+      next[productId]={
+        productId,ownedQuantity:owned,wishlisted:!record.archived,
+        tracked:Object.values(record.alerts).some(rule=>rule.enabled&&rule.frequency!=='Off'),
+        grail:record.priority==='Grail',targetPrice:record.targetPrice,maxPrice:record.maximumPrice,
+        conditionRequirement:record.desiredCondition,setupLocation:next[productId]?.setupLocation
+      };
+    });
+    return next;
+  },[relationships,workspace.data.wishlist]);
+
+  const relationFor=(product:NormalizedProduct)=>effectiveRelationships[product.id]||{
     productId:product.id,ownedQuantity:0,wishlisted:false,tracked:false,grail:false
   };
 
@@ -100,6 +118,10 @@ export default function VexumSearch({initialQuery='',initialProductId=''}:Props)
       saveRelationships(value);
       return value;
     });
+  };
+
+  const saveWishlistRecord=(record:WishlistRecord)=>{
+    workspace.update({...workspace.data,wishlist:{...(workspace.data.wishlist||{}),[record.productId]:record}});
   };
 
   const syncUrl=(nextQuery:string,product?:NormalizedProduct|null,replace=false)=>{
@@ -188,14 +210,14 @@ export default function VexumSearch({initialQuery='',initialProductId=''}:Props)
     </div>:null}
 
     {loading?<SearchSkeleton/>:error?<div className="vxs-search-error"><strong>Search unavailable</strong><p>{error}</p><button onClick={()=>void performSearch(submittedQuery)}>Try again</button></div>:selected?
-      <ProductIntelligence product={selected} relationship={relationships[selected.id]} onBack={closeProduct} onAddPortfolio={setPortfolioModal} onAddWishlist={setWishlistModal} onRelationshipChange={setRelation}/>:
-      submittedQuery?<SearchResults query={submittedQuery} products={results} relationships={relationships} onSelect={selectProduct} onAddPortfolio={setPortfolioModal} onAddWishlist={setWishlistModal} onIdentify={()=>setIdentify('camera')}/>:
-      <SearchDiscovery recentIds={recentIds} relationships={relationships} onSelect={selectProduct} onSearch={value=>void performSearch(value)} onIdentify={()=>setIdentify('camera')}/>
+      <ProductIntelligence product={selected} relationship={effectiveRelationships[selected.id]} onBack={closeProduct} onAddPortfolio={setPortfolioModal} onAddWishlist={setWishlistModal} onRelationshipChange={setRelation}/>:
+      submittedQuery?<SearchResults query={submittedQuery} products={results} relationships={effectiveRelationships} onSelect={selectProduct} onAddPortfolio={setPortfolioModal} onAddWishlist={setWishlistModal} onIdentify={()=>setIdentify('camera')}/>:
+      <SearchDiscovery recentIds={recentIds} relationships={effectiveRelationships} onSelect={selectProduct} onSearch={value=>void performSearch(value)} onIdentify={()=>setIdentify('camera')}/>
     }
 
     {identify?<IdentifyItem initialMethod={identify} onClose={()=>setIdentify(null)} onConfirm={product=>{setIdentify(null);selectProduct(product)}}/>:null}
     {portfolioModal?<AddPortfolioModal product={portfolioModal} relation={relationFor(portfolioModal)} onClose={()=>setPortfolioModal(null)} onSave={next=>{setRelation(next);setPortfolioModal(null)}}/>:null}
-    {wishlistModal?<WishlistModal product={wishlistModal} relation={relationFor(wishlistModal)} onClose={()=>setWishlistModal(null)} onSave={next=>{setRelation(next);setWishlistModal(null)}}/>:null}
+    {wishlistModal?<WishlistModal product={wishlistModal} relation={relationFor(wishlistModal)} record={workspace.data.wishlist?.[wishlistModal.id]} onClose={()=>setWishlistModal(null)} onSave={(next,record)=>{setRelation(next);saveWishlistRecord(record);setWishlistModal(null)}}/>:null}
   </div>;
 }
 
@@ -219,27 +241,47 @@ function AddPortfolioModal({product,relation,onClose,onSave}:{product:Normalized
   </div></div>;
 }
 
-function WishlistModal({product,relation,onClose,onSave}:{product:NormalizedProduct;relation:UserProductRelationship;onClose:()=>void;onSave:(r:UserProductRelationship)=>void}){
-  const [priority,setPriority]=useState(relation.grail?'Grail':'Medium');
-  const [target,setTarget]=useState(relation.targetPrice?String(relation.targetPrice):product.msrp?String(product.msrp):'');
-  const [max,setMax]=useState(relation.maxPrice?String(relation.maxPrice):'');
-  const [condition,setCondition]=useState(relation.conditionRequirement||'Any');
-  const [msrpAlert,setMsrpAlert]=useState(true);
-  const [localAlert,setLocalAlert]=useState(false);
-  const [marketAlert,setMarketAlert]=useState(true);
+function WishlistModal({product,relation,record,onClose,onSave}:{product:NormalizedProduct;relation:UserProductRelationship;record?:WishlistRecord;onClose:()=>void;onSave:(r:UserProductRelationship,record:WishlistRecord)=>void}){
+  const [priority,setPriority]=useState<WishlistPriority>(record?.priority||(relation.grail?'Grail':'Medium'));
+  const [target,setTarget]=useState(record?.targetPrice!==undefined?String(record.targetPrice):relation.targetPrice?String(relation.targetPrice):product.msrp?String(product.msrp):'');
+  const [max,setMax]=useState(record?.maximumPrice!==undefined?String(record.maximumPrice):relation.maxPrice?String(relation.maxPrice):'');
+  const [condition,setCondition]=useState(record?.desiredCondition||relation.conditionRequirement||'Any');
+  const [msrpAlert,setMsrpAlert]=useState(record?.alerts.msrp.enabled??true);
+  const [localAlert,setLocalAlert]=useState(record?.alerts.localStock.enabled??false);
+  const [marketAlert,setMarketAlert]=useState(record?.alerts.marketplace.enabled??true);
+  const [frequency,setFrequency]=useState(record?.alerts.priceTarget.frequency||'Daily Digest');
+
+  const save=()=>{
+    const targetPrice=Number(target)||undefined,maxPrice=Number(max)||undefined;
+    const base=record||newWishlistRecord({
+      productId:product.id,priority,source:'catalog',snapshot:snapshotFromProduct(product),targetPrice,
+      maximumPrice:maxPrice,desiredCondition:condition,initialMarket:product.demoMarket?.current
+    });
+    const alerts={...alertDefaults(priority)};
+    alerts.priceTarget={...alerts.priceTarget,enabled:Boolean(targetPrice),frequency:targetPrice?frequency as any:'Off'};
+    alerts.msrp={...alerts.msrp,enabled:msrpAlert,frequency:msrpAlert?frequency as any:'Off'};
+    alerts.localStock={...alerts.localStock,enabled:localAlert,frequency:localAlert?frequency as any:'Off',radiusMiles:record?.alerts.localStock.radiusMiles||25};
+    alerts.marketplace={...alerts.marketplace,enabled:marketAlert,frequency:marketAlert?frequency as any:'Off'};
+    const nextRecord=wishlistEvent(base,'updated','Wishlist preferences saved from Search',{
+      priority,targetPrice,maximumPrice:maxPrice,desiredCondition:condition,alerts,archived:false,
+      snapshot:snapshotFromProduct(product)
+    });
+    onSave({...relation,wishlisted:true,grail:priority==='Grail',targetPrice,maxPrice,conditionRequirement:condition,tracked:Object.values(alerts).some(rule=>rule.enabled)},nextRecord);
+  };
+
   return <div className="vxs-modal-backdrop" role="dialog" aria-modal="true"><div className="vxs-quick-modal">
-    <header><div><span>ADD TO WISHLIST</span><h2>{product.canonicalName}</h2><p>Set acquisition preferences now; providers can use them later.</p></div><button onClick={onClose}><X/></button></header>
+    <header><div><span>ADD TO WISHLIST</span><h2>{product.canonicalName}</h2><p>Configure how VEXUM should treat this acquisition. Product identity stays canonical.</p></div><button onClick={onClose}><X/></button></header>
     <div className="vxs-owner-fields">
-      <label>Priority<select value={priority} onChange={e=>setPriority(e.target.value)}><option>Low</option><option>Medium</option><option>High</option><option>Grail</option></select></label>
+      <label>Priority<select value={priority} onChange={e=>setPriority(e.target.value as WishlistPriority)}><option>Low</option><option>Medium</option><option>High</option><option>Grail</option></select></label>
       <label>Target Price<input value={target} onChange={e=>setTarget(e.target.value)} placeholder="0.00"/></label>
       <label>Maximum Price<input value={max} onChange={e=>setMax(e.target.value)} placeholder="Optional"/></label>
-      <label>Condition<select value={condition} onChange={e=>setCondition(e.target.value)}><option>Any</option><option>Sealed</option><option>Opened Complete</option><option>Loose</option></select></label>
+      <label>Condition<select value={condition} onChange={e=>setCondition(e.target.value)}>{conditionOptions(product.category).map(value=><option key={value}>{value}</option>)}</select></label>
+      <label>Alert Frequency<select value={frequency} onChange={e=>setFrequency(e.target.value)}><option>Immediate</option><option>Daily Digest</option><option>Weekly Digest</option></select></label>
     </div>
-    <div className="vxs-alert-options"><label><input type="checkbox" checked={msrpAlert} onChange={e=>setMsrpAlert(e.target.checked)}/>Notify at MSRP</label><label><input type="checkbox" checked={localAlert} onChange={e=>setLocalAlert(e.target.checked)}/>Notify locally</label><label><input type="checkbox" checked={marketAlert} onChange={e=>setMarketAlert(e.target.checked)}/>Marketplace alerts</label></div>
-    <footer><button onClick={onClose}>Cancel</button><button className="primary" onClick={()=>onSave({...relation,wishlisted:true,grail:priority==='Grail',targetPrice:Number(target)||undefined,maxPrice:Number(max)||undefined,conditionRequirement:condition,tracked:relation.tracked||msrpAlert||localAlert||marketAlert})}><Star/>Save Wishlist</button></footer>
+    <div className="vxs-alert-options"><label><input type="checkbox" checked={msrpAlert} onChange={e=>setMsrpAlert(e.target.checked)}/>At / below MSRP</label><label><input type="checkbox" checked={localAlert} onChange={e=>setLocalAlert(e.target.checked)}/>Local stock</label><label><input type="checkbox" checked={marketAlert} onChange={e=>setMarketAlert(e.target.checked)}/>Marketplace listings</label></div>
+    <footer><button onClick={onClose}>Cancel</button><button className="primary" onClick={save}><Star/>Save Wishlist</button></footer>
   </div></div>;
 }
-
 function SearchSkeleton(){
   return <div className="vxs-skeleton">
     <div className="vxs-skeleton-row">{[1,2,3,4].map(i=><i key={i}/>)}</div>
