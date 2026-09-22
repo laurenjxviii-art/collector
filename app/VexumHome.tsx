@@ -95,7 +95,7 @@ function setupCapacityRows(store:Store){
   return rows;
 }
 
-export default function VexumHome(){
+export default function VexumHome({onQuickAdd}:{onQuickAdd?:()=>void}={}){
   const workspace=useWorkspace();
   const state=normalizeHomeDashboard(workspace.data.homeDashboard);
   const [editing,setEditing]=useState(false);
@@ -300,7 +300,7 @@ export default function VexumHome(){
   return <div className="vxh-page">
     <section className="vxh-title">
       <div><span>HOME</span><h1>{greeting()}{profileName?', '+profileName:''}.</h1><p>{dateLabel} · Your VEXUM command center.</p></div>
-      <div className="vxh-title-actions"><button onClick={()=>location.assign('/search')}><Search/>Quick Add</button><button className={editing?'active':''} onClick={()=>setEditing(value=>!value)}><SlidersHorizontal/>{editing?'Done Editing':'Edit Widgets'}</button></div>
+      <div className="vxh-title-actions"><button onClick={()=>onQuickAdd?onQuickAdd():location.assign('/search')}><Plus/>Quick Add</button><button className={editing?'active':''} onClick={()=>setEditing(value=>!value)}><SlidersHorizontal/>{editing?'Done Editing':'Edit Widgets'}</button></div>
     </section>
     <div className="vxh-editbar">
       {editing?<><span><GripVertical/>Drag to reorder. Resize, hide, or restore widgets without changing their data source.</span><button onClick={()=>setLibraryOpen(value=>!value)}><Plus/>Add Widget</button><button onClick={reset}><RefreshCw/>Reset Layout</button></>:<span>Widgets only show workspace data VEXUM can actually verify. Unavailable sources stay explicit.</span>}
