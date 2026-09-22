@@ -65,6 +65,7 @@ export async function verifyMfa(config:CloudConfig,factorId:string,challengeId:s
   const value=await request(config,'/auth/v1/factors/'+encodeURIComponent(factorId)+'/verify',{method:'POST',body:JSON.stringify({challenge_id:challengeId,code})},session.access_token);
   const next=sessionFromAuth(value);
   if(!next)throw new Error('MFA verified but the upgraded session was not returned. Sign in again.');
+  keep(next);
   return next;
 }
 export async function unenrollMfa(config:CloudConfig,factorId:string){
