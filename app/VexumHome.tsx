@@ -129,14 +129,14 @@ export default function VexumHome({onQuickAdd}:{onQuickAdd?:()=>void}={}){
       rows.push({date:task.dueDate!,title:task.title,kind:'Task',sort:task.dueDate!+'T'+(task.dueTime||'23:59')});
     }
     for(const event of life.events)rows.push({date:event.start.slice(0,10),title:event.title,kind:'Event',sort:event.start});
-    for(let offset=0;offset<7;offset++){
+    if(platform.lifeSections.includes('Fitness'))for(let offset=0;offset<7;offset++){
       const d=new Date();d.setDate(d.getDate()+offset);
       for(const plan of life.workoutPlans.filter(plan=>plan.active&&plan.days.includes(d.getDay()))){
         const key=todayKey(d);rows.push({date:key,title:plan.name,kind:'Workout',sort:key+'T'+(plan.time||'23:00')});
       }
     }
     return rows.filter(row=>row.date>=today).toSorted((a,b)=>a.sort.localeCompare(b.sort)).slice(0,5);
-  },[life.tasks,life.events,life.workoutPlans,today]);
+  },[life.tasks,life.events,life.workoutPlans,today,platform.lifeSections]);
   const month=new Date().toISOString().slice(0,7);
   const liveMonthSpend=financial.transactions.filter(tx=>tx.direction==='expense'&&tx.isHobby&&tx.date.startsWith(month)).reduce((sum,tx)=>sum+tx.amount,0);
   const liveBudget=workspace.data.financialPreferences?.monthlyHobbyBudget||financial.budgets.find(budget=>budget.active&&budget.period==='monthly'&&(!budget.category||/hobby|collect/i.test(budget.category)))?.amount;
@@ -259,7 +259,7 @@ export default function VexumHome({onQuickAdd}:{onQuickAdd?:()=>void}={}){
     if(layout.id==='brief'){
       const rows:ReadonlyArray<readonly [string,string,string]>=[
         ['Today',lifeTodayTasks.length+' task'+(lifeTodayTasks.length===1?'':'s')+' · '+lifeTodayEvents.length+' event'+(lifeTodayEvents.length===1?'':'s'),lifeTodayTasks.length?'orange':'green'],
-        ['Fitness',lifeTodayWorkouts[0]?.name||'No workout scheduled',lifeTodayWorkouts.length?'green':'muted'],
+        ...(platform.lifeSections.includes('Fitness')?[['Fitness',lifeTodayWorkouts[0]?.name||'No workout scheduled',lifeTodayWorkouts.length?'green':'muted'] as const]:[]),
         ['Momentum',lifeMomentum?lifeMomentum+'% over 30 days':'No habit data',lifeMomentum>=80?'green':lifeMomentum?'orange':'muted'],
         ['Portfolio',hasPortfolio?money(currentValue)+' current value':'No live ownership yet',hasPortfolio?'green':'muted'],
         ['Wishlist',liveWishlist.length+' target opportunit'+(liveWishlist.length===1?'y':'ies'),liveWishlist.length?'green':'muted'],
