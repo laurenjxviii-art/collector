@@ -19,7 +19,7 @@ type Composer='space'|'object'|null;
 function money(value:number){return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(value)}
 function now(){return new Date().toISOString()}
 function pct(value:number,total:number){return total>0?Math.max(0,Math.min(100,Math.round(value/total*100))):0}
-function unitLabel(unit:SetupUnit){return unit==='"ft'?'ft':unit}
+function unitLabel(unit:SetupUnit){return unit}
 function objectContents(data:SetupData,objectId:string){return data.placements.filter(p=>p.setupObjectId===objectId)}
 function itemDimensions(item:{customFields:Record<string,string>}){
   const read=(...keys:string[])=>{
