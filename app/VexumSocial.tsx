@@ -1,6 +1,7 @@
 'use client';
 
 import {useEffect,useMemo,useState} from 'react';
+import type {ChangeEvent,ReactNode} from 'react';
 import {
   AlertTriangle,Bell,Check,ChevronRight,CircleUserRound,Eye,Flag,Heart,Image as ImageIcon,
   Layers3,MapPin,MessageCircle,MessagesSquare,PackageOpen,Plus,Search,Settings2,Share2,
@@ -66,7 +67,7 @@ function Avatar({profile,size='md'}:{profile?:SocialProfile;size?:'sm'|'md'|'lg'
   return <div className={'vxsoc-avatar '+size} style={profile?.avatar_url?{backgroundImage:'url("'+profile.avatar_url.replaceAll('"','')+'")'}:undefined}>{profile?.avatar_url?'':initials(profile)}</div>;
 }
 
-function SocialEmpty({icon,title,body,action}:{icon:React.ReactNode;title:string;body:string;action?:React.ReactNode}){
+function SocialEmpty({icon,title,body,action}:{icon:ReactNode;title:string;body:string;action?:ReactNode}){
   return <div className="vxsoc-empty">{icon}<strong>{title}</strong><p>{body}</p>{action}</div>;
 }
 
@@ -385,11 +386,11 @@ function CommunityStrip({communities,memberships,active,onSelect,onJoin,onCreate
 }
 
 function DropsView({drops}:{drops:SocialDropEvent[]}){
-  return <section className="vxsoc-panel vxsoc-special"><header><div><span>DROPS</span><h2>Provider-backed releases and stock events</h2><p>These rows come from VEXUM's drop-event data. Nothing is invented to make the page look busy.</p></div></header>{drops.map(drop=><div className="vxsoc-drop-row" key={drop.id}><div className="art" style={drop.image_url?{backgroundImage:'url("'+drop.image_url.replaceAll('"','')+'")'}:undefined}>{drop.image_url?'':<Store/>}</div><span><strong>{drop.product_name}</strong><small>{drop.retailer} · {drop.provider} · last seen {timeAgo(drop.last_seen)}</small></span><em>{drop.stock_status.replaceAll('_',' ')}</em><b>{drop.price!==null?money(drop.price):'Price unavailable'}</b>{drop.product_url?<button onClick={()=>window.open(drop.product_url,'_blank','noopener,noreferrer')}>Retailer</button>:null}</div>)}{!drops.length?<SocialEmpty icon={<Bell/>} title="No connected drops yet" body="When Search/Radar providers create real release or stock events, they appear here. Social does not manufacture release activity."/ >:null}</section>;
+  return <section className="vxsoc-panel vxsoc-special"><header><div><span>DROPS</span><h2>Provider-backed releases and stock events</h2><p>These rows come from VEXUM's drop-event data. Nothing is invented to make the page look busy.</p></div></header>{drops.map(drop=><div className="vxsoc-drop-row" key={drop.id}><div className="art" style={drop.image_url?{backgroundImage:'url("'+drop.image_url.replaceAll('"','')+'")'}:undefined}>{drop.image_url?'':<Store/>}</div><span><strong>{drop.product_name}</strong><small>{drop.retailer} · {drop.provider} · last seen {timeAgo(drop.last_seen)}</small></span><em>{drop.stock_status.replaceAll('_',' ')}</em><b>{drop.price!==null?money(drop.price):'Price unavailable'}</b>{drop.product_url?<button onClick={()=>window.open(drop.product_url,'_blank','noopener,noreferrer')}>Retailer</button>:null}</div>)}{!drops.length?<SocialEmpty icon={<Bell/>} title="No connected drops yet" body="When Search/Radar providers create real release or stock events, they appear here. Social does not manufacture release activity."/>:null}</section>;
 }
 
 function LocalView({reports}:{reports:SocialStockReport[]}){
-  return <section className="vxsoc-panel vxsoc-special"><header><div><span>LOCAL</span><h2>Crowdsourced stock reports</h2><p>Store/venue labels only. Collector home addresses are never part of this surface.</p></div></header>{reports.map(report=><div className="vxsoc-local-row" key={report.id}><MapPin/><span><strong>{report.retailer||'Retailer'} · {report.store_label||'Store location'}</strong><small>{report.product_id} · reported {timeAgo(report.reported_at)} · community reported</small></span><em>{report.reported_status.replaceAll('_',' ')}</em>{report.reported_quantity!==null?<b>{report.reported_quantity} reported</b>:null}</div>)}{!reports.length?<SocialEmpty icon={<MapPin/>} title="No local stock reports yet" body="Local remains empty until a collector intentionally submits a crowdsourced store report. VEXUM will not infer or expose private residence information."/ >:null}</section>;
+  return <section className="vxsoc-panel vxsoc-special"><header><div><span>LOCAL</span><h2>Crowdsourced stock reports</h2><p>Store/venue labels only. Collector home addresses are never part of this surface.</p></div></header>{reports.map(report=><div className="vxsoc-local-row" key={report.id}><MapPin/><span><strong>{report.retailer||'Retailer'} · {report.store_label||'Store location'}</strong><small>{report.product_id} · reported {timeAgo(report.reported_at)} · community reported</small></span><em>{report.reported_status.replaceAll('_',' ')}</em>{report.reported_quantity!==null?<b>{report.reported_quantity} reported</b>:null}</div>)}{!reports.length?<SocialEmpty icon={<MapPin/>} title="No local stock reports yet" body="Local remains empty until a collector intentionally submits a crowdsourced store report. VEXUM will not infer or expose private residence information."/>:null}</section>;
 }
 
 function MessagesView(){
@@ -427,7 +428,7 @@ function PostComposer({profile,communities,products,setups,collections,onClose,o
     if(tags.some(tag=>tag.product_id===option.tag.product_id&&tag.portfolio_item_id===option.tag.portfolio_item_id))return;
     setTags(current=>[...current,option.tag]);setProductKey('');
   };
-  const file=(event:React.ChangeEvent<HTMLInputElement>)=>{
+  const file=(event:ChangeEvent<HTMLInputElement>)=>{
     const f=event.target.files?.[0];if(!f)return;
     if(f.size>8*1024*1024)return;
     const reader=new FileReader();reader.onload=()=>setImageUrl(String(reader.result||''));reader.readAsDataURL(f);
