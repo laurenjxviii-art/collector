@@ -2,7 +2,7 @@ export type WishlistPriority='Low'|'Medium'|'High'|'Grail';
 export type WishlistViewMode='table'|'grid';
 export type WishlistAlertFrequency='Immediate'|'Daily Digest'|'Weekly Digest'|'Off';
 export type WishlistAlertKey=
-  'priceTarget'|'priceMaximum'|'msrp'|'belowMsrp'|'localStock'|'restock'|
+  'priceTarget'|'priceMaximum'|'priceDrop'|'msrp'|'belowMsrp'|'localStock'|'restock'|
   'marketplace'|'usedListing'|'newListing'|'releaseChange'|'preorderOpen'|'preorderClosing'|'newVariant'|'promotion';
 
 export type WishlistAlertRule={
@@ -13,11 +13,14 @@ export type WishlistAlertRule={
   condition?:string;
 };
 
+export type WishlistGrailSavingsPoint={at:string;amount:number};
 export type WishlistGrailGoal={
   goalAmount?:number;
   savedAmount?:number;
   deadline?:string;
   status:'Not Started'|'Saving'|'Goal Reached'|'Purchased'|'Paused';
+  completedAt?:string;
+  savingsHistory?:WishlistGrailSavingsPoint[];
 };
 
 export type WishlistPreorder={
@@ -74,6 +77,13 @@ export type WishlistCatalogSnapshot={
   releaseYear?:string;
 };
 
+export type WishlistListingRules={
+  maximumListingPrice?:number;
+  shippingCeiling?:number;
+  sellerRatingMinimum?:number;
+};
+export type WishlistVisibility='Private'|'Friends'|'Community'|'Public';
+
 export type WishlistRecord={
   productId:string;
   source:'catalog'|'workspace';
@@ -85,6 +95,8 @@ export type WishlistRecord={
   desiredCondition:string;
   retailers:string[];
   marketplacePreference:'Any source'|'Retail only'|'Marketplace acceptable'|'Local only'|'Used acceptable'|'New only';
+  listingRules:WishlistListingRules;
+  visibility:WishlistVisibility;
   quantityWanted:number;
   deadline?:string;
   plannedMonth?:string;
@@ -114,13 +126,14 @@ export type WishlistPreferences={
 };
 
 export const WISHLIST_ALERT_KEYS:WishlistAlertKey[]=[
-  'priceTarget','priceMaximum','msrp','belowMsrp','localStock','restock',
+  'priceTarget','priceMaximum','priceDrop','msrp','belowMsrp','localStock','restock',
   'marketplace','usedListing','newListing','releaseChange','preorderOpen','preorderClosing','newVariant','promotion'
 ];
 
 export const WISHLIST_ALERT_LABELS:Record<WishlistAlertKey,string>={
   priceTarget:'Price below target',
   priceMaximum:'Price below maximum',
+  priceDrop:'Meaningful price drop',
   msrp:'At MSRP',
   belowMsrp:'Below MSRP',
   localStock:'Local stock',
@@ -145,11 +158,11 @@ export function alertDefaults(priority:WishlistPriority):Record<WishlistAlertKey
     return rules;
   }
   if(priority==='Medium'){
-    rules.priceTarget=normal();rules.msrp=normal();rules.restock=normal();rules.marketplace=normal();rules.releaseChange=normal();
+    rules.priceTarget=normal();rules.priceDrop=normal();rules.msrp=normal();rules.restock=normal();rules.marketplace=normal();rules.releaseChange=normal();
     return rules;
   }
   if(priority==='High'){
-    rules.priceTarget=urgent();rules.priceMaximum=normal();rules.msrp=urgent();rules.belowMsrp=urgent();rules.restock=urgent();rules.marketplace=normal();rules.releaseChange=normal();rules.preorderOpen=urgent();
+    rules.priceTarget=urgent();rules.priceMaximum=normal();rules.priceDrop=urgent();rules.msrp=urgent();rules.belowMsrp=urgent();rules.restock=urgent();rules.marketplace=normal();rules.releaseChange=normal();rules.preorderOpen=urgent();
     return rules;
   }
   for(const key of WISHLIST_ALERT_KEYS)rules[key]=urgent();
@@ -215,6 +228,8 @@ export function newWishlistRecord(args:{
     desiredCondition:args.desiredCondition||'Any',
     retailers:[],
     marketplacePreference:'Any source',
+    listingRules:{},
+    visibility:'Private',
     quantityWanted:1,
     notes:'',
     alerts:alertDefaults(priority),
@@ -241,7 +256,9 @@ export function normalizeWishlistRecord(value:Partial<WishlistRecord>|undefined,
     goalAmount:finite(value.grail.goalAmount)?value.grail.goalAmount:undefined,
     savedAmount:finite(value.grail.savedAmount)?value.grail.savedAmount:undefined,
     deadline:str(value.grail.deadline)?value.grail.deadline:undefined,
-    status:['Not Started','Saving','Goal Reached','Purchased','Paused'].includes(String(value.grail.status))?value.grail.status:'Saving'
+    status:['Not Started','Saving','Goal Reached','Purchased','Paused'].includes(String(value.grail.status))?value.grail.status:'Saving',
+    completedAt:str(value.grail.completedAt)&&Number.isFinite(Date.parse(value.grail.completedAt!))?value.grail.completedAt:undefined,
+    savingsHistory:Array.isArray(value.grail.savingsHistory)?value.grail.savingsHistory.filter(p=>p&&str(p.at)&&Number.isFinite(Date.parse(p.at))&&finite(p.amount)).slice(-500):[]
   } as WishlistGrailGoal:undefined;
   const preorder=value.preorder?{
     enabled:Boolean(value.preorder.enabled),
@@ -267,6 +284,12 @@ export function normalizeWishlistRecord(value:Partial<WishlistRecord>|undefined,
     desiredCondition:str(value.desiredCondition)&&value.desiredCondition?value.desiredCondition:'Any',
     retailers:Array.isArray(value.retailers)?value.retailers.filter(str):[],
     marketplacePreference:['Any source','Retail only','Marketplace acceptable','Local only','Used acceptable','New only'].includes(String(value.marketplacePreference))?value.marketplacePreference!:'Any source',
+    listingRules:{
+      maximumListingPrice:finite(value.listingRules?.maximumListingPrice)?value.listingRules!.maximumListingPrice:undefined,
+      shippingCeiling:finite(value.listingRules?.shippingCeiling)?value.listingRules!.shippingCeiling:undefined,
+      sellerRatingMinimum:typeof value.listingRules?.sellerRatingMinimum==='number'&&Number.isFinite(value.listingRules.sellerRatingMinimum)?Math.max(0,Math.min(100,value.listingRules.sellerRatingMinimum)):undefined
+    },
+    visibility:['Private','Friends','Community','Public'].includes(String(value.visibility))?value.visibility as WishlistVisibility:'Private',
     quantityWanted:Number.isInteger(value.quantityWanted)&&Number(value.quantityWanted)>0?Number(value.quantityWanted):1,
     deadline:str(value.deadline)?value.deadline:undefined,
     plannedMonth:str(value.plannedMonth)?value.plannedMonth:undefined,
@@ -307,10 +330,12 @@ export function validWishlistRecord(value:unknown):value is WishlistRecord{
   if(!str(r.productId)||!['catalog','workspace'].includes(r.source)||!['Low','Medium','High','Grail'].includes(r.priority))return false;
   if(!str(r.desiredCondition)||!Array.isArray(r.retailers)||!r.retailers.every(str)||!Number.isInteger(r.quantityWanted)||r.quantityWanted<1||!str(r.notes))return false;
   if(!['Any source','Retail only','Marketplace acceptable','Local only','Used acceptable','New only'].includes(r.marketplacePreference))return false;
+  if(r.visibility!==undefined&&!['Private','Friends','Community','Public'].includes(r.visibility))return false;
+  if(r.listingRules!==undefined&&(!r.listingRules||typeof r.listingRules!=='object'||Array.isArray(r.listingRules)))return false;
   if(!r.alerts||typeof r.alerts!=='object'||Array.isArray(r.alerts))return false;
   if(!WISHLIST_ALERT_KEYS.every(key=>{
     const rule=r.alerts[key];
-    return rule&&typeof rule.enabled==='boolean'&&['Immediate','Daily Digest','Weekly Digest','Off'].includes(rule.frequency);
+    return rule===undefined||(typeof rule.enabled==='boolean'&&['Immediate','Daily Digest','Weekly Digest','Off'].includes(rule.frequency));
   }))return false;
   if(typeof r.archived!=='boolean'||!str(r.addedAt)||!Number.isFinite(Date.parse(r.addedAt))||!str(r.updatedAt)||!Number.isFinite(Date.parse(r.updatedAt)))return false;
   if(!Array.isArray(r.marketHistory)||!r.marketHistory.every(p=>p&&str(p.date)&&Number.isFinite(Date.parse(p.date))&&finite(p.value)&&str(p.source)))return false;
