@@ -2,6 +2,7 @@ import './vexum-reset.css';
 import './vexum-platform.css';
 import './vexum-onboarding.css';
 import './vexum-settings.css';
+import './cloud.css';
 import './vexum-life.css';
 import './vexum-home.css';
 import './vexum-portfolio.css';
