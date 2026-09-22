@@ -276,7 +276,7 @@ function WishlistModal({product,relation,record,onClose,onSave}:{product:Normali
       <label>Target Price<input value={target} onChange={e=>setTarget(e.target.value)} placeholder="0.00"/></label>
       <label>Maximum Price<input value={max} onChange={e=>setMax(e.target.value)} placeholder="Optional"/></label>
       <label>Condition<select value={condition} onChange={e=>setCondition(e.target.value)}>{conditionOptions(product.category).map(value=><option key={value}>{value}</option>)}</select></label>
-      <label>Alert Frequency<select value={frequency} onChange={e=>setFrequency(e.target.value)}><option>Immediate</option><option>Daily Digest</option><option>Weekly Digest</option></select></label>
+      <label>Alert Frequency<select value={frequency} onChange={e=>setFrequency(e.target.value as 'Immediate'|'Daily Digest'|'Weekly Digest')}><option>Immediate</option><option>Daily Digest</option><option>Weekly Digest</option></select></label>
     </div>
     <div className="vxs-alert-options"><label><input type="checkbox" checked={msrpAlert} onChange={e=>setMsrpAlert(e.target.checked)}/>At / below MSRP</label><label><input type="checkbox" checked={localAlert} onChange={e=>setLocalAlert(e.target.checked)}/>Local stock</label><label><input type="checkbox" checked={marketAlert} onChange={e=>setMarketAlert(e.target.checked)}/>Marketplace listings</label></div>
     <footer><button onClick={onClose}>Cancel</button><button className="primary" onClick={save}><Star/>Save Wishlist</button></footer>

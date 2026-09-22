@@ -837,7 +837,7 @@ function EditModal({entry,onClose,onSave}:{entry:WishlistEntry;onClose:()=>void;
         <label>Deadline<input type="date" value={deadline} onChange={e=>setDeadline(e.target.value)}/></label>
         <label>Purchase plan<select value={planMode} onChange={e=>setPlanMode(e.target.value)}><option>No Plan</option><option>This Month</option><option>Next Month</option><option>Specific</option><option>Someday</option></select></label>
         {planMode==='Specific'?<label>Specific month<input type="month" value={plannedMonth} onChange={e=>setPlannedMonth(e.target.value)}/></label>:null}
-        <label>Acquisition source<select value={marketplacePreference} onChange={e=>setMarketplacePreference(e.target.value)}><option>Any source</option><option>Retail only</option><option>Marketplace acceptable</option><option>Local only</option><option>Used acceptable</option><option>New only</option></select></label>
+        <label>Acquisition source<select value={marketplacePreference} onChange={e=>setMarketplacePreference(e.target.value as WishlistRecord['marketplacePreference'])}><option>Any source</option><option>Retail only</option><option>Marketplace acceptable</option><option>Local only</option><option>Used acceptable</option><option>New only</option></select></label>
         <label className="wide">Preferred retailers<input value={retailers} onChange={e=>setRetailers(e.target.value)} placeholder="Target, Walmart, GameStop, eBay, Entertainment Earth"/></label>
         <label className="wide">Notes<textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={3} placeholder="Edition, seller, condition, deadline, trade notes…"/></label>
       </div></section>
