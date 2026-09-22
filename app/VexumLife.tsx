@@ -174,7 +174,7 @@ function TasksView({life,query,setQuery,filter,setFilter,onComplete,onUpdate,onS
   if(filter==='today')tasks=tasks.filter(task=>task.dueDate===today||task.scheduledStart?.startsWith(today));
   if(filter==='overdue')tasks=tasks.filter(task=>task.status!=='completed'&&!!task.dueDate&&task.dueDate<today);
   if(filter==='completed')tasks=tasks.filter(task=>task.status==='completed');
-  else if(filter!=='completed')tasks=tasks.filter(task=>task.status!=='cancelled');
+  else tasks=tasks.filter(task=>task.status!=='cancelled');
   tasks=tasks.toSorted((a,b)=>(a.status==='completed'?1:0)-(b.status==='completed'?1:0)||(a.dueDate||'9999').localeCompare(b.dueDate||'9999')||priorityRank(b.priority)-priorityRank(a.priority));
 
   const [selected,setSelected]=useState('');
