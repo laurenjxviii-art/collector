@@ -708,3 +708,5 @@ svg{stroke-width:1.8}
 .vx-fin-calendar>.vx-fin-month{height:68px;border-bottom:1px solid #202126;padding:0 14px;display:flex;align-items:center;justify-content:space-between}.vx-fin-calendar>.vx-fin-month:last-child{border-bottom:0}.vx-fin-month>span{display:flex;flex-direction:column}.vx-fin-month b{font-size:10px}.vx-fin-month small{font-size:7px;color:#73777f;margin-top:3px}.vx-fin-month>strong{font-size:13px}
 .page-plain .vx-fin-stats{margin-top:12px}.vx-truth-panel .vx-panel-head{margin-bottom:0}
 @media(max-width:1350px){.vx-fin-mid.truthful,.vx-fin-bottom.truthful{grid-template-columns:1fr 1fr}.vx-fin-mid.truthful>.vx-fin-calendar{grid-column:1/-1}}
+
+.vxs-owned-warning{margin:0 18px 10px;border:1px solid #65431c;border-radius:6px;background:#171109;color:#d8ad66;min-height:36px;padding:7px 9px;display:flex;align-items:center;gap:7px;font-size:8px}.vxs-owned-warning svg{width:13px;flex:none}
