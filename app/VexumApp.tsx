@@ -31,6 +31,7 @@ import {
 
 type View=VexumModuleId|'settings';
 
+// Cloud identity is required for networked commerce/community modules.
 const ACCOUNT_REQUIRED_VIEWS=new Set<View>(['sell','social']);
 
 const ROUTES:Record<View,string>={
