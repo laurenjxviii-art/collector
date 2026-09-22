@@ -755,14 +755,32 @@ function WishlistGrid({entries,selectMode,selectedIds,onSelect,onOpen,onEdit,onP
   </article>})}</section>;
 }
 
+
+function PlannedTimeline({entries}:{entries:WishlistEntry[]}){
+  const groups=Array.from(new Set(entries.map(entry=>entry.record.plannedMonth).filter(Boolean) as string[])).toSorted();
+  if(!groups.length)return null;
+  return <section className="vxw-planned-timeline">{groups.map(month=>{
+    const rows=entries.filter(entry=>entry.record.plannedMonth===month);
+    const planned=rows.reduce((sum,entry)=>sum+(entry.market??entry.record.targetPrice??entry.record.maximumPrice??0)*entry.record.quantityWanted,0);
+    const preorders=rows.reduce((sum,entry)=>sum+preorderCommitment(entry.record)*entry.record.quantityWanted,0);
+    return <div key={month}><span><CalendarDays/><b>{plannedLabel(month)}</b><small>{rows.length} planned item{rows.length===1?'':'s'}</small></span><strong>{money(planned)}</strong>{preorders>0?<em>{money(preorders)} preorder balance</em>:<em>No preorder balance</em>}</div>;
+  })}</section>;
+}
+
 function ArchiveInsights({entries}:{entries:WishlistEntry[]}){
   const purchased=entries.filter(entry=>entry.record.archiveReason==='purchased');
+  const removed=entries.filter(entry=>entry.record.archiveReason==='removed');
   const avgDays=purchased.length?Math.round(purchased.reduce((sum,entry)=>sum+daysTracked(entry.record),0)/purchased.length):0;
   const belowTarget=purchased.filter(entry=>entry.record.purchasePrice!==undefined&&entry.record.targetPrice!==undefined&&entry.record.purchasePrice<=entry.record.targetPrice).length;
-  const savedVsInitial=purchased.reduce((sum,entry)=>sum+(entry.record.initialMarket!==undefined&&entry.record.purchasePrice!==undefined?Math.max(0,entry.record.initialMarket-entry.record.purchasePrice):0),0);
-  const retailerCounts=new Map<string,number>();purchased.forEach(entry=>{const r=entry.record.purchase?.retailer;if(r)retailerCounts.set(r,(retailerCounts.get(r)||0)+1)});
+  const aboveTarget=purchased.filter(entry=>entry.record.purchasePrice!==undefined&&entry.record.targetPrice!==undefined&&entry.record.purchasePrice>entry.record.targetPrice).length;
+  const savedVsInitial=purchased.reduce((sum,entry)=>sum+(entry.record.initialMarket!==undefined&&entry.record.purchasePrice!==undefined?entry.record.initialMarket-entry.record.purchasePrice:0),0);
+  const savedVsMsrp=purchased.reduce((sum,entry)=>sum+(entry.msrp!==undefined&&entry.record.purchasePrice!==undefined?entry.msrp-entry.record.purchasePrice:0),0);
+  const retailerCounts=new Map<string,number>();purchased.forEach(entry=>{const retailer=entry.record.purchase?.retailer;if(retailer)retailerCounts.set(retailer,(retailerCounts.get(retailer)||0)+1)});
+  const categoryCounts=new Map<string,number>();purchased.forEach(entry=>categoryCounts.set(entry.category,(categoryCounts.get(entry.category)||0)+1));
   const topRetailer=[...retailerCounts.entries()].toSorted((a,b)=>b[1]-a[1])[0]?.[0]||'—';
-  return <section className="vxw-archive-insights"><InsightCard label="Purchased" value={String(purchased.length)} sub="Archived as purchased"/><InsightCard label="Avg. days tracked" value={String(avgDays)} sub="Wishlist → purchase"/><InsightCard label="At/below target" value={String(belowTarget)} sub="Where target data existed"/><InsightCard label="Savings vs initial" value={money(savedVsInitial)} sub="Known initial value only"/><InsightCard label="Top retailer" value={topRetailer} sub="From purchase records"/></section>;
+  const topCategory=[...categoryCounts.entries()].toSorted((a,b)=>b[1]-a[1])[0]?.[0]||'—';
+  const grailPurchased=purchased.filter(entry=>entry.record.priority==='Grail').length;
+  return <section className="vxw-archive-insights expanded"><InsightCard label="Purchased" value={String(purchased.length)} sub="Archived as purchased"/><InsightCard label="Abandoned / removed" value={String(removed.length)} sub="Preserved history"/><InsightCard label="Avg. days tracked" value={String(avgDays)} sub="Wishlist → purchase"/><InsightCard label="At/below target" value={String(belowTarget)} sub={aboveTarget+' above target'}/><InsightCard label="Savings vs initial" value={money(savedVsInitial)} sub="Known initial values"/><InsightCard label="Savings vs MSRP" value={money(savedVsMsrp)} sub="Known MSRP only"/><InsightCard label="Top retailer" value={topRetailer} sub="Purchase records"/><InsightCard label="Top category" value={topCategory} sub="Purchased items"/><InsightCard label="Grails purchased" value={String(grailPurchased)} sub="Historical Grail conversions"/></section>;
 }
 
 function EmptyState({tab,filtered}:{tab:MainTab;filtered:boolean}){
