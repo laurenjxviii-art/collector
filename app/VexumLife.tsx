@@ -14,6 +14,7 @@ import {
   type LifeTab,type TaskPriority,type WorkoutPlan,type WorkoutSession
 } from '../lib/life';
 import {normalizeFinancialData} from '../lib/financial';
+import {loadSellWorkspace,type SellOrder} from '../lib/sellCloud';
 
 const money=(value:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:value<100?2:0}).format(value);
 const dateLabel=(value:string)=>{if(!value)return 'No date';const d=new Date(value.length===10?value+'T12:00:00':value);return Number.isFinite(d.getTime())?new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric',year:'numeric'}).format(d):value};
@@ -44,6 +45,7 @@ export default function VexumLife(){
   const [focusSeconds,setFocusSeconds]=useState(25*60);
   const [focusStartedAt,setFocusStartedAt]=useState('');
   const [fitnessRange,setFitnessRange]=useState<'7'|'30'>('7');
+  const [sellOrders,setSellOrders]=useState<SellOrder[]>([]);
 
   const persist=(next:LifeData)=>workspace.update({...workspace.data,life:next});
   const updateTask=(next:LifeTask)=>persist({...life,tasks:life.tasks.map(task=>task.id===next.id?next:task)});
@@ -58,6 +60,12 @@ export default function VexumLife(){
     }),1000);
     return()=>clearInterval(timer);
   },[focusRunning]);
+  useEffect(()=>{
+    if(!workspace.config?.configured||!workspace.session){setSellOrders([]);return}
+    let alive=true;
+    loadSellWorkspace(workspace.config,workspace.session).then(data=>{if(alive)setSellOrders(data.orders)}).catch(()=>{if(alive)setSellOrders([])});
+    return()=>{alive=false};
+  },[workspace.config?.configured,workspace.session?.user.id]);
 
   const today=todayKey();
   const todayDate=new Date();
@@ -70,6 +78,7 @@ export default function VexumLife(){
   const billsDue=financial.bills.filter(bill=>bill.active&&bill.nextDueDate&&bill.nextDueDate>=today&&bill.nextDueDate<=dateKeyOffset(2));
   const preorders=Object.values(workspace.data.wishlist||{}).filter(record=>!record.archived&&record.preorder?.enabled&&record.preorder.estimatedChargeDate&&record.preorder.estimatedChargeDate>=today&&record.preorder.estimatedChargeDate<=dateKeyOffset(7));
   const activeGoals=life.goals.filter(goal=>goal.status==='active');
+  const ordersNeedingShipping=sellOrders.filter(order=>['paid','preparing_shipment'].includes(order.status));
   const completedThisWeek=life.tasks.filter(task=>task.completedAt&&Date.now()-Date.parse(task.completedAt)<7*86400000).length;
   const habitMomentumAvg=life.habits.filter(h=>h.active).length?Math.round(life.habits.filter(h=>h.active).reduce((sum,h)=>sum+habitMomentum(h),0)/life.habits.filter(h=>h.active).length):0;
 
@@ -119,7 +128,7 @@ export default function VexumLife(){
       <div><button onClick={()=>setTaskComposer(true)}><Plus/>Task</button><button onClick={()=>setEventComposer(true)}><CalendarDays/>Event</button></div>
     </nav>
 
-    {tab==='Today'?<TodayView life={life} tasks={todayTasks} events={todaysEvents} habits={todaysHabits} workouts={todaysWorkoutPlans} bills={billsDue} preorders={preorders} overdue={overdue} onCompleteTask={completeTask} onToggleHabit={toggleHabit} onOpenTasks={()=>setTab('Tasks')} onOpenCalendar={()=>setTab('Calendar')} onOpenFitness={()=>setTab('Fitness')} onOpenFinancial={()=>location.assign('/financial')} onOpenWishlist={()=>location.assign('/wishlist')}/>:null}
+    {tab==='Today'?<TodayView life={life} tasks={todayTasks} events={todaysEvents} habits={todaysHabits} workouts={todaysWorkoutPlans} bills={billsDue} preorders={preorders} overdue={overdue} sellOrders={ordersNeedingShipping} onCompleteTask={completeTask} onToggleHabit={toggleHabit} onOpenTasks={()=>setTab('Tasks')} onOpenCalendar={()=>setTab('Calendar')} onOpenFitness={()=>setTab('Fitness')} onOpenFinancial={()=>location.assign('/financial')} onOpenWishlist={()=>location.assign('/wishlist')}/>:null}
 
     {tab==='Tasks'?<TasksView life={life} query={query} setQuery={setQuery} filter={taskFilter} setFilter={setTaskFilter} onComplete={completeTask} onUpdate={updateTask} onSchedule={scheduleTask} onAdd={()=>setTaskComposer(true)} onPersist={persist}/>:null}
 
@@ -148,8 +157,8 @@ export default function VexumLife(){
   </div>;
 }
 
-function TodayView({life,tasks,events,habits,workouts,bills,preorders,overdue,onCompleteTask,onToggleHabit,onOpenTasks,onOpenCalendar,onOpenFitness,onOpenFinancial,onOpenWishlist}:{
-  life:LifeData;tasks:LifeTask[];events:LifeEvent[];habits:LifeHabit[];workouts:WorkoutPlan[];bills:Array<{id:string;name:string;amount:number;nextDueDate?:string}>;preorders:any[];overdue:LifeTask[];
+function TodayView({life,tasks,events,habits,workouts,bills,preorders,sellOrders,overdue,onCompleteTask,onToggleHabit,onOpenTasks,onOpenCalendar,onOpenFitness,onOpenFinancial,onOpenWishlist}:{
+  life:LifeData;tasks:LifeTask[];events:LifeEvent[];habits:LifeHabit[];workouts:WorkoutPlan[];bills:Array<{id:string;name:string;amount:number;nextDueDate?:string}>;preorders:any[];sellOrders:SellOrder[];overdue:LifeTask[];
   onCompleteTask:(task:LifeTask)=>void;onToggleHabit:(habit:LifeHabit)=>void;onOpenTasks:()=>void;onOpenCalendar:()=>void;onOpenFitness:()=>void;onOpenFinancial:()=>void;onOpenWishlist:()=>void;
 }){
   const date=new Intl.DateTimeFormat('en-US',{weekday:'long',month:'long',day:'numeric'}).format(new Date());
@@ -162,6 +171,7 @@ function TodayView({life,tasks,events,habits,workouts,bills,preorders,overdue,on
       <section className="vx-panel vxl-today-card"><CardHead title="Money" action="Financial" onAction={onOpenFinancial}/><div className="vxl-day-list">{bills.length?bills.map(bill=><div key={bill.id}><time>{bill.nextDueDate===todayKey()?'TODAY':dateLabel(bill.nextDueDate||'')}</time><span><strong>{bill.name}</strong><small>{money(bill.amount)}</small></span></div>):<Empty compact text="No recorded bills due in the next 48 hours."/>}</div></section>
       <section className="vx-panel vxl-today-card"><CardHead title="Collecting" action="Wishlist" onAction={onOpenWishlist}/><div className="vxl-day-list">{preorders.length?preorders.map(record=><div key={record.productId}><time>{dateLabel(record.preorder?.estimatedChargeDate||'')}</time><span><strong>{record.snapshot?.name||record.productId}</strong><small>Preorder charge / release window</small></span></div>):<Empty compact text="No recorded preorder commitments this week."/>}</div></section>
       <section className="vx-panel vxl-today-card"><CardHead title="Workout" action="Fitness" onAction={onOpenFitness}/><div className="vxl-workout-today">{workouts.length?workouts.map(plan=><button key={plan.id} onClick={onOpenFitness}><Dumbbell/><span><strong>{plan.name}</strong><small>{plan.exercises.length} exercises · {plan.time?timeLabel(plan.time):'unscheduled time'}</small></span><ChevronRight/></button>):<Empty compact text="No workout plan scheduled today."/>}</div></section>
+      <section className="vx-panel vxl-today-card"><CardHead title="Marketplace" action="Sell" onAction={()=>location.assign('/sell')}/><div className="vxl-day-list">{sellOrders.length?sellOrders.slice(0,4).map(order=><div key={order.id}><time>SHIP</time><span><strong>{order.buyer_label||order.provider||'Order'}</strong><small>{order.provider} · {money(order.item_subtotal)} · {order.status.replaceAll('_',' ')}</small></span></div>):<Empty compact text="No paid orders currently need shipping."/>}</div></section>
     </div>
     <section className="vx-panel vxl-inbox-strip"><header><div><Inbox/><span><strong>Inbox</strong><small>Capture first, organize later.</small></span></div><b>{life.tasks.filter(task=>task.status==='inbox').length+life.captures.filter(c=>!c.organized).length}</b></header></section>
   </div>;
