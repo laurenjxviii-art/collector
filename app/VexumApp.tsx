@@ -114,7 +114,7 @@ export default function VexumApp({
 
   const platform=normalizePlatformState(workspace.data.platform,true);
   const displayName=platform.identity.displayName||workspace.data.profile?.name||workspace.session?.user.email?.split('@')[0]||'VEXUM User';
-  const enabled=platform.enabledModules.includes('home')?platform.enabledModules:['home',...platform.enabledModules];
+  const enabled:VexumModuleId[]=platform.enabledModules.includes('home')?[...platform.enabledModules]:['home',...platform.enabledModules.filter(module=>module!=='home')];
   const notificationRows=useMemo(()=>buildVexumNotifications(workspace.data,platform),[workspace.data,platform]);
   const readIds=new Set(platform.notifications.readIds);
   const unread=notificationRows.filter(row=>!readIds.has(row.id)).length;
