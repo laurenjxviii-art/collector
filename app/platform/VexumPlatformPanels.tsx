@@ -127,6 +127,7 @@ export function NotificationCenter({open,onClose,workspace,navigate}:{open:boole
 type SearchResult={id:string;kind:string;title:string;detail:string;route:VexumModuleId|'settings';keywords:string};
 export function CommandCenter({open,onClose,workspace,navigate,onQuickAdd}:{open:boolean;onClose:()=>void;workspace:Workspace;navigate:Navigate;onQuickAdd:(type?:QuickAddType)=>void}){
   const [query,setQuery]=useState('');
+  const platform=normalizePlatformState(workspace.data.platform,true);
   const life=normalizeLifeData(workspace.data.life);
   const financial=normalizeFinancialData(workspace.data.financial);
   const results=useMemo(()=>{
@@ -144,9 +145,12 @@ export function CommandCenter({open,onClose,workspace,navigate,onQuickAdd}:{open
   if(!open)return null;
   const clean=query.trim().toLowerCase();
   const commands=[
-    {label:'Add task',type:'task' as QuickAddType},{label:'Add reminder',type:'reminder' as QuickAddType},{label:'Create goal',type:'goal' as QuickAddType},
-    {label:'Start workout',route:'life' as const},{label:'Show Wishlist',route:'wishlist' as const},{label:'Add expense',type:'expense' as QuickAddType},
-    {label:'Sell item',route:'sell' as const},{label:'Open Settings',route:'settings' as const}
+    ...(platform.enabledModules.includes('life')?[{label:'Add task',type:'task' as QuickAddType},{label:'Add reminder',type:'reminder' as QuickAddType},{label:'Create goal',type:'goal' as QuickAddType}]:[]),
+    ...(platform.enabledModules.includes('life')&&platform.lifeSections.includes('Fitness')?[{label:'Start workout',route:'life' as const}]:[]),
+    ...(platform.enabledModules.includes('wishlist')?[{label:'Show Wishlist',route:'wishlist' as const}]:[]),
+    ...(platform.enabledModules.includes('financial')?[{label:'Add expense',type:'expense' as QuickAddType}]:[]),
+    ...(platform.enabledModules.includes('sell')?[{label:'Sell item',route:'sell' as const}]:[]),
+    {label:'Open Settings',route:'settings' as const}
   ].filter(c=>!clean||c.label.toLowerCase().includes(clean));
   const matches=!clean?results.slice(0,8):results.filter(row=>(row.title+' '+row.detail+' '+row.keywords+' '+row.kind).toLowerCase().includes(clean)).slice(0,12);
 
