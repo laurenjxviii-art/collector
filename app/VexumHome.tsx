@@ -12,6 +12,7 @@ import {DEMO_HOME_DATA,HOME_WIDGET_TITLES,defaultHomeDashboard,normalizeHomeDash
 import {normalizeFinancialData} from '../lib/financial';
 import {normalizeSetupData} from '../lib/setup';
 import {normalizePortfolioPreferences} from '../lib/portfolio';
+import {habitMomentum,normalizeLifeData,todayKey} from '../lib/life';
 import type {Collection,Item,Store} from '../lib/model';
 
 type Tone='green'|'red'|'orange'|'muted';
@@ -111,6 +112,29 @@ export default function VexumHome(){
   const plPct=costBasis?pl/costBasis*100:0;
 
   const financial=normalizeFinancialData(workspace.data.financial);
+  const life=normalizeLifeData(workspace.data.life);
+  const today=todayKey();
+  const lifeOpenTasks=life.tasks.filter(task=>!['completed','cancelled'].includes(task.status));
+  const lifeTodayTasks=lifeOpenTasks.filter(task=>task.dueDate===today||task.scheduledStart?.startsWith(today));
+  const lifeTodayEvents=life.events.filter(event=>event.start.startsWith(today));
+  const lifeTodayWorkouts=life.workoutPlans.filter(plan=>plan.active&&plan.days.includes(new Date().getDay()));
+  const lifeMomentum=life.habits.filter(habit=>habit.active).length
+    ?Math.round(life.habits.filter(habit=>habit.active).reduce((sum,habit)=>sum+habitMomentum(habit),0)/life.habits.filter(habit=>habit.active).length)
+    :0;
+  const lifeCalendarRows=useMemo(()=>{
+    const rows:Array<{date:string;title:string;kind:string;sort:string}>=[];
+    for(const task of lifeOpenTasks.filter(task=>task.dueDate)){
+      rows.push({date:task.dueDate!,title:task.title,kind:'Task',sort:task.dueDate!+'T'+(task.dueTime||'23:59')});
+    }
+    for(const event of life.events)rows.push({date:event.start.slice(0,10),title:event.title,kind:'Event',sort:event.start});
+    for(let offset=0;offset<7;offset++){
+      const d=new Date();d.setDate(d.getDate()+offset);
+      for(const plan of life.workoutPlans.filter(plan=>plan.active&&plan.days.includes(d.getDay()))){
+        const key=todayKey(d);rows.push({date:key,title:plan.name,kind:'Workout',sort:key+'T'+(plan.time||'23:00')});
+      }
+    }
+    return rows.filter(row=>row.date>=today).toSorted((a,b)=>a.sort.localeCompare(b.sort)).slice(0,5);
+  },[life.tasks,life.events,life.workoutPlans,today]);
   const month=new Date().toISOString().slice(0,7);
   const liveMonthSpend=financial.transactions.filter(tx=>tx.direction==='expense'&&tx.isHobby&&tx.date.startsWith(month)).reduce((sum,tx)=>sum+tx.amount,0);
   const liveBudget=workspace.data.financialPreferences?.monthlyHobbyBudget||financial.budgets.find(budget=>budget.active&&budget.period==='monthly'&&(!budget.category||/hobby|collect/i.test(budget.category)))?.amount;
@@ -206,6 +230,8 @@ export default function VexumHome(){
     if(id==='sales')return recentSales.length?'live':'demo';
     if(id==='capacity')return capacityRows.length?'live':'demo';
     if(id==='alerts')return auditCounts.total?'mixed':'demo';
+    if(id==='brief')return 'mixed';
+    if(id==='calendar')return lifeCalendarRows.length?'live':'demo';
     return 'demo';
   };
 
@@ -218,10 +244,13 @@ export default function VexumHome(){
     if(layout.id==='monthlySpend')return shell(<div className="vxh-metric"><strong>{money(monthSpend)} <small>/ {money(monthBudget)}</small></strong><span>{monthBudget?Math.round(monthSpend/monthBudget*100):0}% of monthly target</span><div className="vxh-progress"><i style={{width:Math.min(100,monthBudget?monthSpend/monthBudget*100:0)+'%'}}/></div></div>);
     if(layout.id==='portfolioPerformance')return shell(<div className="vxh-performance"><div className="vxh-chart-head"><div><strong>{money(currentValue)}</strong><span>{source==='live'?'Workspace value history':'Isolated dashboard demo history'}</span></div><div>{['7D','30D','3M','6M','1Y','ALL'].map(interval=><button className={(layout.config.interval||'30D')===interval?'active':''} key={interval} onClick={()=>updateDashboard(state.widgets.map(w=>w.id===layout.id?{...w,config:{...w.config,interval}}:w))}>{interval}</button>)}</div></div><DashboardChart values={historyValues}/><footer><span><i className="red"/>Market value</span><span><i/>Cost basis {money(costBasis)}</span></footer></div>);
     if(layout.id==='brief'){
-      const rows:ReadonlyArray<readonly [string,string,string]>=source==='demo'?DEMO_HOME_DATA.brief:[
-        ['Portfolio',money(currentValue)+' current value','green'],
+      const rows:ReadonlyArray<readonly [string,string,string]>=[
+        ['Today',lifeTodayTasks.length+' task'+(lifeTodayTasks.length===1?'':'s')+' · '+lifeTodayEvents.length+' event'+(lifeTodayEvents.length===1?'':'s'),lifeTodayTasks.length?'orange':'green'],
+        ['Fitness',lifeTodayWorkouts[0]?.name||'No workout scheduled',lifeTodayWorkouts.length?'green':'muted'],
+        ['Momentum',lifeMomentum?lifeMomentum+'% over 30 days':'No habit data',lifeMomentum>=80?'green':lifeMomentum?'orange':'muted'],
+        ['Portfolio',hasPortfolio?money(currentValue)+' current value':'No live ownership yet',hasPortfolio?'green':'muted'],
         ['Wishlist',liveWishlist.length+' target opportunit'+(liveWishlist.length===1?'y':'ies'),liveWishlist.length?'green':'muted'],
-        ['Budget',money(monthSpend)+' / '+money(monthBudget),monthSpend>monthBudget?'red':'orange'],
+        ['Budget',hasSpend?money(monthSpend)+' / '+money(monthBudget):'No live hobby budget',hasSpend&&monthSpend>monthBudget?'red':hasSpend?'orange':'muted'],
         ['Audit',auditCounts.total+' issue'+(auditCounts.total===1?'':'s')+' need review',auditCounts.total?'orange':'green'],
         ['Setup',capacityRows[0]?capacityRows[0].name+' '+capacityRows[0].pct+'% full':'No measured capacity','muted']
       ];
@@ -260,7 +289,10 @@ export default function VexumHome(){
       return shell(<div className="vxh-finance"><div><span>Cash</span><strong>{source==='live'?money(cash):'$2,470'}</strong></div><div><span>Debt</span><strong>{source==='live'?money(debt):'$4,220'}</strong></div><div><span>Hobby spend</span><strong>{money(monthSpend)}</strong></div><button onClick={()=>location.assign('/financial')}>Open Financial <ChevronRight/></button></div>);
     }
     if(layout.id==='social')return shell(<div className="vxh-social-list">{DEMO_HOME_DATA.social.map(row=><div key={row[0]}><span className="vxh-avatar">{row[0][0]}</span><span><strong>{row[0]}</strong><small>{row[1]}</small></span></div>)}<p>Demo summary until a Social Home adapter is enabled.</p><button onClick={()=>location.assign('/social')}>Open Social <ChevronRight/></button></div>);
-    if(layout.id==='calendar')return shell(<div className="vxh-calendar">{DEMO_HOME_DATA.calendar.map(row=><div key={row[1]}><time>{row[0]}</time><span><strong>{row[1]}</strong><small>{row[2]}</small></span></div>)}<p>Demo release fixture; no provider event is represented as live here.</p></div>);
+    if(layout.id==='calendar'){
+      const rows=lifeCalendarRows.length?lifeCalendarRows.map(row=>[new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric'}).format(new Date(row.date+'T12:00:00')),row.title,row.kind] as const):DEMO_HOME_DATA.calendar;
+      return shell(<div className="vxh-calendar">{rows.map(row=><div key={row[0]+row[1]}><time>{row[0]}</time><span><strong>{row[1]}</strong><small>{row[2]}</small></span></div>)}<p>{lifeCalendarRows.length?'Live from Life tasks, events, and workout plans.':'Demo release fixture until Life has scheduled data.'}</p><button onClick={()=>location.assign('/life')}>Open Life <ChevronRight/></button></div>);
+    }
     return shell(<div/>);
   };
 
