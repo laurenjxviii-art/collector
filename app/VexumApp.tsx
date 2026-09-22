@@ -4,13 +4,14 @@ import {useEffect,useState} from 'react';
 import type {ReactNode} from 'react';
 import {
   CircleDollarSign,Eye,FileUp,Layers3,Plus,Search,Share2,ShoppingBag,
-  SlidersHorizontal,Star,WalletCards
+  SlidersHorizontal,Star
 } from 'lucide-react';
 import VexumPortfolio from './VexumPortfolio';
 import VexumSearch from './search/VexumSearch';
 import VexumWishlist from './VexumWishlist';
+import VexumFinancial from './VexumFinancial';
+import VexumSetup from './VexumSetup';
 import {useWorkspace} from '../lib/useWorkspace';
-import {grailProgress,preorderCommitment} from '../lib/wishlist';
 
 type View='home'|'portfolio'|'search'|'wishlist'|'sell'|'setup'|'financial'|'social';
 type Tone='red'|'green'|'orange'|'muted';
@@ -292,41 +293,9 @@ function WishlistPage(){return <PageFrame hero="wishlist"><VexumWishlist/></Page
 function SearchPage({initialQuery='',initialProductId=''}:{initialQuery?:string;initialProductId?:string}){
   return <PageFrame hero="search"><VexumSearch initialQuery={initialQuery} initialProductId={initialProductId}/></PageFrame>;
 }
-function SetupPage(){
-  const library=[
-    {a:'Display Case',b:'Single'},{a:'Display Case',b:'Large'},{a:'Shelf Unit',b:'Medium'},
-    {a:'Wall Shelf',b:'Floating'},{a:'Desk',b:'Gaming'},{a:'Storage Bin',b:'Standard'},
-    {a:'Comic Box',b:'Short'},{a:'Rug',b:'VEXUM'},{a:'Plant',b:'Decor'},
-  ];
-  return <PageFrame hero="setup">
-    <section className="vx-page-title"><div><h1>Setup Planner</h1><p>Design. Organize. Display a bigger tomorrow.</p></div><HeroMeta/></section>
-    <div className="vx-setup-tabs"><Tabs items={['Planner','My Rooms','Templates']}/><select defaultValue="room"><option value="room">Gaming / Collection Room</option></select><button><Plus/>Save</button><button><Share2/>Export</button><button className="red"><Layers3/>3D View</button></div>
-    <div className="vx-setup-main">
-      <section className="vx-panel vx-planner">
-        <div className="vx-planner-tools"><button className="active"><Plus/>Select</button><button><SlidersHorizontal/>Pan</button><button><Search/>Zoom</button><button><SlidersHorizontal/>Measure</button><button><Layers3/>Grid</button></div>
-        <div className="vx-room-canvas"><div className="vx-room-reference"/></div>
-        <div className="vx-library-tabs"><Tabs items={['Library','Display','Furniture','Storage','Decor','Electronics','All']}/><button className="vx-element-search"><Search/>Search elements...</button></div>
-        <div className="vx-library">{library.map((item,index)=><button className={index===1?'active':''} key={item.a+item.b}><div className={'vx-library-art a'+index}><Layers3/></div><strong>{item.a}</strong><span>{item.b}</span></button>)}</div>
-      </section>
-      <aside className="vx-panel vx-properties">
-        <div className="vx-prop-product"><div className="vx-case-thumb"><Layers3/></div><div><h3>Display Case (Large)</h3><span>Display Case</span></div><button>×</button></div>
-        <Tabs items={['Properties','Items (12)','Notes']}/>
-        <label><span>Name</span><input value="Display Case (Large)" readOnly/></label>
-        <label><span>Dimensions (inches)</span><div className="vx-three-fields"><i>W <b>48</b></i><i>H <b>72</b></i><i>D <b>18</b></i></div></label>
-        <label><span>Capacity</span><div className="vx-capacity"><i>▣ 24 figures</i><div className="vx-progress"><b style={{width:'50%'}}/></div><strong>12 / 24 (50%)</strong></div></label>
-        <label><span>Shelves</span><div className="vx-counter"><button>−</button><b>4</b><button>+</button></div></label>
-        <label><span>Placement</span><div className="vx-place-fields"><i>X <b>192</b></i><i>Y <b>48</b></i><i>Rotation <b>0°</b></i></div></label>
-        <section className="vx-fit"><div><h3>Fit Analysis</h3><strong>✓ Fits in room</strong></div><p>✓ Clearance (front)<b>36"</b></p><p>✓ Clearance (sides)<b>6"</b></p><p>✓ Clearance (top)<b>12"</b></p></section>
-      </aside>
-    </div>
-  </PageFrame>;
-}
-
+function SetupPage(){return <PageFrame hero="setup"><VexumSetup/></PageFrame>;}
 function fmtMoney(value:number){
   return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(value);
-}
-function monthLabel(value:string){
-  try{return new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric'}).format(new Date(value+'-01T12:00:00'))}catch{return value}
 }
 function SellPage(){
   const workspace=useWorkspace();
@@ -348,69 +317,7 @@ function SellPage(){
   </PageFrame>;
 }
 
-function FinancialPage(){
-  const workspace=useWorkspace();
-  const [budgetDraft,setBudgetDraft]=useState('');
-  const owned=workspace.data.items.filter(item=>item.status==='owned');
-  const collectionValue=owned.reduce((sum,item)=>sum+item.currentValue*item.quantity,0);
-  const currentMonth=new Date().toISOString().slice(0,7);
-  const next=new Date();next.setMonth(next.getMonth()+1);const nextMonth=next.toISOString().slice(0,7);
-  const monthlySpend=owned.filter(item=>item.purchaseDate.startsWith(currentMonth)).reduce((sum,item)=>sum+item.purchasePrice*item.quantity,0);
-  const budget=workspace.data.financialPreferences?.monthlyHobbyBudget;
-  const records=Object.values(workspace.data.wishlist||{}).filter(record=>!record.archived);
-  const preorders=records.filter(record=>record.preorder?.enabled&&record.preorder.status!=='Cancelled'&&record.preorder.status!=='Delivered');
-  const preorderTotal=preorders.reduce((sum,record)=>sum+preorderCommitment(record)*record.quantityWanted,0);
-  const preorder30=preorders.filter(record=>{const value=record.preorder?.estimatedChargeDate;if(!value)return false;const delta=Date.parse(value)-Date.now();return Number.isFinite(delta)&&delta>=0&&delta<=30*86400000}).reduce((sum,record)=>sum+preorderCommitment(record)*record.quantityWanted,0);
-  const planned=records.filter(record=>Boolean(record.plannedMonth));
-  const plannedFor=(month:string)=>planned.filter(record=>record.plannedMonth===month).reduce((sum,record)=>sum+(record.currentMarket??record.targetPrice??record.maximumPrice??0)*record.quantityWanted,0);
-  const grails=records.filter(record=>record.priority==='Grail');
-  const grailSaved=grails.reduce((sum,record)=>sum+(record.grail?.savedAmount||0),0);
-  const grailGoals=grails.reduce((sum,record)=>sum+(record.grail?.goalAmount??record.targetPrice??0),0);
-  const remaining=budget===undefined?undefined:budget-monthlySpend;
-
-  const saveBudget=()=>{
-    const value=Math.max(0,Number(budgetDraft)||0);
-    workspace.update({...workspace.data,financialPreferences:{...(workspace.data.financialPreferences||{}),monthlyHobbyBudget:value}});
-    setBudgetDraft('');
-  };
-
-  if(!workspace.ready)return <PageFrame hero="financial"><section className="vx-fin-hero"><div><h1>Financial</h1><p>Loading your VEXUM workspace…</p></div></section></PageFrame>;
-
-  return <PageFrame hero="financial">
-    <section className="vx-fin-hero"><div><h1>Financial</h1><p>Real hobby context from Portfolio and Wishlist. No invented bank balances.</p></div><HeroMeta text="“Context, not permission.”"/></section>
-    <Tabs items={['Overview','Spending','Budget','Commitments','Goals','Insights']}/>
-    <div className="vx-fin-stats">
-      <Stat label="Collection Estimated Value" value={fmtMoney(collectionValue)} change="Owned Portfolio items" tone="green"/>
-      <Stat label="Monthly Hobby Spend" value={fmtMoney(monthlySpend)} change={monthLabel(currentMonth)+' recorded purchases'} tone="muted"/>
-      <Stat label="Hobby Budget Remaining" value={remaining===undefined?'Not set':fmtMoney(remaining)} change={budget===undefined?'Set a target below':fmtMoney(budget)+' monthly target'} tone={remaining!==undefined&&remaining<0?'red':'muted'}/>
-      <Stat label="Wishlist Planned Next Month" value={fmtMoney(plannedFor(nextMonth))} change={monthLabel(nextMonth)} tone="muted"/>
-      <Stat label="Preorder Commitments" value={fmtMoney(preorderTotal)} change={fmtMoney(preorder30)+' due within 30 days'} tone="orange"/>
-    </div>
-
-    <div className="vx-fin-mid truthful">
-      <section className="vx-panel vx-real-budget">
-        <PanelHead title="Hobby Budget"/>
-        {budget===undefined?<div className="vx-budget-config"><WalletCards/><div><strong>Set a monthly hobby target</strong><p>VEXUM will compare it with purchase prices actually recorded in Portfolio and with Wishlist/preorder commitments. This is not a bank balance.</p></div><input inputMode="decimal" value={budgetDraft} onChange={e=>setBudgetDraft(e.target.value)} placeholder="500"/><button onClick={saveBudget}>Set Budget</button></div>:<>
-          <div className="vx-budget-number"><strong>{fmtMoney(monthlySpend)} <small>/ {fmtMoney(budget)}</small></strong><span>{budget?Math.round(monthlySpend/budget*100):0}%</span></div>
-          <div className="vx-progress"><i style={{width:Math.min(100,budget?monthlySpend/budget*100:0)+'%'}}/></div>
-          <div className="vx-budget-cards"><div><b>{fmtMoney(Math.max(0,budget-monthlySpend))}</b><span>Remaining to target</span></div><div><b>{fmtMoney(plannedFor(currentMonth))}</b><span>Wishlist planned this month</span></div><div><b>{fmtMoney(preorders.filter(r=>r.preorder?.estimatedChargeDate?.startsWith(currentMonth)).reduce((sum,r)=>sum+preorderCommitment(r)*r.quantityWanted,0))}</b><span>Preorders this month</span></div></div>
-          <div className="vx-fin-budget-edit"><input inputMode="decimal" value={budgetDraft} onChange={e=>setBudgetDraft(e.target.value)} placeholder={String(budget)}/><button onClick={saveBudget}>Update target</button></div>
-        </>}
-      </section>
-
-      <section className="vx-panel vx-truth-panel"><PanelHead title="Connected Financial Data"/><div className="vx-fin-empty"><CircleDollarSign/><strong>Bank / debt connector not configured in VEXUM</strong><p>Net worth, checking balances, debt APRs, minimum payments, cash-flow forecasts, and tax estimates remain unavailable here. Wishlist purchase intelligence therefore uses only explicit hobby-budget targets, Portfolio purchases, planned Wishlist items, and preorder balances.</p></div></section>
-
-      <section className="vx-panel vx-fin-calendar"><PanelHead title="Purchase Forecast"/><div className="vx-fin-month"><span><b>{monthLabel(currentMonth)}</b><small>Planned Wishlist</small></span><strong>{fmtMoney(plannedFor(currentMonth))}</strong></div><div className="vx-fin-month"><span><b>{monthLabel(nextMonth)}</b><small>Planned Wishlist</small></span><strong>{fmtMoney(plannedFor(nextMonth))}</strong></div><div className="vx-fin-month"><span><b>Active preorders</b><small>Known remaining balances</small></span><strong>{fmtMoney(preorderTotal)}</strong></div></section>
-    </div>
-
-    <div className="vx-fin-bottom truthful">
-      <section className="vx-panel"><PanelHead title="Preorder Commitments"/>{preorders.slice(0,8).map(record=><div className="vx-preorder-fin" key={record.productId}><div className="vx-mini-product"><Layers3/></div><div><strong>{record.snapshot?.name||record.productId}</strong><span>{record.preorder?.retailer||'Retailer not set'} · {record.preorder?.estimatedChargeDate||'Charge date unknown'}</span></div><b>{fmtMoney(preorderCommitment(record))}</b><em>{record.preorder?.status}</em></div>)}{!preorders.length?<div className="vx-fin-empty"><span>No active preorder commitments.</span></div>:null}</section>
-      <section className="vx-panel"><PanelHead title="Grail Savings Goals"/>{grails.slice(0,8).map(record=><div className="vx-goal" key={record.productId}><div className="vx-goal-icon"><Star/></div><div><strong>{record.snapshot?.name||record.productId}</strong><span>{fmtMoney(record.grail?.savedAmount||0)} / {fmtMoney(record.grail?.goalAmount??record.targetPrice??0)}</span><div className="vx-progress"><i style={{width:grailProgress(record)+'%'}}/></div></div><b>{grailProgress(record)}%</b></div>)}{!grails.length?<div className="vx-fin-empty"><span>No active Grail goals.</span></div>:null}</section>
-      <section className="vx-panel vx-intel"><PanelHead title="Collector Intelligence"/><div><span><Star/></span><p>{records.length} active Wishlist item{records.length===1?'':'s'} are available for planning context.</p></div><div><span><Star/></span><p>{fmtMoney(preorder30)} in known preorder balances are expected within 30 days.</p></div><div><span><Star/></span><p>{grailGoals?fmtMoney(grailSaved)+' saved toward '+fmtMoney(grailGoals)+' in Grail goals.':'No Grail savings goal is active.'}</p></div><div><span><Star/></span><p>{budget===undefined?'Set a hobby budget to enable neutral purchase-impact comparisons.':remaining!==undefined&&remaining<0?'Recorded hobby spend is '+fmtMoney(Math.abs(remaining))+' above the current monthly target.':'Recorded hobby spend leaves '+fmtMoney(Math.max(0,remaining||0))+' against the current monthly target.'}</p></div></section>
-    </div>
-  </PageFrame>;
-}
-
+function FinancialPage(){return <PageFrame hero="financial"><VexumFinancial/></PageFrame>;}
 function PortfolioPage(){return <PageFrame hero="plain"><VexumPortfolio/></PageFrame>;}
 function SocialPage(){
   return <PageFrame hero="plain"><section className="vx-page-title"><div><h1>Social</h1><p>Collectors, communities, drops, and setups.</p></div><HeroMeta text="“Collect together. Build bigger.”"/></section><Tabs items={['For You','Following','Communities','Drops','Marketplace']}/><div className="vx-social-grid"><section className="vx-panel vx-feed"><article><header><div className="vx-avatar small">J</div><div><strong>jordan</strong><span>@jordan · 2h</span></div></header><p>The setup is finally starting to feel right. Red lighting was absolutely the move.</p><div className="vx-social-photo"><Star/></div><footer>♡ 248 &nbsp;&nbsp; ◇ 31 &nbsp;&nbsp; ↗ Share</footer></article><article><header><div className="vx-avatar small">C</div><div><strong>collectorfall</strong><span>@collectorfall · 4h</span></div></header><p>Who else is hunting the Final Swing figure this week?</p></article></section><aside className="vx-panel"><PanelHead title="Trending"/>{['#MarvelLegends','#SpiderMan','#CollectionSetup','#Restock','#VEXUM'].map((name,index)=><div className="vx-trend-row" key={name}><b>{name}</b><span>{[32,28,21,18,15][index]}k posts</span></div>)}</aside></div></PageFrame>;
@@ -430,23 +337,22 @@ export default function VexumApp({
   const navigate=(next:View)=>{
     setView(next);
     if(typeof window==='undefined')return;
-    if(next==='search'){
-      if(!window.location.pathname.startsWith('/search'))window.history.pushState({},'','/search');
-      return;
-    }
-    if(next==='wishlist'){
-      if(window.location.pathname!=='/wishlist')window.history.pushState({},'','/wishlist');
-      return;
-    }
-    if(window.location.pathname.startsWith('/search')||window.location.pathname==='/wishlist'){
-      window.history.pushState({},'','/');
-    }
+    const routes:Partial<Record<View,string>>={portfolio:'/portfolio',search:'/search',wishlist:'/wishlist',sell:'/sell',setup:'/setup',financial:'/financial',social:'/social'};
+    const path=routes[next]||'/';
+    if(next==='search'&&window.location.pathname.startsWith('/search'))return;
+    if(window.location.pathname!==path)window.history.pushState({},'',path);
   };
 
   useEffect(()=>{
     const onPop=()=>{
-      if(window.location.pathname.startsWith('/search'))setView('search');
-      else if(window.location.pathname==='/wishlist')setView('wishlist');
+      const path=window.location.pathname;
+      if(path.startsWith('/search'))setView('search');
+      else if(path==='/wishlist')setView('wishlist');
+      else if(path==='/portfolio')setView('portfolio');
+      else if(path==='/sell')setView('sell');
+      else if(path==='/setup')setView('setup');
+      else if(path==='/financial')setView('financial');
+      else if(path==='/social')setView('social');
       else setView('home');
     };
     window.addEventListener('popstate',onPop);
