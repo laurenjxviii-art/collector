@@ -710,3 +710,111 @@ svg{stroke-width:1.8}
 @media(max-width:1350px){.vx-fin-mid.truthful,.vx-fin-bottom.truthful{grid-template-columns:1fr 1fr}.vx-fin-mid.truthful>.vx-fin-calendar{grid-column:1/-1}}
 
 .vxs-owned-warning{margin:0 18px 10px;border:1px solid #65431c;border-radius:6px;background:#171109;color:#d8ad66;min-height:36px;padding:7px 9px;display:flex;align-items:center;gap:7px;font-size:8px}.vxs-owned-warning svg{width:13px;flex:none}
+
+
+/* ===== GLOBAL READABILITY PASS — keep top summary/stat widgets unchanged ===== */
+
+/* Sidebar / persistent chrome */
+.vx-nav button span{font-size:11.5px!important}
+.vx-quick>span{font-size:11px!important}
+.vx-quick button,.vx-user span,.vx-searchbox span,.vx-searchbox kbd{font-size:11px!important}
+.vx-user strong{font-size:12px!important}
+
+/* Shared panel/body copy — excludes the top metric/stat families */
+.vx-content :where(p,label,input,select,textarea):not(.vx-fin-stats *,.vxs-summary-metrics *,.vxp-summary-card *){font-size:12px!important}
+.vx-content :where(small,time,kbd,em):not(.vx-fin-stats *,.vxs-summary-metrics *,.vxp-summary-card *){font-size:10.5px!important}
+.vx-content :where(button):not(.vx-fin-stats *,.vxs-summary-metrics *,.vxp-summary-card *){font-size:11.5px!important}
+
+/* General legacy/dashboard content */
+.vx-story-banner>span,.vx-table-cols,.vx-preorder,.vx-grail strong,
+.vx-op-card>div:first-child strong,.vx-op-card>b,.vx-pillrow span,
+.vx-product-copy>small,.vx-product-values span,.vx-quick-cards button,
+.vx-ai-row strong,.vx-trending i,.vx-trending span,.vx-details>.vx-tabs button,
+.vx-details>div:not(.vx-tabs),.vx-planner-tools button,.vx-library-tabs>.vx-tabs button,
+.vx-element-search,.vx-capacity span,.vx-capacity b,.vx-fit p,
+.vx-donut span,.vx-debt-row strong,.vx-goal strong,.vx-preorder-fin strong,
+.vx-preorder-fin>b,.vx-intel p,.vx-portfolio-card>span,.vx-portfolio-card footer em,
+.vx-feed article footer,.vx-home-add-menu>span,.vx-home-custom-tip,
+.vx-brief-list span,.vx-home-alerts strong,.vx-home-change-list span,
+.vx-home-progress-list>div>span{font-size:12px!important}
+
+.vx-wish-item small,.vx-wish-item em,.vx-wish-row>span>em,.vx-budget-cards span,
+.vx-grail span,.vx-grail small,.vx-op-card>div:first-child span,
+.vx-ai-row b,.vx-local>p,.vx-store-row,.vx-store-icon,.vx-location,.vx-location button,
+.vx-library button strong,.vx-library button span,.vx-net-chart .vx-chart-head>div p,
+.vx-spend-debt>p,.vx-break-list p,.vx-bar-chart small,.vx-debt-row small,.vx-debt-row>em,
+.vx-budget-row strong,.vx-budget-row b,.vx-budget-row em,.vx-goal span,.vx-goal>b,
+.vx-preorder-fin span,.vx-preorder-fin>em,.vx-feed article header span,.vx-trend-row span,
+.vx-home-add-menu>button,.vx-widget-controls button,.vx-brief-intro>span,.vx-brief-list i,
+.vx-morning-brief footer button,.vx-morning-brief footer span,.vx-home-alerts span,
+.vx-home-alerts time,.vx-home-compact-list strong,.vx-home-compact-list small,
+.vx-home-inline-action,.vx-home-drop-list time,.vx-home-drop-list strong,.vx-home-drop-list em,
+.vx-home-change-list strong,.vx-home-finance span,.vx-home-finance small,
+.vx-capacity-ring span,.vx-home-capacity p,.vx-home-table-head,
+.vx-home-table>div:not(.vx-home-table-head),.vx-home-social .vx-avatar.small,
+.vx-home-social p,.vx-home-calendar time span,.vx-home-calendar strong,
+.vx-home-calendar>div>div>span{font-size:11px!important}
+
+/* Portfolio */
+.vxp-title aside>span,.vxp-modebar>span,.vxp-tree-head p,.vxp-tree-all,.vxp-tree-node>button,
+.vxp-tree-footer button,.vxp-toolbar>div:first-child span,.vxp-toolbar input,.vxp-toolbar button,
+.vxp-path-example,.vxp-card>span,.vxp-table>button,.vxp-table>button>span:first-child strong,
+.vxp-metric>span,.vxp-chart footer,.vxp-category-performance>div:not(.vxp-head),
+.vxp-behavior>div:not(.vxp-head),.vxp-health-summary p,.vxp-health-card p,
+.vxp-record-top>button,.vxp-record-top>div button,.vxp-record-title>span,
+.vxp-record-tabs button,.vxp-section-head p,.vxp-field,.vxp-field input,.vxp-side-row,
+.vxp-history>div:not(.vxp-head),.vxp-doc-row{font-size:12px!important}
+
+.vxp-card-art>span,.vxp-card-path,.vxp-card footer small,.vxp-table-head,
+.vxp-table>button>span:first-child small,.vxp-table>button>span:nth-child(2),
+.vxp-metric>small,.vxp-health-card button,.vxp-head button,.vxp-record-top>span,
+.vxp-record-title em,.vxp-record-hero>aside>span,.vxp-record-hero>aside>small,
+.vxp-section-head button,.vxp-provenance span,.vxp-prov-row,.vxp-prov-row i,
+.vxp-market-chart footer span,.vxp-market-sources strong,.vxp-market-sources span,
+.vxp-media-grid span{font-size:10.5px!important}
+
+/* Search + Product Intelligence */
+.vxs-search-heading>span,.vxs-search-hero aside>span,.vxs-search-command form kbd,
+.vxs-search-command form button.submit,.vxs-input-actions button,.vxs-history>span,
+.vxs-history button,.vxs-discovery-banner>div>span,.vxs-discovery-banner p,
+.vxs-discovery-banner>button,.vxs-panel-head p,.vxs-panel-head>button,
+.vxs-mini-product strong,.vxs-radar-list strong,.vxs-release-list strong,
+.vxs-source-empty>span,.vxs-source-empty p,.vxs-source-empty button,
+.vxs-results-top p,.vxs-results-top button,.vxs-results-top select,
+.vxs-category-tabs button,.vxs-filter-drawer span,.vxs-filter-drawer select,
+.vxs-filter-placeholder p,.vxs-result-copy p,.vxs-result-card footer button,
+.vxs-no-results p,.vxs-search-error p,.vxs-no-results button,.vxs-search-error button,
+.vxs-intel-topline>button,.vxs-intel-topline>div button,.vxs-product-identity>p,
+.vxs-product-actions button,.vxs-intel-tabs button,.vxs-detail-grid>div,
+.vxs-variants strong,.vxs-release>div:not(.vxs-panel-head),.vxs-ai-actions>button,
+.vxs-provider-unavailable span,.vxs-provider-unavailable p,.vxs-local-control p,
+.vxs-local-control input,.vxs-local-control label button,.vxs-own-card strong,
+.vxs-own-card>button{font-size:12px!important}
+
+.vxs-mini-product span,.vxs-mini-product aside em,.vxs-radar-list small,
+.vxs-release-list time,.vxs-release-list small,.vxs-demo-note>span,.vxs-demo-note p,
+.vxs-result-art>span,.vxs-result-badges em,.vxs-result-copy small,.vxs-result-price span,
+.vxs-result-price small,.vxs-intel-topline>span,.vxs-product-visual>span,.vxs-pill-row span,
+.vxs-identifiers span,.vxs-user-relationship>span,.vxs-user-relationship small,
+.vxs-user-relationship p,.vxs-product-details .vxs-panel-head>span,.vxs-variants small,
+.vxs-ai-actions>small,.vxs-chart-head p,.vxs-chart-head button,
+.vxs-market-chart footer label,.vxs-market-chart footer>span,
+.vxs-market-stats>div:not(.vxs-panel-head),.vxs-own-card span,.vxs-own-card small,
+.vxs-wishlist-context span{font-size:10.5px!important}
+
+/* Search phase-1 controls */
+.vxs-results-controls>button em,.vxs-filter-drawer-expanded>div>span,
+.vxs-filter-drawer-expanded select,.vxs-filter-price input,.vxs-filter-price label i,
+.vxs-filter-disabled p,.vxs-filter-actions button,.vxs-filter-actions>span,
+.vxs-result-price>em,.vxs-result-grid.is-list .vxs-result-copy p{font-size:11px!important}
+
+/* Financial / Sell detail text, excluding the top stats */
+.vx-budget-config p,.vx-budget-config input,.vx-fin-budget-edit input,
+.vx-budget-config button,.vx-fin-budget-edit button,.vx-fin-empty strong,
+.vx-fin-empty p,.vx-fin-empty>span,.vx-fin-month b,.vx-fin-month small{font-size:12px!important}
+.vx-preorder-fin span,.vx-preorder-fin>em,.vx-goal span{font-size:11px!important}
+
+/* Prevent enlarged controls from feeling cramped */
+.vx-content :where(button,input,select):not(.vx-fin-stats *,.vxs-summary-metrics *,.vxp-summary-card *){min-height:32px}
+.vx-nav button{min-height:42px}
+.vx-quick button{min-height:38px}
