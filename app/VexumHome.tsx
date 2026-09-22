@@ -8,7 +8,7 @@ import {
   Sparkles,Star,TrendingDown,TrendingUp,WalletCards,X
 } from 'lucide-react';
 import {useWorkspace} from '../lib/useWorkspace';
-import {HOME_WIDGET_TITLES,defaultHomeDashboard,normalizeHomeDashboard,type HomeWidgetId,type HomeWidgetLayout,type HomeWidgetSize} from '../lib/home';
+import {DEMO_HOME_DATA,HOME_WIDGET_TITLES,defaultHomeDashboard,normalizeHomeDashboard,type HomeWidgetId,type HomeWidgetLayout,type HomeWidgetSize} from '../lib/home';
 import {normalizeFinancialData} from '../lib/financial';
 import {normalizeSetupData} from '../lib/setup';
 import {normalizePortfolioPreferences} from '../lib/portfolio';
@@ -43,14 +43,14 @@ function DashboardChart({values}:{values:number[]}){
   </svg>;
 }
 
-function SourceBadge({source}:{source:'live'|'unavailable'|'mixed'}){
-  return <span className={'vxh-source '+source}>{source==='live'?'LIVE':source==='mixed'?'MIXED':'UNAVAILABLE'}</span>;
+function SourceBadge({source}:{source:'live'|'demo'|'mixed'}){
+  return <span className={'vxh-source '+source}>{source==='live'?'LIVE':source==='mixed'?'MIXED':'DEMO'}</span>;
 }
 
 function WidgetShell({layout,editing,dragged,onDragStart,onDrop,onHide,onResize,onConfigure,menuFor,setMenuFor,source,children}:{
   layout:HomeWidgetLayout;editing:boolean;dragged:HomeWidgetId|null;onDragStart:(id:HomeWidgetId)=>void;onDrop:(id:HomeWidgetId)=>void;
   onHide:(id:HomeWidgetId)=>void;onResize:(id:HomeWidgetId)=>void;onConfigure:(id:HomeWidgetId)=>void;menuFor:HomeWidgetId|null;
-  setMenuFor:(id:HomeWidgetId|null)=>void;source:'live'|'unavailable'|'mixed';children:ReactNode;
+  setMenuFor:(id:HomeWidgetId|null)=>void;source:'live'|'demo'|'mixed';children:ReactNode;
 }){
   return <section className={'vxh-widget vx-panel size-'+layout.size+(editing?' editing':'')+(dragged===layout.id?' dragging':'')} draggable={editing}
     onDragStart={()=>onDragStart(layout.id)} onDragOver={event=>editing&&event.preventDefault()} onDrop={()=>onDrop(layout.id)}>
@@ -106,8 +106,8 @@ export default function VexumHome({onQuickAdd}:{onQuickAdd?:()=>void}={}){
   const owned=workspace.data.items.filter(item=>item.status==='owned'&&!item.archivedAt);
   const sold=workspace.data.items.filter(item=>item.status==='sold');
   const hasPortfolio=owned.length>0;
-  const currentValue=owned.reduce((sum,item)=>sum+item.currentValue*item.quantity,0);
-  const costBasis=owned.reduce((sum,item)=>sum+item.purchasePrice*item.quantity,0);
+  const currentValue=hasPortfolio?owned.reduce((sum,item)=>sum+item.currentValue*item.quantity,0):DEMO_HOME_DATA.portfolio.currentValue;
+  const costBasis=hasPortfolio?owned.reduce((sum,item)=>sum+item.purchasePrice*item.quantity,0):DEMO_HOME_DATA.portfolio.costBasis;
   const pl=currentValue-costBasis;
   const plPct=costBasis?pl/costBasis*100:0;
 
@@ -139,12 +139,12 @@ export default function VexumHome({onQuickAdd}:{onQuickAdd?:()=>void}={}){
   const liveMonthSpend=financial.transactions.filter(tx=>tx.direction==='expense'&&tx.isHobby&&tx.date.startsWith(month)).reduce((sum,tx)=>sum+tx.amount,0);
   const liveBudget=workspace.data.financialPreferences?.monthlyHobbyBudget||financial.budgets.find(budget=>budget.active&&budget.period==='monthly'&&(!budget.category||/hobby|collect/i.test(budget.category)))?.amount;
   const hasSpend=Boolean(liveBudget||liveMonthSpend);
-  const monthSpend=liveMonthSpend;
-  const monthBudget=liveBudget||0;
+  const monthSpend=hasSpend?liveMonthSpend:DEMO_HOME_DATA.monthlySpend.spent;
+  const monthBudget=liveBudget||DEMO_HOME_DATA.monthlySpend.budget;
 
   const historyValues=useMemo(()=>{
     const rows=(workspace.data.history||[]).slice(-30).map(snapshot=>Object.values(snapshot.values).reduce((sum,value)=>sum+value,0)).filter(value=>value>0);
-    return rows;
+    return rows.length>=3?rows:[...DEMO_HOME_DATA.portfolio.chart];
   },[workspace.data.history]);
 
   const liveWishlist=Object.values(workspace.data.wishlist||{}).filter(record=>!record.archived&&typeof record.currentMarket==='number'&&(
@@ -221,29 +221,28 @@ export default function VexumHome({onQuickAdd}:{onQuickAdd?:()=>void}={}){
   const profileName=workspace.data.profile?.name?.trim();
   const dateLabel=new Intl.DateTimeFormat('en-US',{weekday:'long',month:'long',day:'numeric'}).format(new Date());
 
-  const sourceFor=(id:HomeWidgetId):'live'|'unavailable'|'mixed'=> {
-    if(['collectionValue','costBasis','profitLoss'].includes(id))return hasPortfolio?'live':'unavailable';
-    if(id==='portfolioPerformance')return historyValues.length>=2?'live':'unavailable';
-    if(id==='monthlySpend')return hasSpend?'live':'unavailable';
-    if(id==='finance')return financial.accounts.length||hasSpend?'live':'unavailable';
-    if(id==='wishlist')return liveWishlist.length?'live':'unavailable';
-    if(id==='progress')return progressRows.length?'live':'unavailable';
-    if(id==='purchases')return recentPurchases.length?'live':'unavailable';
-    if(id==='sales')return recentSales.length?'live':'unavailable';
-    if(id==='capacity')return capacityRows.length?'live':'unavailable';
-    if(id==='alerts'||id==='brief')return 'live';
-    if(id==='calendar')return lifeCalendarRows.length?'live':'unavailable';
-    return 'unavailable';
+  const sourceFor=(id:HomeWidgetId):'live'|'demo'|'mixed'=> {
+    if(['collectionValue','costBasis','profitLoss','portfolioPerformance'].includes(id))return hasPortfolio?'live':'demo';
+    if(id==='monthlySpend'||id==='finance')return hasSpend?'live':'demo';
+    if(id==='wishlist')return liveWishlist.length?'live':'demo';
+    if(id==='progress')return progressRows.length?'live':'demo';
+    if(id==='purchases')return recentPurchases.length?'live':'demo';
+    if(id==='sales')return recentSales.length?'live':'demo';
+    if(id==='capacity')return capacityRows.length?'live':'demo';
+    if(id==='alerts')return auditCounts.total?'mixed':'demo';
+    if(id==='brief')return 'mixed';
+    if(id==='calendar')return lifeCalendarRows.length?'live':'demo';
+    return 'demo';
   };
 
   const render=(layout:HomeWidgetLayout)=>{
     const source=sourceFor(layout.id);
     const shell=(body:ReactNode)=><WidgetShell key={layout.id} layout={layout} editing={editing} dragged={dragged} onDragStart={setDragged} onDrop={drop} onHide={hide} onResize={resize} onConfigure={configure} menuFor={menuFor} setMenuFor={setMenuFor} source={source}>{body}</WidgetShell>;
-    if(layout.id==='collectionValue')return shell(hasPortfolio?<div className="vxh-metric"><strong>{money(currentValue)}</strong><span className="tone-muted">{owned.reduce((s,i)=>s+i.quantity,0)} owned units</span></div>:<EmptyWidget text="Add owned items to Portfolio to calculate collection value." action="Open Portfolio" route="/portfolio"/>);
-    if(layout.id==='costBasis')return shell(hasPortfolio?<div className="vxh-metric"><strong>{money(costBasis)}</strong><span>Recorded acquisition cost</span></div>:<EmptyWidget text="Cost basis appears after real Portfolio purchases are recorded." action="Open Portfolio" route="/portfolio"/>);
-    if(layout.id==='profitLoss')return shell(hasPortfolio?<div className="vxh-metric"><strong className={pl>=0?'tone-green':'tone-red'}>{pl>=0?'+':''}{money(pl)}</strong><span className={pl>=0?'tone-green':'tone-red'}>{plPct>=0?'+':''}{plPct.toFixed(1)}%</span></div>:<EmptyWidget text="Profit / loss needs real Portfolio cost and market values." action="Open Portfolio" route="/portfolio"/>);
-    if(layout.id==='monthlySpend')return shell(hasSpend?<div className="vxh-metric"><strong>{money(monthSpend)} <small>{monthBudget?' / '+money(monthBudget):''}</small></strong><span>{monthBudget?Math.round(monthSpend/monthBudget*100)+'% of monthly target':'No monthly target set'}</span><div className="vxh-progress"><i style={{width:Math.min(100,monthBudget?monthSpend/monthBudget*100:0)+'%'}}/></div></div>:<EmptyWidget text="Record Financial hobby spending or set a monthly budget to activate this widget." action="Open Financial" route="/financial"/>);
-    if(layout.id==='portfolioPerformance')return shell(historyValues.length>=2?<div className="vxh-performance"><div className="vxh-chart-head"><div><strong>{money(currentValue)}</strong><span>Workspace value history</span></div><div>{['7D','30D','3M','6M','1Y','ALL'].map(interval=><button className={(layout.config.interval||'30D')===interval?'active':''} key={interval} onClick={()=>updateDashboard(state.widgets.map(w=>w.id===layout.id?{...w,config:{...w.config,interval}}:w))}>{interval}</button>)}</div></div><DashboardChart values={historyValues}/><footer><span><i className="red"/>Market value</span><span><i/>Cost basis {money(costBasis)}</span></footer></div>:<EmptyWidget text="VEXUM needs at least two real value snapshots before it can draw performance history." action="Open Portfolio" route="/portfolio"/>);
+    if(layout.id==='collectionValue')return shell(<div className="vxh-metric"><strong>{money(currentValue)}</strong><span className={hasPortfolio?'tone-muted':'tone-green'}>{hasPortfolio?owned.reduce((s,i)=>s+i.quantity,0)+' owned units':'+'+money(DEMO_HOME_DATA.portfolio.changeYesterday)+' yesterday'}</span></div>);
+    if(layout.id==='costBasis')return shell(<div className="vxh-metric"><strong>{money(costBasis)}</strong><span>{hasPortfolio?'Recorded acquisition cost':'Demo ownership basis'}</span></div>);
+    if(layout.id==='profitLoss')return shell(<div className="vxh-metric"><strong className={pl>=0?'tone-green':'tone-red'}>{pl>=0?'+':''}{money(pl)}</strong><span className={pl>=0?'tone-green':'tone-red'}>{plPct>=0?'+':''}{plPct.toFixed(1)}%</span></div>);
+    if(layout.id==='monthlySpend')return shell(<div className="vxh-metric"><strong>{money(monthSpend)} <small>/ {money(monthBudget)}</small></strong><span>{monthBudget?Math.round(monthSpend/monthBudget*100):0}% of monthly target</span><div className="vxh-progress"><i style={{width:Math.min(100,monthBudget?monthSpend/monthBudget*100:0)+'%'}}/></div></div>);
+    if(layout.id==='portfolioPerformance')return shell(<div className="vxh-performance"><div className="vxh-chart-head"><div><strong>{money(currentValue)}</strong><span>{source==='live'?'Workspace value history':'Isolated dashboard demo history'}</span></div><div>{['7D','30D','3M','6M','1Y','ALL'].map(interval=><button className={(layout.config.interval||'30D')===interval?'active':''} key={interval} onClick={()=>updateDashboard(state.widgets.map(w=>w.id===layout.id?{...w,config:{...w.config,interval}}:w))}>{interval}</button>)}</div></div><DashboardChart values={historyValues}/><footer><span><i className="red"/>Market value</span><span><i/>Cost basis {money(costBasis)}</span></footer></div>);
     if(layout.id==='brief'){
       const rows:ReadonlyArray<readonly [string,string,string]>=[
         ['Today',lifeTodayTasks.length+' task'+(lifeTodayTasks.length===1?'':'s')+' · '+lifeTodayEvents.length+' event'+(lifeTodayEvents.length===1?'':'s'),lifeTodayTasks.length?'orange':'green'],
@@ -257,23 +256,23 @@ export default function VexumHome({onQuickAdd}:{onQuickAdd?:()=>void}={}){
       ];
       return shell(<div className="vxh-brief"><div className="vxh-brief-lead"><Sparkles/><span><strong>{greeting()}{profileName?', '+profileName:''}.</strong><small>What changed and what needs attention.</small></span></div>{rows.map(([label,value,tone])=><div className="vxh-brief-row" key={label}><span>{label}</span><strong className={'tone-'+tone}>{value}</strong></div>)}</div>);
     }
-    if(layout.id==='wishlist')return shell(liveWishlist.length?<div className="vxh-list">{liveWishlist.map(record=>({name:record.snapshot?.name||record.productId,sub:'Target '+money(record.targetPrice||record.maximumPrice||0),value:money(record.currentMarket||0),tone:'green' as Tone})).map(row=><div key={row.name}><Star/><span><strong>{row.name}</strong><small>{row.sub}</small></span><b className={'tone-'+row.tone}>{row.value}</b></div>)}<button onClick={()=>location.assign('/wishlist')}>Open Wishlist <ChevronRight/></button></div>:<EmptyWidget text="No Wishlist item currently has verified market data at or below its target." action="Open Wishlist" route="/wishlist"/>);
-    if(layout.id==='radar')return shell(<EmptyWidget text="Radar has no verified provider events to show. VEXUM will not fabricate restocks, prices, or availability." action="Open Wishlist" route="/wishlist"/>);
+    if(layout.id==='wishlist')return shell(<div className="vxh-list">{(liveWishlist.length?liveWishlist.map(record=>({name:record.snapshot?.name||record.productId,sub:'Target '+money(record.targetPrice||record.maximumPrice||0),value:money(record.currentMarket||0),tone:'green' as Tone})):DEMO_HOME_DATA.wishlist.map(row=>({name:row[0],sub:'Target '+row[2]+' · '+row[4],value:row[3],tone:'green' as Tone}))).map(row=><div key={row.name}><Star/><span><strong>{row.name}</strong><small>{row.sub}</small></span><b className={'tone-'+row.tone}>{row.value}</b></div>)}<button onClick={()=>location.assign('/wishlist')}>Open Wishlist <ChevronRight/></button></div>);
+    if(layout.id==='radar')return shell(<div className="vxh-radar">{DEMO_HOME_DATA.radar.map(row=><div key={row[1]}><em>{row[0]}</em><span><strong>{row[1]}</strong><small>{row[3]}</small></span><b>{row[2]}</b></div>)}<p>Demo fixture until Radar/provider events are wired to Home.</p></div>);
     if(layout.id==='progress'){
-      const rows=progressRows;
-      return shell(rows.length?<div className="vxh-progress-list">{rows.slice(0,Number(layout.config.count)||3).map(row=>{const pct=row.total?Math.min(100,Math.round(row.count/row.total*100)):0;return <div key={row.name}><span><strong>{row.name}</strong><b>{row.count} / {row.total} · {pct}%</b></span><div className="vxh-progress"><i style={{width:pct+'%'}}/></div></div>})}</div>:<EmptyWidget text="Mark a Portfolio collection measurable and set its target count to track progress here." action="Open Portfolio" route="/portfolio"/>);
+      const rows=progressRows.length?progressRows:DEMO_HOME_DATA.progress.map(row=>({name:row[0],count:row[1],total:row[2]}));
+      return shell(<div className="vxh-progress-list">{rows.slice(0,Number(layout.config.count)||3).map(row=>{const pct=row.total?Math.min(100,Math.round(row.count/row.total*100)):0;return <div key={row.name}><span><strong>{row.name}</strong><b>{row.count} / {row.total} · {pct}%</b></span><div className="vxh-progress"><i style={{width:pct+'%'}}/></div></div>})}</div>);
     }
     if(layout.id==='purchases'){
-      const rows=recentPurchases.map(item=>({name:item.name,date:item.purchaseDate||item.createdAt,paid:item.purchasePrice,market:item.currentValue,image:item.image}));
-      return shell(rows.length?<HomeTable headers={['Product','Date','Paid','Market']} rows={rows.slice(0,Number(layout.config.count)||5).map(row=>[<ItemLabel key={row.name} name={row.name} image={row.image}/>,row.date.includes('-')?shortDate(row.date):row.date,money(row.paid),money(row.market)])}/>:<EmptyWidget text="Recent purchases appear from real owned Portfolio records." action="Open Portfolio" route="/portfolio"/>);
+      const rows=recentPurchases.length?recentPurchases.map(item=>({name:item.name,date:item.purchaseDate||item.createdAt,paid:item.purchasePrice,market:item.currentValue,image:item.image})):DEMO_HOME_DATA.purchases.map(row=>({name:row[0],date:row[1],paid:row[2],market:row[3],image:''}));
+      return shell(<HomeTable headers={['Product','Date','Paid','Market']} rows={rows.slice(0,Number(layout.config.count)||5).map(row=>[<ItemLabel key={row.name} name={row.name} image={row.image}/>,row.date.includes('-')?shortDate(row.date):row.date,money(row.paid),money(row.market)])}/>);
     }
     if(layout.id==='sales'){
-      const rows=recentSales.map(item=>[<ItemLabel key={item.id} name={item.name} image={item.image}/>,money(item.currentValue*item.quantity),money((item.currentValue-item.purchasePrice)*item.quantity),'Sold']);
-      return shell(rows.length?<HomeTable headers={['Product','Sold','Profit','Platform']} rows={rows.slice(0,Number(layout.config.count)||5)}/>:<EmptyWidget text="Completed real sales will appear here." action="Open Sell" route="/sell"/>);
+      const rows=recentSales.length?recentSales.map(item=>[<ItemLabel key={item.id} name={item.name} image={item.image}/>,money(item.currentValue*item.quantity),money((item.currentValue-item.purchasePrice)*item.quantity),'Sold']):DEMO_HOME_DATA.sales.map(row=>[row[0],money(row[1]),'+'+money(row[2]),row[3]]);
+      return shell(<HomeTable headers={['Product','Sold','Profit','Platform']} rows={rows.slice(0,Number(layout.config.count)||5)}/>);
     }
     if(layout.id==='capacity'){
-      const rows=capacityRows;
-      return shell(rows.length?<div className="vxh-capacity-list">{rows.map(row=><div key={row.name}><span><strong>{row.name}</strong><b>{row.label}</b></span><div className="vxh-progress"><i style={{width:row.pct+'%'}}/></div></div>)}<button onClick={()=>location.assign('/setup')}>Open Setup <ChevronRight/></button></div>:<EmptyWidget text="Add capacity values to Setup objects to monitor physical storage here." action="Open Setup" route="/setup"/>);
+      const rows=capacityRows.length?capacityRows:DEMO_HOME_DATA.capacity.map(row=>({name:row[0],pct:row[1],label:row[2]}));
+      return shell(<div className="vxh-capacity-list">{rows.map(row=><div key={row.name}><span><strong>{row.name}</strong><b>{row.label}</b></span><div className="vxh-progress"><i style={{width:row.pct+'%'}}/></div></div>)}<button onClick={()=>location.assign('/setup')}>Open Setup <ChevronRight/></button></div>);
     }
     if(layout.id==='alerts'){
       const liveRows=auditCounts.total?[
@@ -281,18 +280,18 @@ export default function VexumHome({onQuickAdd}:{onQuickAdd?:()=>void}={}){
         auditCounts.missingLocation?['Missing Setup location',auditCounts.missingLocation+' owned items']:null,
         auditCounts.missingImages?['Missing images',auditCounts.missingImages+' owned items']:null,
         auditCounts.missingCost?['Missing cost basis',auditCounts.missingCost+' owned items']:null
-      ].filter(Boolean) as string[][]:[];
-      return shell(liveRows.length?<div className="vxh-alert-list">{liveRows.map(row=><div key={row[0]}><AlertTriangle/><span><strong>{row[0]}</strong><small>{row[1]}</small></span></div>)}<button onClick={()=>location.assign('/portfolio')}>Review Portfolio Audit <ChevronRight/></button></div>:<EmptyWidget text="No current Portfolio audit issues were detected." action="Open Portfolio" route="/portfolio"/>);
+      ].filter(Boolean) as string[][]:DEMO_HOME_DATA.alerts.map(row=>[row[0],row[1]]);
+      return shell(<div className="vxh-alert-list">{liveRows.map(row=><div key={row[0]}><AlertTriangle/><span><strong>{row[0]}</strong><small>{row[1]}</small></span></div>)}<button onClick={()=>location.assign('/portfolio')}>Review Portfolio Audit <ChevronRight/></button></div>);
     }
     if(layout.id==='finance'){
       const debt=financial.accounts.filter(a=>['credit_card','student_loan','auto_loan','mortgage','personal_loan','other_liability'].includes(a.type)).reduce((sum,a)=>sum+Math.max(0,a.currentBalance),0);
       const cash=financial.accounts.filter(a=>['checking','savings','cash'].includes(a.type)).reduce((sum,a)=>sum+a.currentBalance,0);
-      return shell(financial.accounts.length||hasSpend?<div className="vxh-finance"><div><span>Cash</span><strong>{financial.accounts.length?money(cash):'Not set'}</strong></div><div><span>Debt</span><strong>{financial.accounts.length?money(debt):'Not set'}</strong></div><div><span>Hobby spend</span><strong>{hasSpend?money(monthSpend):'Not set'}</strong></div><button onClick={()=>location.assign('/financial')}>Open Financial <ChevronRight/></button></div>:<EmptyWidget text="Financial stays empty until you record real accounts, transactions, or a budget." action="Open Financial" route="/financial"/>);
+      return shell(<div className="vxh-finance"><div><span>Cash</span><strong>{source==='live'?money(cash):'$2,470'}</strong></div><div><span>Debt</span><strong>{source==='live'?money(debt):'$4,220'}</strong></div><div><span>Hobby spend</span><strong>{money(monthSpend)}</strong></div><button onClick={()=>location.assign('/financial')}>Open Financial <ChevronRight/></button></div>);
     }
-    if(layout.id==='social')return shell(<EmptyWidget text="The Social Home adapter is not connected yet. Open Social for the real network feed." action="Open Social" route="/social"/>);
+    if(layout.id==='social')return shell(<div className="vxh-social-list">{DEMO_HOME_DATA.social.map(row=><div key={row[0]}><span className="vxh-avatar">{row[0][0]}</span><span><strong>{row[0]}</strong><small>{row[1]}</small></span></div>)}<p>Demo summary until a Social Home adapter is enabled.</p><button onClick={()=>location.assign('/social')}>Open Social <ChevronRight/></button></div>);
     if(layout.id==='calendar'){
-      const rows=lifeCalendarRows.map(row=>[new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric'}).format(new Date(row.date+'T12:00:00')),row.title,row.kind] as const);
-      return shell(rows.length?<div className="vxh-calendar">{rows.map(row=><div key={row[0]+row[1]}><time>{row[0]}</time><span><strong>{row[1]}</strong><small>{row[2]}</small></span></div>)}<p>Live from Life tasks, events, and workout plans.</p><button onClick={()=>location.assign('/life')}>Open Life <ChevronRight/></button></div>:<EmptyWidget text="Schedule a Life task, event, or workout to activate this calendar widget." action="Open Life" route="/life"/>);
+      const rows=lifeCalendarRows.length?lifeCalendarRows.map(row=>[new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric'}).format(new Date(row.date+'T12:00:00')),row.title,row.kind] as const):DEMO_HOME_DATA.calendar;
+      return shell(<div className="vxh-calendar">{rows.map(row=><div key={row[0]+row[1]}><time>{row[0]}</time><span><strong>{row[1]}</strong><small>{row[2]}</small></span></div>)}<p>{lifeCalendarRows.length?'Live from Life tasks, events, and workout plans.':'Demo release fixture until Life has scheduled data.'}</p><button onClick={()=>location.assign('/life')}>Open Life <ChevronRight/></button></div>);
     }
     return shell(<div/>);
   };
@@ -303,7 +302,7 @@ export default function VexumHome({onQuickAdd}:{onQuickAdd?:()=>void}={}){
       <div className="vxh-title-actions"><button onClick={()=>onQuickAdd?onQuickAdd():location.assign('/search')}><Plus/>Quick Add</button><button className={editing?'active':''} onClick={()=>setEditing(value=>!value)}><SlidersHorizontal/>{editing?'Done Editing':'Edit Widgets'}</button></div>
     </section>
     <div className="vxh-editbar">
-      {editing?<><span><GripVertical/>Drag to reorder. Resize, hide, or restore widgets without changing their data source.</span><button onClick={()=>setLibraryOpen(value=>!value)}><Plus/>Add Widget</button><button onClick={reset}><RefreshCw/>Reset Layout</button></>:<span>Widgets only show workspace data VEXUM can actually verify. Unavailable sources stay explicit.</span>}
+      {editing?<><span><GripVertical/>Drag to reorder. Resize, hide, or restore widgets without changing their data source.</span><button onClick={()=>setLibraryOpen(value=>!value)}><Plus/>Add Widget</button><button onClick={reset}><RefreshCw/>Reset Layout</button></>:<span>Each widget can move from DEMO → LIVE independently without rebuilding Home.</span>}
     </div>
     {libraryOpen&&editing?<section className="vxh-library vx-panel"><header><div><strong>Widget Library</strong><span>Hidden widgets can be restored. Future Life/Fitness modules use the same registry.</span></div><button onClick={()=>setLibraryOpen(false)}><X/></button></header><div>{hidden.length?hidden.map(widget=><button key={widget.id} onClick={()=>show(widget.id)}><span>{widgetIcon(widget.id)}</span><strong>{HOME_WIDGET_TITLES[widget.id]}</strong><Plus/></button>):<p>Every current widget is visible.</p>}</div></section>:null}
     <div className="vxh-grid">{visible.map(render)}</div>
@@ -312,10 +311,6 @@ export default function VexumHome({onQuickAdd}:{onQuickAdd?:()=>void}={}){
 
 function ItemLabel({name,image}:{name:string;image:string}){
   return <span className="vxh-item-label"><i style={image?{backgroundImage:'url("'+image.replaceAll('"','')+'")'}:undefined}>{image?'':<Layers3/>}</i><strong>{name}</strong></span>;
-}
-
-function EmptyWidget({text,action,route}:{text:string;action?:string;route?:string}){
-  return <div className="vxh-empty-widget"><span>{text}</span>{action&&route?<button onClick={()=>location.assign(route)}>{action}<ChevronRight/></button>:null}</div>;
 }
 
 function HomeTable({headers,rows}:{headers:string[];rows:Array<Array<ReactNode|string|number>>}){
