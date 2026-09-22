@@ -74,6 +74,19 @@ export default function VexumSell(){
   const financial=normalizeFinancialData(workspace.data.financial);
   const listingByItem=new Map(data.listings.filter(listing=>activeListing(listing.status)).map(listing=>[listing.portfolio_item_id,listing]));
   const orderItemByOrder=new Map(data.orderItems.map(item=>[item.order_id,item]));
+  const canonicalProductIdForItem=(item?:Item)=>{
+    if(!item)return undefined;
+    const name=norm(item.name);
+    const records=Object.values(workspace.data.wishlist||{}).filter(record=>record.source==='catalog');
+    const matched=records.find(record=>{
+      const snapshot=record.snapshot;
+      return (snapshot?.name&&norm(snapshot.name)===name)||
+        (!!item.identity?.upc&&snapshot?.upc===item.identity.upc)||
+        (!!item.identity?.sku&&snapshot?.sku===item.identity.sku)||
+        (!!item.identity?.modelNumber&&snapshot?.modelNumber===item.identity.modelNumber);
+    });
+    return matched?.productId;
+  };
 
   async function refresh(){
     if(!workspace.ready){return}
@@ -223,7 +236,8 @@ export default function VexumSell(){
     {composer==='listing'&&config&&session?<ListingComposer items={owned} listings={data.listings} initialItemId={selectedItemId} onClose={()=>setComposer(null)} busy={busy} onSave={async input=>{
       setBusy(true);setError('');
       try{
-        const listing=await createSellListing(config,session,input);
+        const sourceItem=owned.find(item=>item.id===input.portfolioItemId);
+        const listing=await createSellListing(config,session,{...input,productId:input.productId||canonicalProductIdForItem(sourceItem)});
         if(input.publish&&listing)await publishVexumListing(config,session,listing.id,listing.price,listing.quantity);
         setComposer(null);await refresh();
       }catch(err){setError(err instanceof Error?err.message:'Listing could not be created.')}
