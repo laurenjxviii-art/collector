@@ -166,7 +166,7 @@ export default function VexumApp({
 
   const frame=(hero:string,children:ReactNode)=><PageFrame hero={hero} displayName={displayName} unread={unread} onCommand={openCommand} onQuick={()=>openQuick()} onNotifications={openNotifications} onProfile={openProfile}>{children}</PageFrame>;
 
-  let content:ReactNode=frame('home',<VexumHome/>);
+  let content:ReactNode=frame('home',<VexumHome onQuickAdd={()=>openQuick()}/>);
   if(view==='life')content=frame('life',<VexumLife/>);
   else if(view==='portfolio')content=frame('plain',<VexumPortfolio/>);
   else if(view==='search')content=frame('search',<VexumSearch initialQuery={initialSearchQuery} initialProductId={initialProductId}/>);
