@@ -67,7 +67,7 @@ export function QuickAddPanel({open,onClose,workspace,navigate,initialType}:{ope
     if(selected==='expense'){
       const amount=Number(window.prompt('Expense amount','0')||0);if(!(amount>0))return;
       const financial=normalizeFinancialData(workspace.data.financial);
-      workspace.update({...workspace.data,financial:{...financial,transactions:[{id:newFinancialId('tx'),date:todayKey(),direction:'expense',amount,merchant:value,category:'Shopping',subcategory:'',isHobby:false,notes:'Quick Add',createdAt:now,updatedAt:now},...financial.transactions]}});
+      workspace.update({...workspace.data,financial:{...financial,transactions:[{id:newFinancialId('tx'),date:todayKey(),direction:'expense',amount,merchant:value,category:'Shopping',subcategory:'',description:'Quick Add expense',isRecurring:false,isHobby:false,createdAt:now,updatedAt:now},...financial.transactions]}});
       onClose();navigate('financial');return;
     }
   };
