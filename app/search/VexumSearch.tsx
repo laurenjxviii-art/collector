@@ -189,7 +189,7 @@ export default function VexumSearch({initialQuery='',initialProductId=''}:Props)
 
     {loading?<SearchSkeleton/>:error?<div className="vxs-search-error"><strong>Search unavailable</strong><p>{error}</p><button onClick={()=>void performSearch(submittedQuery)}>Try again</button></div>:selected?
       <ProductIntelligence product={selected} relationship={relationships[selected.id]} onBack={closeProduct} onAddPortfolio={setPortfolioModal} onAddWishlist={setWishlistModal} onRelationshipChange={setRelation}/>:
-      submittedQuery?<SearchResults query={submittedQuery} products={results} relationships={relationships} onSelect={selectProduct} onAddPortfolio={setPortfolioModal} onAddWishlist={setWishlistModal}/>:
+      submittedQuery?<SearchResults query={submittedQuery} products={results} relationships={relationships} onSelect={selectProduct} onAddPortfolio={setPortfolioModal} onAddWishlist={setWishlistModal} onIdentify={()=>setIdentify('camera')}/>:
       <SearchDiscovery recentIds={recentIds} relationships={relationships} onSelect={selectProduct} onSearch={value=>void performSearch(value)} onIdentify={()=>setIdentify('camera')}/>
     }
 
