@@ -11,8 +11,14 @@ import {resolveSearch} from '../../lib/search/providers';
 import type {NormalizedProduct,UserProductRelationship} from '../../lib/search/types';
 import {useWorkspace} from '../../lib/useWorkspace';
 import {alertDefaults,conditionOptions,newWishlistRecord,snapshotFromProduct,wishlistEvent,type WishlistPriority,type WishlistRecord} from '../../lib/wishlist';
+import type {Item} from '../../lib/model';
+import {newPortfolioId,normalizePortfolioPreferences} from '../../lib/portfolio';
 
 type IdentifyMethod='camera'|'image'|'barcode'|'receipt'|'url';
+type PortfolioCopyInput={
+  price:number;date:string;condition:string;quantity:number;collectionId:string;
+  retailer:string;box:string;accessories:string;receipt:string;notes:string;
+};
 
 type Props={
   initialQuery?:string;
@@ -139,6 +145,40 @@ export default function VexumSearch({initialQuery='',initialProductId=''}:Props)
     workspace.update({...workspace.data,wishlist:{...(workspace.data.wishlist||{}),[record.productId]:record}});
   };
 
+  const savePortfolioCopy=(product:NormalizedProduct,relation:UserProductRelationship,input:PortfolioCopyInput)=>{
+    const now=new Date().toISOString();
+    const preferences=normalizePortfolioPreferences(workspace.data.portfolioPreferences);
+    const collection=workspace.data.collections.find(row=>row.id===input.collectionId);
+    const template=preferences.templates.find(row=>row.id===collection?.customFieldTemplateId);
+    const customFields:Record<string,string>=Object.fromEntries((template?.fields||[]).map(field=>[field.label,field.defaultValue||'']));
+    if(input.retailer)customFields['Purchased From']=input.retailer;
+    if(input.box)customFields['Box']=input.box;
+    if(input.accessories)customFields['Accessories']=input.accessories;
+    if(product.msrp!==undefined)customFields['MSRP']=String(product.msrp);
+    const currentValue=product.demoMarket?.current??0;
+    const item:Item={
+      id:newPortfolioId('item'),productId:product.id,collectionId:input.collectionId,
+      name:product.canonicalName,category:product.category,status:'owned',
+      purchasePrice:Math.max(0,input.price),currentValue:Math.max(0,currentValue),quantity:Math.max(1,Math.round(input.quantity)),
+      image:product.imageUrl||'',condition:input.condition,purchaseDate:input.date,location:'',notes:input.notes,
+      customFields,
+      packagingState:/sealed/i.test(input.condition)?'sealed':/loose/i.test(input.condition)?'loose':'opened-box',
+      identity:{
+        brand:product.manufacturer||product.brand,series:product.line,year:product.releaseYear,
+        upc:product.upc||'',sku:product.sku||'',modelNumber:product.modelNumber||'',
+        description:product.description||''
+      },
+      documents:input.receipt?[{id:newPortfolioId('doc'),kind:'Receipt',name:'Purchase Receipt',url:input.receipt,createdAt:now}]:[],
+      historyEvents:[
+        {id:newPortfolioId('history'),at:now,type:'added',label:'Added from canonical Search',detail:product.id},
+        ...(input.date?[{id:newPortfolioId('history'),at:input.date,type:'purchased' as const,label:'Purchased',detail:input.retailer||undefined}]:[])
+      ],
+      createdAt:now,updatedAt:now
+    };
+    workspace.update({...workspace.data,items:[...workspace.data.items,item]});
+    setRelation({...relation,ownedQuantity:(relation.ownedQuantity||0)+item.quantity});
+  };
+
   const removeWishlistRecord=(product:NormalizedProduct)=>{
     const existing=workspace.data.wishlist?.[product.id];
     if(existing){
@@ -242,31 +282,46 @@ export default function VexumSearch({initialQuery='',initialProductId=''}:Props)
     }
 
     {identify?<IdentifyItem initialMethod={identify} onClose={()=>setIdentify(null)} onConfirm={product=>{setIdentify(null);selectProduct(product)}}/>:null}
-    {portfolioModal?<AddPortfolioModal product={portfolioModal} relation={relationFor(portfolioModal)} onClose={()=>setPortfolioModal(null)} onSave={next=>{setRelation(next);setPortfolioModal(null)}}/>:null}
+    {portfolioModal?<AddPortfolioModal product={portfolioModal} relation={relationFor(portfolioModal)} collections={workspace.data.collections.filter(collection=>!collection.archivedAt)} templates={normalizePortfolioPreferences(workspace.data.portfolioPreferences).templates} onClose={()=>setPortfolioModal(null)} onSave={(next,input)=>{savePortfolioCopy(portfolioModal,next,input);setPortfolioModal(null)}}/>:null}
     {wishlistModal?<WishlistModal product={wishlistModal} relation={relationFor(wishlistModal)} record={workspace.data.wishlist?.[wishlistModal.id]} onClose={()=>setWishlistModal(null)} onSave={(next,record)=>{setRelation(next);saveWishlistRecord(record);setWishlistModal(null)}}/>:null}
   </div>;
 }
 
-function AddPortfolioModal({product,relation,onClose,onSave}:{product:NormalizedProduct;relation:UserProductRelationship;onClose:()=>void;onSave:(r:UserProductRelationship)=>void}){
+function AddPortfolioModal({product,relation,collections,templates,onClose,onSave}:{product:NormalizedProduct;relation:UserProductRelationship;collections:Array<{id:string;name:string;customFieldTemplateId?:string}>;templates:Array<{id:string;name:string}>;onClose:()=>void;onSave:(r:UserProductRelationship,input:PortfolioCopyInput)=>void}){
   const [price,setPrice]=useState(product.msrp?String(product.msrp):'');
   const [date,setDate]=useState('');
   const [condition,setCondition]=useState('Opened Complete');
   const [quantity,setQuantity]=useState(1);
-  const [location,setLocation]=useState('');
+  const [collectionId,setCollectionId]=useState('');
+  const [retailer,setRetailer]=useState('');
+  const [box,setBox]=useState('Yes');
+  const [accessories,setAccessories]=useState('Complete');
+  const [receipt,setReceipt]=useState('');
+  const [notes,setNotes]=useState('');
+  const selectedCollection=collections.find(collection=>collection.id===collectionId);
+  const selectedTemplate=templates.find(template=>template.id===selectedCollection?.customFieldTemplateId);
   return <div className="vxs-modal-backdrop" role="dialog" aria-modal="true"><div className="vxs-quick-modal">
-    <header><div><span>ADD TO PORTFOLIO</span><h2>{product.canonicalName}</h2><p>Catalog metadata is already known. Only tell VEXUM about your physical copy.</p></div><button onClick={onClose}><X/></button></header>
+    <header><div><span>ADD TO PORTFOLIO</span><h2>{product.canonicalName}</h2><p>Catalog metadata is already known. This creates your specific physical copy in the synced Portfolio.</p></div><button onClick={onClose}><X/></button></header>
     <div className="vxs-known-metadata"><span><b>Manufacturer</b>{product.manufacturer}</span><span><b>Line</b>{product.line||'—'}</span><span><b>Year</b>{product.releaseYear}</span><span><b>UPC</b>{product.upc||'—'}</span><span><b>SKU</b>{product.sku||'—'}</span><span><b>MSRP</b>{money(product.msrp)}</span></div>
-    {relation.ownedQuantity>0?<div className="vxs-owned-warning"><Star/><span>You already own {relation.ownedQuantity} cop{relation.ownedQuantity===1?'y':'ies'}. Confirm quantity before adding another Portfolio copy.</span></div>:null}
+    {relation.ownedQuantity>0?<div className="vxs-owned-warning"><Star/><span>You already own {relation.ownedQuantity} cop{relation.ownedQuantity===1?'y':'ies'}. Adding here creates another owned quantity intentionally.</span></div>:null}
     <div className="vxs-owner-fields">
       <label>Price Paid<input value={price} onChange={e=>setPrice(e.target.value)} placeholder="0.00"/></label>
       <label>Purchase Date<input type="date" value={date} onChange={e=>setDate(e.target.value)}/></label>
       <label>Condition<select value={condition} onChange={e=>setCondition(e.target.value)}><option>Sealed</option><option>Opened Complete</option><option>Opened Incomplete</option><option>Loose</option><option>Used Excellent</option></select></label>
-      <label>Quantity<input type="number" min="1" value={quantity} onChange={e=>setQuantity(Math.max(1,Number(e.target.value)))}/></label>
-      <label className="wide">Storage Location<input value={location} onChange={e=>setLocation(e.target.value)} placeholder="Display Case 2 / Shelf 3"/></label>
+      <label>Quantity<input type="number" min="1" value={quantity} onChange={e=>setQuantity(Math.max(1,Number(e.target.value)||1))}/></label>
+      <label>Collection<select value={collectionId} onChange={e=>setCollectionId(e.target.value)}><option value="">All Items</option>{collections.map(collection=><option key={collection.id} value={collection.id}>{collection.name}</option>)}</select></label>
+      <label>Purchased From<input value={retailer} onChange={e=>setRetailer(e.target.value)} placeholder="Target"/></label>
+      <label>Box<select value={box} onChange={e=>setBox(e.target.value)}><option>Yes</option><option>No</option><option>Unknown</option></select></label>
+      <label>Accessories<select value={accessories} onChange={e=>setAccessories(e.target.value)}><option>Complete</option><option>Incomplete</option><option>Unknown</option></select></label>
+      <label className="wide">Receipt URL<input value={receipt} onChange={e=>setReceipt(e.target.value)} placeholder="Optional document link"/></label>
+      <label className="wide">Notes<input value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Copy-specific notes"/></label>
     </div>
-    <footer><button onClick={onClose}>Cancel</button><button className="primary" onClick={()=>onSave({...relation,ownedQuantity:quantity,setupLocation:location||relation.setupLocation})}><Plus/>Add to Portfolio</button></footer>
+    <div className="vxs-owned-warning"><LayersIcon/><span>Physical location is assigned in Setup, not duplicated here.{selectedTemplate?' Collection template "'+selectedTemplate.name+'" will apply default ownership fields.':''}</span></div>
+    <footer><button onClick={onClose}>Cancel</button><button className="primary" onClick={()=>onSave(relation,{price:Number(price)||0,date,condition,quantity,collectionId,retailer,box,accessories,receipt,notes})}><Plus/>Add Owned Copy</button></footer>
   </div></div>;
 }
+
+function LayersIcon(){return <span style={{fontWeight:800}}>◇</span>}
 
 function WishlistModal({product,relation,record,onClose,onSave}:{product:NormalizedProduct;relation:UserProductRelationship;record?:WishlistRecord;onClose:()=>void;onSave:(r:UserProductRelationship,record:WishlistRecord)=>void}){
   const [priority,setPriority]=useState<WishlistPriority>(record?.priority||(relation.grail?'Grail':'Medium'));
