@@ -44,6 +44,7 @@ const LEGACY_REL_KEY='vexum.search.relationships.v1';
 const LEGACY_META_KEY='vexum.wishlist.meta.v1';
 const LEGACY_PREF_KEY='vexum.wishlist.view.v1';
 const PRIORITY_ORDER:Record<WishlistPriority,number>={Grail:0,High:1,Medium:2,Low:3};
+const COMMON_RETAILERS=['Target','Walmart','GameStop','Entertainment Earth','Amazon','eBay','VEXUM Marketplace'];
 
 function money(value?:number){
   return typeof value==='number'&&Number.isFinite(value)
@@ -907,6 +908,10 @@ function EditModal({entry,onClose,onSave}:{entry:WishlistEntry;onClose:()=>void;
   const [desiredCondition,setDesiredCondition]=useState(original.desiredCondition);
   const [retailers,setRetailers]=useState(original.retailers.join(', '));
   const [marketplacePreference,setMarketplacePreference]=useState(original.marketplacePreference);
+  const [maximumListingPrice,setMaximumListingPrice]=useState(original.listingRules.maximumListingPrice===undefined?'':String(original.listingRules.maximumListingPrice));
+  const [shippingCeiling,setShippingCeiling]=useState(original.listingRules.shippingCeiling===undefined?'':String(original.listingRules.shippingCeiling));
+  const [sellerRatingMinimum,setSellerRatingMinimum]=useState(original.listingRules.sellerRatingMinimum===undefined?'':String(original.listingRules.sellerRatingMinimum));
+  const [visibility,setVisibility]=useState(original.visibility);
   const [quantity,setQuantity]=useState(original.quantityWanted);
   const [deadline,setDeadline]=useState(original.deadline||'');
   const [planMode,setPlanMode]=useState(original.plannedMonth==='Someday'?'Someday':original.plannedMonth?'Specific':'No Plan');
@@ -931,15 +936,28 @@ function EditModal({entry,onClose,onSave}:{entry:WishlistEntry;onClose:()=>void;
 
   function submit(){
     const targetPrice=parseNumber(target),maximumPrice=parseNumber(maximum),totalPrice=parseNumber(preorderPrice),depositPaid=parseNumber(deposit);
+    const savedAmount=parseNumber(grailSaved),previousSaved=original.grail?.savedAmount;
     const remainingBalance=parseNumber(balance)??(totalPrice!==undefined?Math.max(0,totalPrice-(depositPaid||0)):undefined);
     const plan=planMode==='Someday'?'Someday':planMode==='This Month'?new Date().toISOString().slice(0,7):planMode==='Next Month'?nextMonth():planMode==='Specific'?plannedMonth:undefined;
-    const next=wishlistEvent(original,'updated','Wishlist settings updated',{
+    const now=new Date().toISOString();
+    let next=wishlistEvent(original,'updated','Wishlist settings updated',{
       priority,targetPrice,maximumPrice,desiredCondition,retailers:retailers.split(',').map(v=>v.trim()).filter(Boolean),
-      marketplacePreference:marketplacePreference as WishlistRecord['marketplacePreference'],quantityWanted:Math.max(1,quantity||1),
+      marketplacePreference:marketplacePreference as WishlistRecord['marketplacePreference'],
+      listingRules:{maximumListingPrice:parseNumber(maximumListingPrice),shippingCeiling:parseNumber(shippingCeiling),sellerRatingMinimum:parseNumber(sellerRatingMinimum)},
+      visibility:visibility as WishlistRecord['visibility'],quantityWanted:Math.max(1,quantity||1),
       deadline:deadline||undefined,plannedMonth:plan,notes,alerts,
-      grail:priority==='Grail'?{goalAmount:parseNumber(grailGoal),savedAmount:parseNumber(grailSaved),deadline:grailDeadline||undefined,status:grailStatus as any}:undefined,
+      grail:priority==='Grail'?{
+        goalAmount:parseNumber(grailGoal),savedAmount,deadline:grailDeadline||undefined,status:grailStatus as any,
+        completedAt:(grailStatus==='Goal Reached'||grailStatus==='Purchased')?(original.grail?.completedAt||now):undefined,
+        savingsHistory:savedAmount!==previousSaved?[...(original.grail?.savingsHistory||[]),{at:now,amount:savedAmount||0}].slice(-500):(original.grail?.savingsHistory||[])
+      }:undefined,
       preorder:preorderEnabled?{enabled:true,retailer:preorderRetailer||undefined,totalPrice,depositPaid,remainingBalance,preorderDate:preorderDate||undefined,estimatedChargeDate:chargeDate||undefined,estimatedReleaseDate:releaseDate||undefined,cancellationDeadline:cancelDate||undefined,status:preorderStatus as any,notes:preorderNotes||undefined}:undefined
     });
+    if(priority!==original.priority)next=wishlistEvent(next,'priority','Priority changed from '+original.priority+' to '+priority);
+    if(targetPrice!==original.targetPrice||maximumPrice!==original.maximumPrice)next=wishlistEvent(next,'target','Target / maximum price updated');
+    if(JSON.stringify(alerts)!==JSON.stringify(original.alerts))next=wishlistEvent(next,'alert','Radar alert rules updated');
+    if(priority==='Grail'&&(savedAmount!==previousSaved||grailStatus!==original.grail?.status))next=wishlistEvent(next,'goal','Grail savings goal updated');
+    if(preorderEnabled!==Boolean(original.preorder?.enabled)||preorderStatus!==original.preorder?.status||remainingBalance!==original.preorder?.remainingBalance)next=wishlistEvent(next,'preorder','Preorder commitment updated');
     onSave(next);
   }
 
@@ -956,11 +974,15 @@ function EditModal({entry,onClose,onSave}:{entry:WishlistEntry;onClose:()=>void;
         <label>Purchase plan<select value={planMode} onChange={e=>setPlanMode(e.target.value)}><option>No Plan</option><option>This Month</option><option>Next Month</option><option>Specific</option><option>Someday</option></select></label>
         {planMode==='Specific'?<label>Specific month<input type="month" value={plannedMonth} onChange={e=>setPlannedMonth(e.target.value)}/></label>:null}
         <label>Acquisition source<select value={marketplacePreference} onChange={e=>setMarketplacePreference(e.target.value as WishlistRecord['marketplacePreference'])}><option>Any source</option><option>Retail only</option><option>Marketplace acceptable</option><option>Local only</option><option>Used acceptable</option><option>New only</option></select></label>
-        <label className="wide">Preferred retailers<input value={retailers} onChange={e=>setRetailers(e.target.value)} placeholder="Target, Walmart, GameStop, eBay, Entertainment Earth"/></label>
+        <label className="wide">Preferred retailers<input value={retailers} onChange={e=>setRetailers(e.target.value)} placeholder="Target, Walmart, GameStop, eBay, Entertainment Earth"/><span className="vxw-retailer-chips">{COMMON_RETAILERS.map(name=>{const active=retailers.split(',').map(v=>v.trim()).includes(name);return <button type="button" key={name} className={active?'active':''} onClick={()=>{const list=retailers.split(',').map(v=>v.trim()).filter(Boolean);setRetailers((active?list.filter(v=>v!==name):[...list,name]).join(', '))}}>{name}</button>})}</span></label>
+        <label>Max listing price<input inputMode="decimal" value={maximumListingPrice} onChange={e=>setMaximumListingPrice(e.target.value)} placeholder="Optional"/></label>
+        <label>Shipping ceiling<input inputMode="decimal" value={shippingCeiling} onChange={e=>setShippingCeiling(e.target.value)} placeholder="Optional"/></label>
+        <label>Seller rating minimum %<input inputMode="decimal" value={sellerRatingMinimum} onChange={e=>setSellerRatingMinimum(e.target.value)} placeholder="Optional"/></label>
+        <label>Wishlist privacy<select value={visibility} onChange={e=>setVisibility(e.target.value as WishlistRecord['visibility'])}><option>Private</option><option>Friends</option><option>Community</option><option>Public</option></select></label>
         <label className="wide">Notes<textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={3} placeholder="Edition, seller, condition, deadline, trade notes…"/></label>
       </div></section>
 
-      <section className="vxw-form-section"><div className="vxw-section-toggle"><h3>Radar / Alert Rules</h3><button onClick={()=>setAlerts(alertDefaults(priority))}>Apply {priority} defaults</button></div><div className="vxw-alert-rule-grid">{WISHLIST_ALERT_KEYS.map(key=><div key={key}><label><input type="checkbox" checked={alerts[key].enabled} onChange={e=>setAlerts(current=>({...current,[key]:{...current[key],enabled:e.target.checked,frequency:e.target.checked&&current[key].frequency==='Off'?'Daily Digest':e.target.checked?current[key].frequency:'Off'}}))}/><span>{WISHLIST_ALERT_LABELS[key]}</span></label><select value={alerts[key].frequency} onChange={e=>setAlerts(current=>({...current,[key]:{...current[key],frequency:e.target.value as WishlistAlertFrequency,enabled:e.target.value!=='Off'}}))}><option>Immediate</option><option>Daily Digest</option><option>Weekly Digest</option><option>Off</option></select>{key==='localStock'?<select value={alerts[key].radiusMiles||25} onChange={e=>setAlerts(current=>({...current,[key]:{...current[key],radiusMiles:Number(e.target.value) as 5|10|25|50}}))}><option value="5">5 mi</option><option value="10">10 mi</option><option value="25">25 mi</option><option value="50">50 mi</option></select>:null}</div>)}</div></section>
+      <section className="vxw-form-section"><div className="vxw-section-toggle"><h3>Radar / Alert Rules</h3><button onClick={()=>setAlerts(alertDefaults(priority))}>Apply {priority} defaults</button></div><div className="vxw-alert-rule-grid">{WISHLIST_ALERT_KEYS.map(key=><div key={key}><label><input type="checkbox" checked={alerts[key].enabled} onChange={e=>setAlerts(current=>({...current,[key]:{...current[key],enabled:e.target.checked,frequency:e.target.checked&&current[key].frequency==='Off'?'Daily Digest':e.target.checked?current[key].frequency:'Off'}}))}/><span>{WISHLIST_ALERT_LABELS[key]}</span></label><select value={alerts[key].frequency} onChange={e=>setAlerts(current=>({...current,[key]:{...current[key],frequency:e.target.value as WishlistAlertFrequency,enabled:e.target.value!=='Off'}}))}><option>Immediate</option><option>Daily Digest</option><option>Weekly Digest</option><option>Off</option></select>{key==='localStock'?<select value={alerts[key].radiusMiles||25} onChange={e=>setAlerts(current=>({...current,[key]:{...current[key],radiusMiles:Number(e.target.value) as 5|10|25|50}}))}><option value="5">5 mi</option><option value="10">10 mi</option><option value="25">25 mi</option><option value="50">50 mi</option></select>:null}{key==='priceDrop'?<label className="vxw-rule-threshold"><input type="number" min="1" max="100" value={alerts[key].threshold||5} onChange={e=>setAlerts(current=>({...current,[key]:{...current[key],threshold:Math.max(1,Number(e.target.value)||5)}}))}/><span>%</span></label>:null}</div>)}</div></section>
 
       {priority==='Grail'?<section className="vxw-form-section"><h3>Grail Savings Goal</h3><div className="vxw-form-grid"><label>Goal amount<input value={grailGoal} onChange={e=>setGrailGoal(e.target.value)} placeholder={target||'0.00'}/></label><label>Saved amount<input value={grailSaved} onChange={e=>setGrailSaved(e.target.value)}/></label><label>Goal deadline<input type="date" value={grailDeadline} onChange={e=>setGrailDeadline(e.target.value)}/></label><label>Status<select value={grailStatus} onChange={e=>setGrailStatus(e.target.value as any)}><option>Not Started</option><option>Saving</option><option>Goal Reached</option><option>Paused</option><option>Purchased</option></select></label></div></section>:null}
 
