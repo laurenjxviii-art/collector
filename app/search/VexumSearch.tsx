@@ -254,7 +254,7 @@ function AddPortfolioModal({product,relation,onClose,onSave}:{product:Normalized
   return <div className="vxs-modal-backdrop" role="dialog" aria-modal="true"><div className="vxs-quick-modal">
     <header><div><span>ADD TO PORTFOLIO</span><h2>{product.canonicalName}</h2><p>Catalog metadata is already known. Only tell VEXUM about your physical copy.</p></div><button onClick={onClose}><X/></button></header>
     <div className="vxs-known-metadata"><span><b>Manufacturer</b>{product.manufacturer}</span><span><b>Line</b>{product.line||'—'}</span><span><b>Year</b>{product.releaseYear}</span><span><b>UPC</b>{product.upc||'—'}</span><span><b>SKU</b>{product.sku||'—'}</span><span><b>MSRP</b>{money(product.msrp)}</span></div>
-    {relation.ownedQuantity>0?<div className="vxs-owned-warning"><Star/><span>You already own {relation.ownedQuantity} cop{relation.ownedQuantity===1?'y':'ies'}. You can still wishlist another intentionally.</span></div>:null}
+    {relation.ownedQuantity>0?<div className="vxs-owned-warning"><Star/><span>You already own {relation.ownedQuantity} cop{relation.ownedQuantity===1?'y':'ies'}. Confirm quantity before adding another Portfolio copy.</span></div>:null}
     <div className="vxs-owner-fields">
       <label>Price Paid<input value={price} onChange={e=>setPrice(e.target.value)} placeholder="0.00"/></label>
       <label>Purchase Date<input type="date" value={date} onChange={e=>setDate(e.target.value)}/></label>
@@ -296,6 +296,7 @@ function WishlistModal({product,relation,record,onClose,onSave}:{product:Normali
 
   return <div className="vxs-modal-backdrop" role="dialog" aria-modal="true"><div className="vxs-quick-modal">
     <header><div><span>ADD TO WISHLIST</span><h2>{product.canonicalName}</h2><p>Configure how VEXUM should treat this acquisition. Product identity stays canonical.</p></div><button onClick={onClose}><X/></button></header>
+    {relation.ownedQuantity>0?<div className="vxs-owned-warning"><Star/><span>You already own {relation.ownedQuantity} cop{relation.ownedQuantity===1?'y':'ies'}. You can still wishlist another intentionally.</span></div>:null}
     <div className="vxs-owner-fields">
       <label>Priority<select value={priority} onChange={e=>setPriority(e.target.value as WishlistPriority)}><option>Low</option><option>Medium</option><option>High</option><option>Grail</option></select></label>
       <label>Target Price<input value={target} onChange={e=>setTarget(e.target.value)} placeholder="0.00"/></label>
