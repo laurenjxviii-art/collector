@@ -11,6 +11,7 @@ type Props={
   onSelect:(product:NormalizedProduct)=>void;
   onAddPortfolio:(product:NormalizedProduct)=>void;
   onAddWishlist:(product:NormalizedProduct)=>void;
+  onRemoveWishlist:(product:NormalizedProduct)=>void;
   onIdentify:()=>void;
 };
 
@@ -21,7 +22,7 @@ type ViewMode='grid'|'list';
 
 const unique=(values:string[])=>Array.from(new Set(values.filter(Boolean))).sort((a,b)=>a.localeCompare(b));
 
-export default function SearchResults({query,products,relationships,onSelect,onAddPortfolio,onAddWishlist,onIdentify}:Props){
+export default function SearchResults({query,products,relationships,onSelect,onAddPortfolio,onAddWishlist,onRemoveWishlist,onIdentify}:Props){
   const [category,setCategory]=useState('All');
   const [sort,setSort]=useState<SortMode>('relevance');
   const [filtersOpen,setFiltersOpen]=useState(false);
@@ -161,7 +162,7 @@ export default function SearchResults({query,products,relationships,onSelect,onA
           </button>
           <footer>
             {rel?.ownedQuantity?<button onClick={()=>onSelect(product)}>View in Portfolio</button>:<button onClick={()=>onAddPortfolio(product)}>+ Portfolio</button>}
-            {rel?.wishlisted?<button className="active"><Star/>Wishlisted</button>:<button onClick={()=>onAddWishlist(product)}><Star/>Wishlist</button>}
+            {rel?.wishlisted?<button className="active" onClick={()=>onRemoveWishlist(product)}><Star/>Remove Wishlist</button>:<button onClick={()=>onAddWishlist(product)}><Star/>Wishlist</button>}
             <button onClick={()=>onSelect(product)}>Research →</button>
           </footer>
         </article>;
