@@ -3,7 +3,7 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {
   AlertTriangle,Archive,BarChart3,Bell,CalendarDays,Check,ChevronRight,CircleDollarSign,
-  Eye,Filter,Gem,Grid2X2,History,List,PackageCheck,Pencil,RefreshCw,Search,ShoppingBag,
+  Eye,Filter,Gem,Grid2X2,History,List,MapPin,PackageCheck,Pencil,RefreshCw,Search,ShoppingBag,
   SlidersHorizontal,Star,Store,Target,TrendingDown,WalletCards,X
 } from 'lucide-react';
 import {DEMO_PRODUCTS} from '../lib/search/demo';
