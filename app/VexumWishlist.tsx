@@ -545,7 +545,7 @@ export default function VexumWishlist(){
       const record=wishlistEvent(purchasing.record,'purchase','Purchased for '+money(total),{
         archived:true,archiveReason:'purchased',purchasedAt:now,purchasePrice:total,purchase,
         alerts:disableAlerts(purchasing.record.alerts),
-        grail:purchasing.record.grail?{...purchasing.record.grail,status:'Purchased'}:undefined
+        grail:purchasing.record.grail?{...purchasing.record.grail,status:'Purchased',completedAt:purchasing.record.grail.completedAt||now}:undefined
       });
       workspace.update({...workspace.data,items,wishlist:{...(workspace.data.wishlist||{}),[purchasing.id]:record}});
       syncLegacyRelationship(record,purchasing.ownedQuantity+quantity);
