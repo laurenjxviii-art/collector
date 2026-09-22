@@ -6,6 +6,7 @@ export type GlowLevel='off'|'subtle'|'standard';
 export type SidebarWidth='compact'|'standard';
 export type NumberFormat='full'|'compact';
 export type Visibility='Private'|'Friends'|'Community'|'Public';
+export type LifeSectionId='Today'|'Tasks'|'Calendar'|'Habits'|'Goals'|'Focus'|'Fitness';
 
 export type PlatformIdentity={
   username:string;
@@ -86,6 +87,7 @@ export type PlatformState={
   onboardingComplete:boolean;
   enabledModules:VexumModuleId[];
   moduleOrder:VexumModuleId[];
+  lifeSections:LifeSectionId[];
   collectorCategories:string[];
   collectorInterests:string[];
   identity:PlatformIdentity;
@@ -100,6 +102,7 @@ export type PlatformState={
 };
 
 export const ALL_MODULES:VexumModuleId[]=['home','life','portfolio','search','wishlist','sell','setup','financial','social'];
+export const ALL_LIFE_SECTIONS:LifeSectionId[]=['Today','Tasks','Calendar','Habits','Goals','Focus','Fitness'];
 
 export const MODULE_LABELS:Record<VexumModuleId,string>={
   home:'Home',life:'Life',portfolio:'Portfolio',search:'Search',wishlist:'Wishlist',sell:'Sell',setup:'Setup',financial:'Financial',social:'Social'
@@ -134,6 +137,7 @@ export function defaultPlatformState(legacy=true):PlatformState{
     onboardingComplete:legacy,
     enabledModules:legacy?[...ALL_MODULES]:['home'],
     moduleOrder:[...ALL_MODULES],
+    lifeSections:[...ALL_LIFE_SECTIONS],
     collectorCategories:[],
     collectorInterests:[],
     identity:{username:'',displayName:'',birthday:'',country:'United States',currency:'USD',language:'English'},
@@ -190,6 +194,7 @@ export function normalizePlatformState(value?:PlatformState,legacy=true):Platfor
     onboardingComplete:typeof value.onboardingComplete==='boolean'?value.onboardingComplete:fallback.onboardingComplete,
     enabledModules:enabled,
     moduleOrder:order,
+    lifeSections:Array.isArray(value.lifeSections)?[...new Set(value.lifeSections.filter((section):section is LifeSectionId=>ALL_LIFE_SECTIONS.includes(section as LifeSectionId)))]:[...fallback.lifeSections],
     collectorCategories:Array.isArray(value.collectorCategories)?value.collectorCategories.filter(x=>typeof x==='string'):[],
     collectorInterests:Array.isArray(value.collectorInterests)?value.collectorInterests.filter(x=>typeof x==='string'):[],
     identity:{
@@ -274,6 +279,10 @@ export function platformFromChoices(input:{
   if(input.everything)ALL_MODULES.forEach(module=>enabled.add(module));
   else for(const choice of ONBOARDING_CHOICES.filter(choice=>input.choiceIds.includes(choice.id)))choice.modules.forEach(module=>enabled.add(module));
   state.enabledModules=state.moduleOrder.filter(module=>enabled.has(module));
+  if(input.everything)state.lifeSections=[...ALL_LIFE_SECTIONS];
+  else if(input.choiceIds.includes('life'))state.lifeSections=input.choiceIds.includes('fitness')?[...ALL_LIFE_SECTIONS]:ALL_LIFE_SECTIONS.filter(section=>section!=='Fitness');
+  else if(input.choiceIds.includes('fitness'))state.lifeSections=['Today','Fitness'];
+  else state.lifeSections=[...ALL_LIFE_SECTIONS];
   state.identity={...state.identity,...input.identity};
   state.collectorCategories=[...(input.collectorCategories||[])];
   state.collectorInterests=[...(input.collectorInterests||[])];
