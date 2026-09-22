@@ -15,6 +15,7 @@ type Props={
   onBack:()=>void;
   onAddPortfolio:(product:NormalizedProduct)=>void;
   onAddWishlist:(product:NormalizedProduct)=>void;
+  onRemoveWishlist:(product:NormalizedProduct)=>void;
   onRelationshipChange:(next:UserProductRelationship)=>void;
 };
 
@@ -33,7 +34,7 @@ function DemoChart(){
   </svg>;
 }
 
-export default function ProductIntelligence({product,relationship,onBack,onAddPortfolio,onAddWishlist,onRelationshipChange}:Props){
+export default function ProductIntelligence({product,relationship,onBack,onAddPortfolio,onAddWishlist,onRemoveWishlist,onRelationshipChange}:Props){
   const workspace=useWorkspace();
   const wishlistRecord=workspace.data.wishlist?.[product.id];
   const [tab,setTab]=useState<Tab>('product');
@@ -131,7 +132,7 @@ export default function ProductIntelligence({product,relationship,onBack,onAddPo
         <div className="vxs-identifiers">{product.upc?<span>UPC <b>{product.upc}</b></span>:null}{product.sku?<span>SKU <b>{product.sku}</b></span>:null}{product.modelNumber?<span>MODEL <b>{product.modelNumber}</b></span>:null}</div>
         <div className="vxs-product-actions">
           {relation.ownedQuantity?<button className="active"><Layers3/>You own: {relation.ownedQuantity}</button>:<button className="primary" onClick={()=>onAddPortfolio(product)}><Plus/>Add to Collection</button>}
-          {relation.wishlisted?<button className="active"><Star/>Wishlisted</button>:<button onClick={()=>onAddWishlist(product)}><Star/>Add to Wishlist</button>}
+          {relation.wishlisted?<button className="active" onClick={()=>onRemoveWishlist(product)}><Star/>Remove from Wishlist</button>:<button onClick={()=>onAddWishlist(product)}><Star/>Add to Wishlist</button>}
           <button className={relation.tracked?'active':''} onClick={track}><Bell/>{relation.tracked?'Tracking':'Track'}</button>
           {relation.ownedQuantity?<button><ShoppingBag/>Sell This Item</button>:null}
         </div>
