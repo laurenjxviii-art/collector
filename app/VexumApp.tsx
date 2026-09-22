@@ -48,14 +48,14 @@ function Sidebar({view,setView}:{view:View;setView:(v:View)=>void}){
       <button><FileUp/><span>Import Receipt</span></button>
       <button onClick={()=>setView('wishlist')}><Star/><span>Add to Wishlist</span></button>
     </div>
-    <div className="vx-user"><div className="vx-avatar">J</div><div><strong>Jordan</strong><span>Collector · Level 12</span></div><i/></div>
+    <div className="vx-user"><div className="vx-avatar">C</div><div><strong>Collector</strong><span>VEXUM workspace</span></div><i/></div>
   </aside>;
 }
 
 function Topbar({hero}:{hero:string}){
   return <div className={'vx-topbar hero-'+hero}>
     <button className="vx-searchbox"><Search/><span>Search for anything...</span><kbd>⌘ K</kbd></button>
-    <div className="vx-topicons"><button><Star/></button><button><Eye/></button><button><Layers3/></button><button><Star/></button><button className="vx-top-avatar">J</button></div>
+    <div className="vx-topicons"><button><Star/></button><button><Eye/></button><button><Layers3/></button><button><Star/></button><button className="vx-top-avatar">C</button></div>
   </div>;
 }
 
