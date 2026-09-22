@@ -59,3 +59,7 @@
 .vxf-loading{min-height:400px;display:grid;place-items:center;color:#777b83}
 @media(max-width:1450px){.vxf-metrics{grid-template-columns:repeat(4,1fr)}.vxf-account-grid{grid-template-columns:1fr 1fr}.vxf-composer{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:1100px){.vxf-grid-main,.vxf-two,.vxf-reports{grid-template-columns:1fr}.vxf-metrics,.vxf-collection-metrics{grid-template-columns:repeat(2,1fr)}.vxf-debt-grid{grid-template-columns:1fr}.vxf-liquidity{grid-template-columns:1fr}.vxf-composer,.vxf-composer.small{grid-template-columns:repeat(2,1fr)}}
+
+/* External finance security gate */
+.vxf-security-gate{min-height:64px;border:1px solid #4f3c28;border-radius:7px;background:#130f0b;margin-bottom:9px;display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:9px;padding:8px 10px}
+.vxf-security-gate.connected{border-color:#24503f;background:#09130f}.vxf-security-gate .icon{width:32px;height:32px;border-radius:6px;border:1px solid #4b3b2a;background:#18120d;display:grid;place-items:center;color:#d79b52}.vxf-security-gate.connected .icon{border-color:#28503f;background:#0a1712;color:#31d398}.vxf-security-gate .icon svg{width:14px}.vxf-security-gate>div:nth-child(2){display:flex;flex-direction:column}.vxf-security-gate strong{font-size:9.5px}.vxf-security-gate p{font-size:8px;line-height:1.45;color:#797d85;margin:3px 0 0;max-width:850px}.vxf-security-gate button{height:29px;border:1px solid #3b3d43;border-radius:5px;background:#0d0e10;color:#aeb1b7;font-size:8px;padding:0 8px}
