@@ -1,6 +1,6 @@
 'use client';
 
-import {useMemo,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import {
   Bell,CalendarDays,Check,ChevronRight,CircleDollarSign,Clock3,Dumbbell,FileText,Goal,Inbox,
   Layers3,ListTodo,Plus,Search,ShoppingBag,Sparkles,Star,Target,X
@@ -8,7 +8,8 @@ import {
 import type {useWorkspace} from '../../lib/useWorkspace';
 import {emptyLifeData,newLifeId,normalizeLifeData,parseNaturalTask,todayKey,type LifeEvent,type LifeGoal,type LifeHabit,type LifeTask,type WorkoutPlan} from '../../lib/life';
 import {normalizeFinancialData,newFinancialId} from '../../lib/financial';
-import {buildVexumNotifications,completeNotificationTask,type VexumNotificationCategory} from '../../lib/platformNotifications';
+import {buildSellNotifications,buildVexumNotifications,completeNotificationTask,type VexumNotification,type VexumNotificationCategory} from '../../lib/platformNotifications';
+import {loadSellWorkspace} from '../../lib/sellCloud';
 import {normalizePlatformState,type PlatformState,type VexumModuleId} from '../../lib/platform';
 
 type Workspace=ReturnType<typeof useWorkspace>;
@@ -86,8 +87,15 @@ export function QuickAddPanel({open,onClose,workspace,navigate,initialType}:{ope
 
 export function NotificationCenter({open,onClose,workspace,navigate}:{open:boolean;onClose:()=>void;workspace:Workspace;navigate:Navigate}){
   const platform=normalizePlatformState(workspace.data.platform,true);
-  const notifications=buildVexumNotifications(workspace.data,platform);
+  const [sellRows,setSellRows]=useState<VexumNotification[]>([]);
   const [tab,setTab]=useState<'All'|VexumNotificationCategory>('All');
+  useEffect(()=>{
+    if(!open||!platform.notifications.marketplace||!workspace.config?.configured||!workspace.session){setSellRows([]);return}
+    let alive=true;
+    loadSellWorkspace(workspace.config,workspace.session).then(data=>{if(alive)setSellRows(buildSellNotifications(data))}).catch(()=>{if(alive)setSellRows([])});
+    return()=>{alive=false};
+  },[open,platform.notifications.marketplace,workspace.config?.configured,workspace.session?.user.id]);
+  const notifications=[...buildVexumNotifications(workspace.data,platform),...sellRows].toSorted((a,b)=>a.urgency===b.urgency?b.occurredAt.localeCompare(a.occurredAt):a.urgency==='high'?-1:1);
   if(!open)return null;
   const filtered=tab==='All'?notifications:notifications.filter(n=>n.category===tab);
   const read=new Set(platform.notifications.readIds);
