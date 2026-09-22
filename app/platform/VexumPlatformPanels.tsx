@@ -35,37 +35,48 @@ export function QuickAddPanel({open,onClose,workspace,navigate,initialType}:{ope
   const [selected,setSelected]=useState<QuickAddType|undefined>(initialType);
   const [text,setText]=useState('');
   if(!open)return null;
+  const platform=normalizePlatformState(workspace.data.platform,true);
   const life=normalizeLifeData(workspace.data.life||emptyLifeData());
+  const available=QUICK.filter(item=>{
+    if(['task','reminder','event','habit','goal','note'].includes(item.id))return platform.enabledModules.includes('life');
+    if(item.id==='workout')return platform.enabledModules.includes('life')&&platform.lifeSections.includes('Fitness');
+    if(item.id==='collectible')return platform.enabledModules.includes('search');
+    if(item.id==='wishlist')return platform.enabledModules.includes('wishlist');
+    if(item.id==='sale')return platform.enabledModules.includes('sell');
+    if(item.id==='expense')return platform.enabledModules.includes('financial');
+    return true;
+  });
+  const activeSelected=selected&&available.some(item=>item.id===selected)?selected:undefined;
 
   const saveSimple=()=>{
     const value=text.trim();if(!value)return;
     const now=new Date().toISOString();
-    if(selected==='task'||selected==='reminder'){
+    if(activeSelected==='task'||activeSelected==='reminder'){
       const parsed=parseNaturalTask(value);
-      const task:LifeTask={id:newLifeId('task'),title:parsed.title,notes:'',status:'inbox',priority:'Medium',listId:'inbox',tags:[],subtasks:[],dueDate:parsed.dueDate,dueTime:parsed.dueTime,repeat:parsed.repeat,reminderMinutes:selected==='reminder'?60:undefined,createdAt:now,updatedAt:now};
+      const task:LifeTask={id:newLifeId('task'),title:parsed.title,notes:'',status:'inbox',priority:'Medium',listId:'inbox',tags:[],subtasks:[],dueDate:parsed.dueDate,dueTime:parsed.dueTime,repeat:parsed.repeat,reminderMinutes:activeSelected==='reminder'?60:undefined,createdAt:now,updatedAt:now};
       workspace.update({...workspace.data,life:{...life,tasks:[task,...life.tasks]}});onClose();navigate('life');return;
     }
-    if(selected==='event'){
+    if(activeSelected==='event'){
       const parsed=parseNaturalTask(value);const date=parsed.dueDate||todayKey();const time=parsed.dueTime||'09:00';
       const event:LifeEvent={id:newLifeId('event'),title:parsed.title,start:date+'T'+time+':00',allDay:false,location:'',notes:'',source:'manual',createdAt:now,updatedAt:now};
       workspace.update({...workspace.data,life:{...life,events:[...life.events,event]}});onClose();navigate('life');return;
     }
-    if(selected==='habit'){
+    if(activeSelected==='habit'){
       const habit:LifeHabit={id:newLifeId('habit'),name:value,notes:'',frequency:{mode:'daily',days:[0,1,2,3,4,5,6],targetPerWeek:7},checks:[],active:true,createdAt:now,updatedAt:now};
       workspace.update({...workspace.data,life:{...life,habits:[...life.habits,habit]}});onClose();navigate('life');return;
     }
-    if(selected==='goal'){
+    if(activeSelected==='goal'){
       const goal:LifeGoal={id:newLifeId('goal'),title:value,description:'',progress:0,status:'active',taskIds:[],habitIds:[],links:[],createdAt:now,updatedAt:now};
       workspace.update({...workspace.data,life:{...life,goals:[...life.goals,goal]}});onClose();navigate('life');return;
     }
-    if(selected==='workout'){
+    if(activeSelected==='workout'){
       const plan:WorkoutPlan={id:newLifeId('plan'),name:value,days:[],exercises:[],active:true,createdAt:now,updatedAt:now};
       workspace.update({...workspace.data,life:{...life,workoutPlans:[...life.workoutPlans,plan]}});onClose();navigate('life');return;
     }
-    if(selected==='note'){
+    if(activeSelected==='note'){
       workspace.update({...workspace.data,life:{...life,captures:[{id:newLifeId('capture'),text:value,createdAt:now,organized:false},...life.captures]}});onClose();navigate('life');return;
     }
-    if(selected==='expense'){
+    if(activeSelected==='expense'){
       const amount=Number(window.prompt('Expense amount','0')||0);if(!(amount>0))return;
       const financial=normalizeFinancialData(workspace.data.financial);
       workspace.update({...workspace.data,financial:{...financial,transactions:[{id:newFinancialId('tx'),date:todayKey(),direction:'expense',amount,merchant:value,category:'Shopping',subcategory:'',description:'Quick Add expense',isRecurring:false,isHobby:false,createdAt:now,updatedAt:now},...financial.transactions]}});
@@ -80,8 +91,8 @@ export function QuickAddPanel({open,onClose,workspace,navigate,initialType}:{ope
     setSelected(type);setText('');
   };
 
-  return <div className="vxp-platform-backdrop" onMouseDown={e=>e.currentTarget===e.target&&onClose()}><section className="vxp-quick-panel"><header><div><span>QUICK ADD</span><h2>{selected?QUICK.find(x=>x.id===selected)?.label:'What do you want to add?'}</h2></div><button onClick={onClose}><X/></button></header>
-    {!selected?<div className="vxp-quick-grid">{QUICK.map(item=><button key={item.id} onClick={()=>choose(item.id)}>{item.icon}<span><strong>{item.label}</strong><small>{item.description}</small></span><ChevronRight/></button>)}</div>:<div className="vxp-quick-entry"><label>{selected==='expense'?'What did you spend on?':selected==='note'?'Capture note':selected==='event'?'Describe the event':selected==='workout'?'Workout plan name':selected==='habit'?'Habit name':selected==='goal'?'Goal':'Describe the task'}<input autoFocus value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')saveSimple()}} placeholder={selected==='task'||selected==='reminder'?'pay electric bill friday at 8 pm':'Type and press Enter…'}/></label><p>{selected==='task'||selected==='reminder'||selected==='event'?'VEXUM parses common dates, weekdays, and times locally. You can refine every field inside Life afterward.':'This creates the minimum viable record so capture stays fast.'}</p><footer><button onClick={()=>setSelected(undefined)}>Back</button><button className="primary" disabled={!text.trim()} onClick={saveSimple}>Add</button></footer></div>}
+  return <div className="vxp-platform-backdrop" onMouseDown={e=>e.currentTarget===e.target&&onClose()}><section className="vxp-quick-panel"><header><div><span>QUICK ADD</span><h2>{activeSelected?QUICK.find(x=>x.id===activeSelected)?.label:'What do you want to add?'}</h2></div><button onClick={onClose}><X/></button></header>
+    {!activeSelected?<div className="vxp-quick-grid">{available.map(item=><button key={item.id} onClick={()=>choose(item.id)}>{item.icon}<span><strong>{item.label}</strong><small>{item.description}</small></span><ChevronRight/></button>)}</div>:<div className="vxp-quick-entry"><label>{activeSelected==='expense'?'What did you spend on?':activeSelected==='note'?'Capture note':activeSelected==='event'?'Describe the event':activeSelected==='workout'?'Workout plan name':activeSelected==='habit'?'Habit name':activeSelected==='goal'?'Goal':'Describe the task'}<input autoFocus value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')saveSimple()}} placeholder={activeSelected==='task'||activeSelected==='reminder'?'pay electric bill friday at 8 pm':'Type and press Enter…'}/></label><p>{activeSelected==='task'||activeSelected==='reminder'||activeSelected==='event'?'VEXUM parses common dates, weekdays, and times locally. You can refine every field inside Life afterward.':'This creates the minimum viable record so capture stays fast.'}</p><footer><button onClick={()=>setSelected(undefined)}>Back</button><button className="primary" disabled={!text.trim()} onClick={saveSimple}>Add</button></footer></div>}
   </section></div>;
 }
 
