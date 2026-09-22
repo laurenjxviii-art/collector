@@ -115,13 +115,22 @@ export default function VexumSocial(){
         }
       });
     }
+    const catalogRecords=Object.values(workspace.data.wishlist||{}).filter(record=>record.source==='catalog');
+    const normalized=(value:string)=>value.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
     for(const item of workspace.data.items.filter(item=>item.status==='owned')){
       const key='owned:'+item.id;
+      const canonical=catalogRecords.find(record=>{
+        const snapshot=record.snapshot;
+        return (snapshot?.name&&normalized(snapshot.name)===normalized(item.name))||
+          (!!item.identity?.upc&&snapshot?.upc===item.identity.upc)||
+          (!!item.identity?.sku&&snapshot?.sku===item.identity.sku)||
+          (!!item.identity?.modelNumber&&snapshot?.modelNumber===item.identity.modelNumber);
+      });
       byKey.set(key,{
         key,label:item.name,
         sub:[item.identity?.brand,item.identity?.series,item.category,'Owned'].filter(Boolean).join(' · '),
         tag:{
-          product_id:null,portfolio_item_id:item.id,tag_type:'owned_copy',
+          product_id:canonical?.productId||null,portfolio_item_id:item.id,tag_type:'owned_copy',
           product_snapshot:{
             name:item.name,imageUrl:item.image||undefined,category:item.category,line:item.identity?.series,
             manufacturer:item.identity?.brand,market:item.currentValue
