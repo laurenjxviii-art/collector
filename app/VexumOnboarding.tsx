@@ -24,7 +24,7 @@ export default function VexumOnboarding({onComplete,onCancel,embedded=false}:Pro
   const [interests,setInterests]=useState<string[]>([]);
   const selectedCollect=everything||choiceIds.includes('collect');
   const title=step===1?'Who are you?':step===2?'Build Your VEXUM':step===3&&selectedCollect?'What do you collect?':'Secure the foundation';
-  const subtitle=step===1?'VEXUM-specific identity stays separate from your public visibility settings.':step===2?'Choose what you want the app to help with. You can change this anytime.':step===3&&selectedCollect?'This seeds discovery and recommendations without creating fake owned items.':'Security-sensitive connections remain locked until their real provider flows exist.';
+  const subtitle=step===1?'VEXUM-specific identity stays separate from your public visibility settings.':step===2?'Choose what you want the app to help with. You can change this anytime.':step===3&&selectedCollect?'This seeds discovery and recommendations without creating fake owned items.':'Security-sensitive connections stay gated until their real provider flows and required account security are available.';
 
   const toggle=(id:string)=>setChoiceIds(current=>current.includes(id)?current.filter(x=>x!==id):[...current,id]);
   const toggleValue=(value:string,setter:React.Dispatch<React.SetStateAction<string[]>>)=>setter(current=>current.includes(value)?current.filter(x=>x!==value):[...current,value]);
@@ -69,9 +69,9 @@ export default function VexumOnboarding({onComplete,onCancel,embedded=false}:Pro
       {step===lastStep?<div className="vxo-security">
         <LockKeyhole/>
         <h2>Security before sensitive connections.</h2>
-        <p>VEXUM will not pretend MFA or Plaid is configured when the provider flow is not actually available. External Financial connections remain gated until MFA is verified and a real financial provider integration exists.</p>
-        <div><span><Check/>Email/password account</span><span className="pending">MFA — provider flow not configured</span><span className="pending">Plaid — provider connection not configured</span></div>
-        <small>You can finish setup now. These gates can be completed later from Account & Security and Connected Apps.</small>
+        <p>Authenticator-app MFA is available in Account & Security. External Financial connections remain unavailable until a real financial provider integration exists, and VEXUM will not simulate one.</p>
+        <div><span><Check/>Email/password account</span><span><Check/>Authenticator MFA available after onboarding</span><span className="pending">Plaid — provider connection not configured</span></div>
+        <small>You can finish setup now, then enable MFA from Settings → Account & Security. Connected Apps always shows the real provider state.</small>
       </div>:null}
 
       <footer><button disabled={step===1} onClick={()=>setStep(value=>Math.max(1,value-1))}><ArrowLeft/>Back</button><span>{workspace.status}</span>{step<lastStep?<button className="primary" disabled={nextDisabled} onClick={()=>setStep(value=>value+1)}>Continue<ArrowRight/></button>:<button className="primary" onClick={finish}>Enter VEXUM<Check/></button>}</footer>
