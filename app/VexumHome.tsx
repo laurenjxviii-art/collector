@@ -4,7 +4,7 @@ import {useMemo,useState} from 'react';
 import type {ReactNode} from 'react';
 import {
   AlertTriangle,Bell,CalendarDays,ChevronRight,CircleDollarSign,GripVertical,Layers3,
-  MoreHorizontal,PackageCheck,Plus,RefreshCw,Search,Settings2,ShoppingBag,SlidersHorizontal,
+  MoreHorizontal,PackageCheck,Plus,RefreshCw,Settings2,ShoppingBag,SlidersHorizontal,
   Sparkles,Star,TrendingDown,TrendingUp,WalletCards,X
 } from 'lucide-react';
 import {useWorkspace} from '../lib/useWorkspace';
