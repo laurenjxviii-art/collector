@@ -32,7 +32,7 @@ import {
 type View=VexumModuleId|'settings';
 
 // Cloud identity is required for networked commerce/community modules.
-const ACCOUNT_REQUIRED_VIEWS=new Set<View>(['sell','social']);
+const ACCOUNT_REQUIRED_VIEWS=new Set<View>(['life','portfolio','wishlist','sell','setup','financial','social','settings']);
 
 const ROUTES:Record<View,string>={
   home:'/',life:'/life',portfolio:'/portfolio',search:'/search',wishlist:'/wishlist',sell:'/sell',
@@ -130,6 +130,7 @@ export default function VexumApp({
   const [commandOpen,setCommandOpen]=useState(false);
   const [profileOpen,setProfileOpen]=useState(false);
   const [accountOpen,setAccountOpen]=useState(false);
+  const [authReason,setAuthReason]=useState('');
   const [onboardingPending,setOnboardingPending]=useState(false);
   const [sellNotifications,setSellNotifications]=useState<VexumNotification[]>([]);
 
@@ -161,17 +162,47 @@ export default function VexumApp({
 
   useEffect(()=>{
     if(!workspace.ready||workspace.session||!ACCOUNT_REQUIRED_VIEWS.has(view))return;
+    setAuthReason(MODULE_LABELS[view as VexumModuleId]||'this section');
     setAccountOpen(true);
   },[workspace.ready,workspace.session,view]);
+
+  useEffect(()=>{
+    if(!workspace.ready||!workspace.session)return;
+    try{
+      const destination=sessionStorage.getItem('vexum.auth.pendingDestination');
+      if(!destination)return;
+      sessionStorage.removeItem('vexum.auth.pendingDestination');
+      const next=viewFromPath(destination);
+      setView(next);
+      if(window.location.pathname!==destination)window.history.replaceState({},'',destination);
+      setAccountOpen(false);setAuthReason('');
+    }catch{}
+  },[workspace.ready,workspace.session?.user.id]);
 
   useEffect(()=>{
     const onPop=()=>setView(viewFromPath(window.location.pathname));
     window.addEventListener('popstate',onPop);return()=>window.removeEventListener('popstate',onPop);
   },[]);
 
+  const openAuth=(reason='your account',destination?:string)=>{
+    setProfileOpen(false);setNotificationsOpen(false);setCommandOpen(false);
+    setAuthReason(reason);
+    try{
+      if(destination)sessionStorage.setItem('vexum.auth.pendingDestination',destination);
+      else sessionStorage.removeItem('vexum.auth.pendingDestination');
+    }catch{}
+    setAccountOpen(true);
+  };
+  const closeAuth=()=>{
+    try{sessionStorage.removeItem('vexum.auth.pendingDestination')}catch{}
+    setAccountOpen(false);setAuthReason('');
+  };
   const navigate=(next:View)=>{
     setProfileOpen(false);setNotificationsOpen(false);
-    if(!workspace.session&&ACCOUNT_REQUIRED_VIEWS.has(next)){setAccountOpen(true);return}
+    if(!workspace.session&&ACCOUNT_REQUIRED_VIEWS.has(next)){
+      openAuth(MODULE_LABELS[next as VexumModuleId]||'this section',ROUTES[next]);
+      return
+    }
     setView(next);
     if(typeof window==='undefined')return;
     if(next==='search'&&window.location.pathname.startsWith('/search'))return;
@@ -181,8 +212,8 @@ export default function VexumApp({
   const openQuick=(type?:QuickAddType)=>{setQuickType(type);setQuickOpen(true);setProfileOpen(false);setNotificationsOpen(false);setCommandOpen(false)};
   const closeQuick=()=>{setQuickOpen(false);setQuickType(undefined)};
   const openCommand=()=>{setCommandOpen(true);setProfileOpen(false);setNotificationsOpen(false)};
-  const openNotifications=()=>{setNotificationsOpen(v=>!v);setProfileOpen(false);setCommandOpen(false)};
-  const openProfile=()=>{setNotificationsOpen(false);setCommandOpen(false);if(!workspace.session){setProfileOpen(false);setAccountOpen(true);return}setProfileOpen(v=>!v)};
+  const openNotifications=()=>{if(!workspace.session){openAuth('your notifications');return}setNotificationsOpen(v=>!v);setProfileOpen(false);setCommandOpen(false)};
+  const openProfile=()=>{setNotificationsOpen(false);setCommandOpen(false);if(!workspace.session){openAuth('your account');return}setProfileOpen(v=>!v)};
 
   const frame=(hero:string,children:ReactNode)=><PageFrame hero={hero} displayName={displayName} unread={unread} onCommand={openCommand} onQuick={()=>openQuick()} onNotifications={openNotifications} onProfile={openProfile}>{children}</PageFrame>;
 
@@ -205,8 +236,8 @@ export default function VexumApp({
     <QuickAddPanel key={quickType||'all'} open={quickOpen} initialType={quickType} onClose={closeQuick} workspace={workspace} navigate={navigate}/>
     <NotificationCenter open={notificationsOpen} onClose={()=>setNotificationsOpen(false)} workspace={workspace} navigate={navigate}/>
     <CommandCenter open={commandOpen} onClose={()=>setCommandOpen(false)} workspace={workspace} navigate={navigate} onQuickAdd={openQuick}/>
-    <ProfileMenu open={profileOpen} onClose={()=>setProfileOpen(false)} displayName={displayName} email={workspace.session?.user.email||''} navigate={navigate} signOut={workspace.signOut} onAccount={()=>setAccountOpen(true)}/>
-    {accountOpen?<CloudPanel authOnly={!workspace.session} config={workspace.config} session={workspace.session} status={workspace.status} error={workspace.error} needsMigration={workspace.needsMigration} conflict={workspace.conflict} busy={workspace.busy} pending={workspace.pending} close={()=>setAccountOpen(false)} migrate={workspace.migrate} refresh={workspace.refresh} signOut={async()=>{await workspace.signOut();setAccountOpen(false)}} retry={workspace.retry} backup={()=>{const blob=new Blob([JSON.stringify(workspace.data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='vexum-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),500)}} recovery={()=>{const data=workspace.recovery();if(!data){window.alert('No conflict recovery backup is available on this device.');return}const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='vexum-recovery.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),500)}}/>:null}
+    <ProfileMenu open={profileOpen} onClose={()=>setProfileOpen(false)} displayName={displayName} email={workspace.session?.user.email||''} navigate={navigate} signOut={workspace.signOut} onAccount={()=>openAuth('your account')}/>
+    {accountOpen?<CloudPanel authOnly={!workspace.session} authReason={authReason} config={workspace.config} session={workspace.session} status={workspace.status} error={workspace.error} needsMigration={workspace.needsMigration} conflict={workspace.conflict} busy={workspace.busy} pending={workspace.pending} close={closeAuth} migrate={workspace.migrate} refresh={workspace.refresh} signOut={async()=>{await workspace.signOut();setAccountOpen(false)}} retry={workspace.retry} backup={()=>{const blob=new Blob([JSON.stringify(workspace.data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='vexum-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),500)}} recovery={()=>{const data=workspace.recovery();if(!data){window.alert('No conflict recovery backup is available on this device.');return}const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='vexum-recovery.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),500)}}/>:null}
     <MfaSessionGate config={workspace.config} session={workspace.session} onSignOut={workspace.signOut} onVerified={()=>workspace.update({...workspace.data,platform:{...platform,security:{...platform.security,mfaStatus:'verified',mfaMethod:'authenticator'}}})}/>
     {workspace.ready&&onboardingPending?<VexumOnboarding onComplete={()=>setOnboardingPending(false)}/>:null}
   </div>;
