@@ -104,6 +104,19 @@ export default function VexumSell(){
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[workspace.ready,Boolean(workspace.config?.configured),workspace.session?.user.id]);
 
+  useEffect(()=>{
+    if(!workspace.ready||loading||typeof window==='undefined')return;
+    const itemId=localStorage.getItem('vexum.sell.prefillItemId');
+    if(!itemId)return;
+    const item=workspace.data.items.find(entry=>entry.id===itemId&&entry.status==='owned'&&!entry.archivedAt);
+    localStorage.removeItem('vexum.sell.prefillItemId');
+    if(!item)return;
+    setSelectedItemId(item.id);
+    const existing=data.listings.find(listing=>listing.portfolio_item_id===item.id&&activeListing(listing.status));
+    if(existing){setSelectedListingId(existing.id);setTab('Listings');setComposer(null)}
+    else if(config?.configured&&session)setComposer('listing');
+  },[workspace.ready,loading,data.listings,workspace.data.items,config?.configured,session]);
+
   const completedOrders=data.orders.filter(order=>order.status==='completed');
   const pendingOrders=data.orders.filter(order=>!['completed','cancelled','returned','refunded'].includes(order.status));
   const activeListings=data.listings.filter(listing=>liveListing(listing.status));
