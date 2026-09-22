@@ -95,6 +95,19 @@ export default function VexumSearch({initialQuery='',initialProductId=''}:Props)
 
   const effectiveRelationships=useMemo(()=>{
     const next={...relationships};
+    const normalize=(value:string)=>value.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+    for(const product of DEMO_PRODUCTS){
+      const owned=workspace.data.items.filter(item=>item.status==='owned'&&(
+        normalize(item.name)===normalize(product.canonicalName)||
+        (!!product.upc&&item.identity?.upc===product.upc)||
+        (!!product.sku&&item.identity?.sku===product.sku)||
+        (!!product.modelNumber&&item.identity?.modelNumber===product.modelNumber)
+      )).reduce((sum,item)=>sum+item.quantity,0);
+      if(owned>0){
+        const current=next[product.id]||{productId:product.id,ownedQuantity:0,wishlisted:false,tracked:false,grail:false};
+        next[product.id]={...current,ownedQuantity:Math.max(current.ownedQuantity||0,owned)};
+      }
+    }
     Object.entries(workspace.data.wishlist||{}).forEach(([productId,record])=>{
       if(record.source!=='catalog')return;
       const owned=next[productId]?.ownedQuantity||0;
@@ -106,7 +119,7 @@ export default function VexumSearch({initialQuery='',initialProductId=''}:Props)
       };
     });
     return next;
-  },[relationships,workspace.data.wishlist]);
+  },[relationships,workspace.data.wishlist,workspace.data.items]);
 
   const relationFor=(product:NormalizedProduct)=>effectiveRelationships[product.id]||{
     productId:product.id,ownedQuantity:0,wishlisted:false,tracked:false,grail:false
@@ -122,6 +135,17 @@ export default function VexumSearch({initialQuery='',initialProductId=''}:Props)
 
   const saveWishlistRecord=(record:WishlistRecord)=>{
     workspace.update({...workspace.data,wishlist:{...(workspace.data.wishlist||{}),[record.productId]:record}});
+  };
+
+  const removeWishlistRecord=(product:NormalizedProduct)=>{
+    const existing=workspace.data.wishlist?.[product.id];
+    if(existing){
+      const disabled=Object.fromEntries(Object.entries(existing.alerts).map(([key,rule])=>[key,{...rule,enabled:false,frequency:'Off'}])) as WishlistRecord['alerts'];
+      const archived=wishlistEvent(existing,'archive','Removed from Wishlist from Search',{archived:true,archiveReason:'removed',alerts:disabled});
+      workspace.update({...workspace.data,wishlist:{...(workspace.data.wishlist||{}),[product.id]:archived}});
+    }
+    const relation=relationFor(product);
+    setRelation({...relation,wishlisted:false,tracked:false,grail:false});
   };
 
   const syncUrl=(nextQuery:string,product?:NormalizedProduct|null,replace=false)=>{
@@ -210,8 +234,8 @@ export default function VexumSearch({initialQuery='',initialProductId=''}:Props)
     </div>:null}
 
     {loading?<SearchSkeleton/>:error?<div className="vxs-search-error"><strong>Search unavailable</strong><p>{error}</p><button onClick={()=>void performSearch(submittedQuery)}>Try again</button></div>:selected?
-      <ProductIntelligence product={selected} relationship={effectiveRelationships[selected.id]} onBack={closeProduct} onAddPortfolio={setPortfolioModal} onAddWishlist={setWishlistModal} onRelationshipChange={setRelation}/>:
-      submittedQuery?<SearchResults query={submittedQuery} products={results} relationships={effectiveRelationships} onSelect={selectProduct} onAddPortfolio={setPortfolioModal} onAddWishlist={setWishlistModal} onIdentify={()=>setIdentify('camera')}/>:
+      <ProductIntelligence product={selected} relationship={effectiveRelationships[selected.id]} onBack={closeProduct} onAddPortfolio={setPortfolioModal} onAddWishlist={setWishlistModal} onRemoveWishlist={removeWishlistRecord} onRelationshipChange={setRelation}/>:
+      submittedQuery?<SearchResults query={submittedQuery} products={results} relationships={effectiveRelationships} onSelect={selectProduct} onAddPortfolio={setPortfolioModal} onAddWishlist={setWishlistModal} onRemoveWishlist={removeWishlistRecord} onIdentify={()=>setIdentify('camera')}/>:
       <SearchDiscovery recentIds={recentIds} relationships={effectiveRelationships} onSelect={selectProduct} onSearch={value=>void performSearch(value)} onIdentify={()=>setIdentify('camera')}/>
     }
 
@@ -230,6 +254,7 @@ function AddPortfolioModal({product,relation,onClose,onSave}:{product:Normalized
   return <div className="vxs-modal-backdrop" role="dialog" aria-modal="true"><div className="vxs-quick-modal">
     <header><div><span>ADD TO PORTFOLIO</span><h2>{product.canonicalName}</h2><p>Catalog metadata is already known. Only tell VEXUM about your physical copy.</p></div><button onClick={onClose}><X/></button></header>
     <div className="vxs-known-metadata"><span><b>Manufacturer</b>{product.manufacturer}</span><span><b>Line</b>{product.line||'—'}</span><span><b>Year</b>{product.releaseYear}</span><span><b>UPC</b>{product.upc||'—'}</span><span><b>SKU</b>{product.sku||'—'}</span><span><b>MSRP</b>{money(product.msrp)}</span></div>
+    {relation.ownedQuantity>0?<div className="vxs-owned-warning"><Star/><span>You already own {relation.ownedQuantity} cop{relation.ownedQuantity===1?'y':'ies'}. You can still wishlist another intentionally.</span></div>:null}
     <div className="vxs-owner-fields">
       <label>Price Paid<input value={price} onChange={e=>setPrice(e.target.value)} placeholder="0.00"/></label>
       <label>Purchase Date<input type="date" value={date} onChange={e=>setDate(e.target.value)}/></label>
