@@ -1,6 +1,6 @@
 'use client';
 
-import {useMemo,useRef,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import {
   AlertTriangle,Box,ChevronRight,ClipboardCheck,Grid2X2,Layers3,MapPin,
   Maximize2,PackageOpen,Plus,Redo2,Ruler,Search,Tags,Undo2
@@ -50,6 +50,7 @@ export default function VexumSetup(){
   const [query,setQuery]=useState('');
   const [undo,setUndo]=useState<SetupData[]>([]);
   const [redo,setRedo]=useState<SetupData[]>([]);
+  const [portfolioPrefillIds,setPortfolioPrefillIds]=useState<string[]>([]);
   const canvasRef=useRef<HTMLDivElement>(null);
 
   const activeSpace=setup.spaces.find(space=>space.id===selectedSpaceId)||setup.spaces[0];
@@ -59,6 +60,20 @@ export default function VexumSetup(){
   const selectedObject=objects.find(object=>object.id===selectedObjectId);
   const owned=workspace.data.items.filter(item=>item.status==='owned');
   const wishlist=Object.values(workspace.data.wishlist||{}).filter(record=>!record.archived);
+
+  useEffect(()=>{
+    if(!workspace.ready||typeof window==='undefined')return;
+    const raw=localStorage.getItem('vexum.setup.prefillItemIds');
+    if(!raw)return;
+    localStorage.removeItem('vexum.setup.prefillItemIds');
+    try{
+      const ids=JSON.parse(raw);
+      if(Array.isArray(ids)){
+        const valid=ids.filter((id):id is string=>typeof id==='string'&&workspace.data.items.some(item=>item.id===id&&item.status==='owned'));
+        if(valid.length){setPortfolioPrefillIds(valid);setTab('Items')}
+      }
+    }catch{}
+  },[workspace.ready,workspace.data.items]);
 
   const currentSpaces=setup.spaces.filter(space=>space.mode==='current');
   const currentSpaceIds=new Set(currentSpaces.map(space=>space.id));
@@ -145,6 +160,20 @@ export default function VexumSetup(){
     const placement:SetupPlacement={id:newSetupId('place'),setupId:activeSpace.id,setupObjectId:objectId||undefined,portfolioItemId:itemId,kind:'owned',x:0,y:0,rotation:0,notes:'',createdAt:stamp,updatedAt:stamp};
     persist({...setup,placements:[...existing,placement]});
   };
+  const assignPortfolioPrefill=()=>{
+    if(!activeSpace||!portfolioPrefillIds.length)return;
+    const moving=new Set(portfolioPrefillIds);
+    const currentIds=new Set(setup.spaces.filter(space=>space.mode==='current').map(space=>space.id));
+    const existing=setup.placements.filter(p=>!(p.kind==='owned'&&p.portfolioItemId&&moving.has(p.portfolioItemId)&&currentIds.has(p.setupId)));
+    const stamp=now();
+    const added=portfolioPrefillIds.map((itemId,index):SetupPlacement=>({
+      id:newSetupId('place'),setupId:activeSpace.id,setupObjectId:selectedObjectId||undefined,portfolioItemId:itemId,kind:'owned',
+      x:0,y:index*0.1,rotation:0,notes:'Assigned from Portfolio bulk action',createdAt:stamp,updatedAt:stamp
+    }));
+    persist({...setup,placements:[...existing,...added]});
+    setPortfolioPrefillIds([]);
+  };
+
   const assignWishlist=(productId:string,objectId?:string)=>{
     if(!activeSpace||activeSpace.mode!=='dream')return;
     const existing=setup.placements.filter(p=>!(p.kind==='wishlist'&&p.wishlistProductId===productId&&p.setupId===activeSpace.id));
@@ -272,6 +301,7 @@ export default function VexumSetup(){
 
     {tab==='Items'&&<section className="vxsup-panel vxsup-full">
       <header><div><h3>Items + Locations</h3><p>Current Setup placement is the physical-location source of truth. The legacy Portfolio location string is updated as a compatibility mirror.</p></div><label className="vxsup-search"><Search/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search item or location…"/></label></header>
+      {portfolioPrefillIds.length?<div className="vxsup-portfolio-prefill"><Layers3/><span><strong>${portfolioPrefillIds.length} Portfolio item${portfolioPrefillIds.length===1?'':'s'} ready to assign</strong><small>Choose the Current space and optional storage object, then confirm the placement. No location changes happen automatically.</small></span><button onClick={assignPortfolioPrefill} disabled={!activeSpace}>Assign to {selectedObject?.name||activeSpace?.name||'Current Space'}</button><button onClick={()=>setPortfolioPrefillIds([])}>Cancel</button></div>:null}
       <div className="vxsup-item-table"><div className="head"><span>Item</span><span>Category</span><span>Physical Location</span><span>Dimensions</span><span>Value</span><span>Action</span></div>{filteredItems.map(item=>{
         const placement=currentOwnedPlacements.find(p=>p.portfolioItemId===item.id);
         const dims=itemDimensions(item);
