@@ -17,6 +17,7 @@ import VexumSell from './VexumSell';
 import VexumSocial from './VexumSocial';
 import VexumSettings from './VexumSettings';
 import VexumOnboarding from './VexumOnboarding';
+import CloudPanel from './CloudPanel';
 import {useWorkspace} from '../lib/useWorkspace';
 import {challengeMfa,mfaState,verifyMfa,type CloudConfig,type Session} from '../lib/cloud';
 import {
@@ -87,7 +88,7 @@ function PageFrame({hero,children,displayName,unread,onCommand,onQuick,onNotific
   return <main className={'vx-content page-'+hero}><Topbar hero={hero} displayName={displayName} unread={unread} onCommand={onCommand} onQuick={onQuick} onNotifications={onNotifications} onProfile={onProfile}/>{children}</main>;
 }
 
-function ProfileMenu({open,onClose,displayName,email,navigate,signOut}:{open:boolean;onClose:()=>void;displayName:string;email:string;navigate:(v:View)=>void;signOut:()=>Promise<void>}){
+function ProfileMenu({open,onClose,displayName,email,navigate,signOut,onAccount}:{open:boolean;onClose:()=>void;displayName:string;email:string;navigate:(v:View)=>void;signOut:()=>Promise<void>;onAccount:()=>void}){
   if(!open)return null;
   const go=(view:View)=>{onClose();navigate(view)};
   return <div className="vxp-profile-menu">
@@ -96,7 +97,7 @@ function ProfileMenu({open,onClose,displayName,email,navigate,signOut}:{open:boo
     <button onClick={()=>go('settings')}><Settings/><span>Settings</span><ChevronDown/></button>
     <button onClick={()=>window.alert('The VEXUM Help Center is not connected yet.')}><HelpCircle/><span>Help</span><ChevronDown/></button>
     <button onClick={()=>window.alert('Feedback delivery is not configured yet.')}><MessageSquare/><span>Send Feedback</span><ChevronDown/></button>
-    <button className="danger" onClick={()=>void signOut()}><LogOut/><span>Sign Out</span></button>
+    {email?<button className="danger" onClick={()=>void signOut()}><LogOut/><span>Sign Out</span></button>:<button className="danger" onClick={()=>{onClose();onAccount()}}><UserRound/><span>Create or Sign In to Account</span></button>}
   </div>;
 }
 
@@ -125,6 +126,7 @@ export default function VexumApp({
   const [notificationsOpen,setNotificationsOpen]=useState(false);
   const [commandOpen,setCommandOpen]=useState(false);
   const [profileOpen,setProfileOpen]=useState(false);
+  const [accountOpen,setAccountOpen]=useState(false);
   const [onboardingPending,setOnboardingPending]=useState(false);
   const [sellNotifications,setSellNotifications]=useState<VexumNotification[]>([]);
 
@@ -193,7 +195,8 @@ export default function VexumApp({
     <QuickAddPanel key={quickType||'all'} open={quickOpen} initialType={quickType} onClose={closeQuick} workspace={workspace} navigate={navigate}/>
     <NotificationCenter open={notificationsOpen} onClose={()=>setNotificationsOpen(false)} workspace={workspace} navigate={navigate}/>
     <CommandCenter open={commandOpen} onClose={()=>setCommandOpen(false)} workspace={workspace} navigate={navigate} onQuickAdd={openQuick}/>
-    <ProfileMenu open={profileOpen} onClose={()=>setProfileOpen(false)} displayName={displayName} email={workspace.session?.user.email||''} navigate={navigate} signOut={workspace.signOut}/>
+    <ProfileMenu open={profileOpen} onClose={()=>setProfileOpen(false)} displayName={displayName} email={workspace.session?.user.email||''} navigate={navigate} signOut={workspace.signOut} onAccount={()=>setAccountOpen(true)}/>
+    {accountOpen?<CloudPanel config={workspace.config} session={workspace.session} status={workspace.status} error={workspace.error} needsMigration={workspace.needsMigration} conflict={workspace.conflict} busy={workspace.busy} pending={workspace.pending} close={()=>setAccountOpen(false)} migrate={workspace.migrate} refresh={workspace.refresh} signOut={async()=>{await workspace.signOut();setAccountOpen(false)}} retry={workspace.retry} backup={()=>{const blob=new Blob([JSON.stringify(workspace.data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='vexum-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),500)}} recovery={()=>{const data=workspace.recovery();if(!data){window.alert('No conflict recovery backup is available on this device.');return}const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='vexum-recovery.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),500)}}/>:null}
     <MfaSessionGate config={workspace.config} session={workspace.session} onSignOut={workspace.signOut} onVerified={()=>workspace.update({...workspace.data,platform:{...platform,security:{...platform.security,mfaStatus:'verified',mfaMethod:'authenticator'}}})}/>
     {workspace.ready&&onboardingPending?<VexumOnboarding onComplete={()=>setOnboardingPending(false)}/>:null}
   </div>;
