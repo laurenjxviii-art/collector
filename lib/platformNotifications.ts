@@ -59,8 +59,10 @@ export function buildVexumNotifications(store:Store,platformInput?:PlatformState
     }
   }
 
-  for(const record of Object.values(store.wishlist||{}).filter(record=>!record.archived&&record.preorder?.enabled&&record.preorder.estimatedChargeDate&&record.preorder.estimatedChargeDate>=today&&record.preorder.estimatedChargeDate<=week)){
-    rows.push({id:'preorder:'+record.productId+':'+record.preorder.estimatedChargeDate,category:'Collecting',title:'Preorder charge approaching',detail:(record.snapshot?.name||record.productId)+' · '+record.preorder.estimatedChargeDate,route:'/wishlist',occurredAt:timeAt(record.preorder.estimatedChargeDate!),urgency:'high'});
+  for(const record of Object.values(store.wishlist||{})){
+    const preorder=record.preorder;
+    if(record.archived||!preorder?.enabled||!preorder.estimatedChargeDate||preorder.estimatedChargeDate<today||preorder.estimatedChargeDate>week)continue;
+    rows.push({id:'preorder:'+record.productId+':'+preorder.estimatedChargeDate,category:'Collecting',title:'Preorder charge approaching',detail:(record.snapshot?.name||record.productId)+' · '+preorder.estimatedChargeDate,route:'/wishlist',occurredAt:timeAt(preorder.estimatedChargeDate),urgency:'high'});
   }
 
   const setup=store.setup;
