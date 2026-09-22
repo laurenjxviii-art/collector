@@ -1,4 +1,6 @@
 import './vexum-reset.css';
+import './vexum-home.css';
+import './vexum-portfolio.css';
 import './vexum-wishlist.css';
 import './vexum-financial.css';
 import './vexum-setup.css';
