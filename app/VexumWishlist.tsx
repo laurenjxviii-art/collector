@@ -528,14 +528,14 @@ export default function VexumWishlist(){
       let items:Item[];
       if(existing){
         items=workspace.data.items.map(item=>item.id===existing.id?{
-          ...item,status:'owned',purchasePrice:unit,currentValue:purchasing.market||unit,quantity,
+          ...item,productId:purchasing.productId,status:'owned',purchasePrice:unit,currentValue:purchasing.market||unit,quantity,
           condition:purchase.condition||item.condition,purchaseDate:purchase.purchaseDate||today(),updatedAt:now,
           customFields:{...item.customFields,'Purchased from Wishlist':'Yes','Retailer':purchase.retailer||item.customFields.Retailer||'','Shipping':String(purchase.shipping||0),'Tax':String(purchase.tax||0),'Receipt':purchase.receipt||'','Expected Delivery':purchase.expectedDelivery||''}
         }:item);
       }else{
         const p=purchasing.product,s=purchasing.record.snapshot;
         const newItem:Item={
-          id:'wishlist-'+purchasing.productId.replace(/[^a-z0-9]+/gi,'-')+'-'+Date.now(),collectionId:'',name:purchasing.name,category:purchasing.category,status:'owned',
+          id:'wishlist-'+purchasing.productId.replace(/[^a-z0-9]+/gi,'-')+'-'+Date.now(),productId:purchasing.productId,collectionId:'',name:purchasing.name,category:purchasing.category,status:'owned',
           purchasePrice:unit,currentValue:purchasing.market||unit,quantity,image:purchasing.imageUrl||'',condition:purchase.condition||purchasing.record.desiredCondition,
           purchaseDate:purchase.purchaseDate||today(),location:'',notes:purchasing.record.notes,
           customFields:{'Wishlist Product ID':purchasing.productId,'Wishlist Priority':purchasing.record.priority,'Retailer':purchase.retailer||'','Shipping':String(purchase.shipping||0),'Tax':String(purchase.tax||0),'Receipt':purchase.receipt||'','Expected Delivery':purchase.expectedDelivery||''},
