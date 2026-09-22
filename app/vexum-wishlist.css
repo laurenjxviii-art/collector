@@ -119,3 +119,90 @@
 .vxw-market-provider-grid,.vxw-availability-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}.vxw-market-provider-grid>section,.vxw-availability-grid>section{min-height:78px;border:1px solid #26282d;border-radius:7px;background:#090a0c;padding:9px;display:flex;flex-direction:column}.vxw-market-provider-grid strong,.vxw-availability-grid strong{font-size:8px}.vxw-market-provider-grid span,.vxw-availability-grid span{font-size:7px;color:#747880;line-height:1.4;margin-top:5px}.vxw-availability-grid{grid-template-columns:repeat(3,1fr)}.vxw-availability-grid>section header{display:flex;align-items:center;gap:5px}.vxw-availability-grid>section header svg{width:12px;color:#ff4353}.vxw-availability-grid>section>b{font-size:8px;margin-top:8px;color:#9a9da4}.vxw-availability-grid>section>small{font-size:6.5px;color:#646870;margin-top:auto;padding-top:5px}
 @media(max-width:1500px){.vxw-archive-insights.expanded{grid-template-columns:repeat(5,minmax(0,1fr))}}
 @media(max-width:1000px){.vxw-availability-grid{grid-template-columns:1fr 1fr}.vxw-market-provider-grid{grid-template-columns:1fr}}
+
+
+/* ===== WISHLIST READABILITY PASS — top stat widgets intentionally unchanged ===== */
+
+/* Navigation / controls / filters */
+.vxw-hero>div>span,.vxw-hero aside span,.vxw-tabs button,.vxw-tabs button small,
+.vxw-provider-note strong,.vxw-provider-note span,.vxw-provider-note>button,
+.vxw-search input,.vxw-command>select,.vxw-command>button,.vxw-filters label,
+.vxw-filters select,.vxw-priority-filter>span,.vxw-priority-filter button,
+.vxw-clear-filter,.vxw-filters.advanced select,.vxw-filters.advanced input,
+.vxw-check-filter,.vxw-bulk-bar strong,.vxw-bulk-bar button{font-size:12px!important}
+
+.vxw-bulk-bar span{font-size:11px!important}
+
+/* Table / grid */
+.vxw-table-head{font-size:11px!important}
+.vxw-table-row,.vxw-item-cell strong,.vxw-market-cell b,.vxw-plan-cell b,
+.vxw-row-buttons button,.vxw-card-footer button{font-size:12px!important}
+.vxw-item-cell small,.vxw-item-cell em,.vxw-priority,.vxw-market-cell small,
+.vxw-plan-cell small,.vxw-source,.vxw-card-copy>span,.vxw-card-copy .warning,
+.vxw-card-values small,.vxw-card-values em,.vxw-signal-cell>small,
+.vxw-signal-cell .vxw-source,.vxw-state{font-size:10.5px!important}
+
+/* Empty/loading */
+.vxw-empty p,.vxw-loading span,.vxw-empty>div button{font-size:12px!important}
+
+/* Drawer / detail */
+.vxw-drawer>header>div>span,.vxw-modal>header>div>span{font-size:10.5px!important}
+.vxw-drawer>header p,.vxw-modal>header p,.vxw-duplicate,.vxw-detail-tabs button,
+.vxw-info-grid b,.vxw-note p,.vxw-provider-state strong,.vxw-provider-state p,
+.vxw-neutral,.vxw-intelligence p,.vxw-goal-block strong,.vxw-preorder-block strong,
+.vxw-goal-block header>b,.vxw-primary.wide,.vxw-history strong,
+.vxw-drawer>footer button,.vxw-modal>footer button,.vxw-form-section h3,
+.vxw-form-grid input,.vxw-form-grid select,.vxw-form-grid textarea,
+.vxw-purchase-warning,.vxw-provider-state>button,.vxw-market-error,
+.vxw-chart-empty strong,.vxw-section-toggle>button,.vxw-purchase-total span,
+.vxw-budget-setup{font-size:12px!important}
+
+.vxw-info-grid small,.vxw-note span,.vxw-market-cards small,.vxw-neutral-grid small,
+.vxw-neutral-grid em,.vxw-intelligence span,.vxw-goal-block p,
+.vxw-preorder-block>header span,.vxw-history small,.vxw-form-grid label,
+.vxw-alert-grid label,.vxw-section-toggle label{font-size:10.5px!important}
+
+/* Dashboard below top stat strip */
+.vxw-insight-card>span,.vxw-insight-card>small,.vxw-overview-grid section>header small,
+.vxw-overview-opportunities small,.vxw-overview-preorders small,.vxw-overview-grails small,
+.vxw-overview-plan>button small,.vxw-coverage-grid small,.vxw-ai-boundary,
+.vxw-overview-empty span{font-size:10.5px!important}
+
+.vxw-overview-grid section>header strong,.vxw-overview-opportunities strong,
+.vxw-overview-preorders strong,.vxw-overview-grails strong,.vxw-overview-plan>button b,
+.vxw-ai-questions button,.vxw-completion-boundary strong,.vxw-completion-boundary p{
+  font-size:12px!important
+}
+
+/* Price chart */
+.vxw-price-chart>header strong{font-size:12px!important}
+.vxw-price-chart>header span,.vxw-price-chart>header button,
+.vxw-price-chart>footer span,.vxw-chart-empty p{font-size:10.5px!important}
+
+/* Forms / Radar rules */
+.vxw-alert-rule-grid label,.vxw-alert-rule-grid select,
+.vxw-retailer-chips button,.vxw-rule-threshold span{font-size:11px!important}
+.vxw-rule-threshold input{font-size:11px!important}
+
+/* Planning / market / availability */
+.vxw-budget-impact small,.vxw-budget-impact>p,.vxw-planned-timeline b,
+.vxw-planned-timeline small,.vxw-planned-timeline em,
+.vxw-market-provider-grid strong,.vxw-market-provider-grid span,
+.vxw-availability-grid strong,.vxw-availability-grid span,
+.vxw-availability-grid>section>b,.vxw-availability-grid>section>small{
+  font-size:11px!important
+}
+
+.vxw-ai-answer{font-size:11px!important;line-height:1.55!important}
+
+/* Give the larger text enough room */
+.vxw-tabs button,.vxw-command>select,.vxw-command>button,.vxw-row-buttons button,
+.vxw-card-footer button,.vxw-drawer>footer button,.vxw-modal>footer button,
+.vxw-section-toggle>button,.vxw-provider-state>button,.vxw-budget-setup{
+  min-height:34px
+}
+.vxw-form-grid input,.vxw-form-grid select,.vxw-alert-rule-grid select,
+.vxw-filters select,.vxw-filters.advanced select,.vxw-filters.advanced input{
+  min-height:34px
+}
+.vxw-table-row{min-height:74px}
