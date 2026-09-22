@@ -11,7 +11,7 @@ import {useWorkspace} from '../lib/useWorkspace';
 import type {Collection,Item,Store} from '../lib/model';
 import {
   DEFAULT_PORTFOLIO_COLUMNS,defaultPortfolioPreferences,newPortfolioId,normalizePortfolioPreferences,
-  type PortfolioFilter,type PortfolioSavedView,type PortfolioViewMode,type PortfolioVisibility
+  type PortfolioFieldTemplate,type PortfolioFieldType,type PortfolioFilter,type PortfolioSavedView,type PortfolioViewMode,type PortfolioVisibility
 } from '../lib/portfolio';
 import {normalizeSetupData} from '../lib/setup';
 import PortfolioItemDetail from './portfolio/PortfolioItemDetail';
@@ -101,6 +101,7 @@ export default function VexumPortfolio(){
   const [selectedIds,setSelectedIds]=useState<Set<string>>(new Set());
   const [collectionEditor,setCollectionEditor]=useState<CollectionEditorState>(null);
   const [manualOpen,setManualOpen]=useState(false);
+  const [templatesOpen,setTemplatesOpen]=useState(false);
   const [auditFocus,setAuditFocus]=useState<AuditIssue|null>(null);
 
   const store=workspace.data;
@@ -225,7 +226,7 @@ export default function VexumPortfolio(){
     <nav className="vxp2-tabs">{([
       ['overview','Overview'],['collections','Collections'],['items','All Items'],['analytics','Analytics'],['audit','Audit']
     ] as Array<[Section,string]>).map(([id,label])=><button key={id} className={section===id?'active':''} onClick={()=>setSection(id)}>{label}</button>)}
-      <div className="vxp2-top-actions"><button onClick={()=>location.assign('/search')}><Search/>Search & Add</button><button onClick={()=>setManualOpen(true)}><Plus/>Add Manually</button><button onClick={()=>exportItems(owned,'csv')}><Download/>Export</button></div>
+      <div className="vxp2-top-actions"><button onClick={()=>location.assign('/search')}><Search/>Search & Add</button><button onClick={()=>setManualOpen(true)}><Plus/>Add Manually</button><button onClick={()=>setTemplatesOpen(true)}><Settings2/>Templates</button><button onClick={()=>exportItems(owned,'csv')}><Download/>Export</button></div>
     </nav>
 
     {section==='overview'?<PortfolioOverview store={store} analytics={analytics} issues={issues} health={health} onOpenItems={()=>setSection('items')} onOpenAudit={()=>setSection('audit')} onCollection={id=>{setActiveCollectionId(id);setSection('items')}}/>:null}
@@ -259,6 +260,7 @@ export default function VexumPortfolio(){
 
     {collectionEditor?<CollectionEditor state={collectionEditor} collections={activeCollections} templates={preferences.templates} onClose={()=>setCollectionEditor(null)} onSave={saveCollection}/>:null}
     {manualOpen?<ManualItemModal collections={activeCollections} templates={preferences.templates} onClose={()=>setManualOpen(false)} onSave={addManual}/>:null}
+    {templatesOpen?<TemplateManager templates={preferences.templates} onClose={()=>setTemplatesOpen(false)} onChange={templates=>persistPreferences({templates})}/>:null}
   </div>;
 }
 
@@ -364,22 +366,88 @@ function BulkBar({count,collections,onMove,onTag,onSetup,onSell,onArchive,onExpo
 }
 
 function ColumnMenu({columns,onChange,onClose}:{columns:string[];onChange:(columns:string[])=>void;onClose:()=>void}){
-  return <div className="vxp2-popover columns"><header><strong>Columns</strong><button onClick={onClose}><X/></button></header>{COLUMNS.map(column=><label key={column.id}><input type="checkbox" checked={columns.includes(column.id)} onChange={e=>onChange(e.target.checked?[...columns,column.id]:columns.filter(id=>id!==column.id))}/>{column.label}</label>)}</div>;
+  const move=(id:string,direction:-1|1)=>{
+    const index=columns.indexOf(id);if(index<0)return;
+    const target=index+direction;if(target<0||target>=columns.length)return;
+    const next=[...columns];[next[index],next[target]]=[next[target],next[index]];onChange(next);
+  };
+  const ordered=[...columns,...COLUMNS.map(column=>column.id).filter(id=>!columns.includes(id))];
+  return <div className="vxp2-popover columns"><header><strong>Columns</strong><button onClick={onClose}><X/></button></header>{ordered.map(id=>{const column=COLUMNS.find(row=>row.id===id);if(!column)return null;const enabled=columns.includes(id);return <div className="column-row" key={id}><label><input type="checkbox" checked={enabled} onChange={e=>onChange(e.target.checked?[...columns,id]:columns.filter(columnId=>columnId!==id))}/>{column.label}</label><span><button disabled={!enabled||columns.indexOf(id)===0} onClick={()=>move(id,-1)}>↑</button><button disabled={!enabled||columns.indexOf(id)===columns.length-1} onClick={()=>move(id,1)}>↓</button></span></div>})}</div>;
 }
+
 function SavedViewsMenu({views,onApply,onSave,onClose}:{views:PortfolioSavedView[];onApply:(view:PortfolioSavedView)=>void;onSave:()=>void;onClose:()=>void}){
   return <div className="vxp2-popover views"><header><strong>Saved Views</strong><button onClick={onClose}><X/></button></header>{views.map(view=><button className="saved" key={view.id} onClick={()=>onApply(view)}><span><strong>{view.name}</strong><small>{view.view} · {view.filters.length} filters</small></span><ChevronRight/></button>)}{!views.length?<p>No saved views yet.</p>:null}<button className="save" onClick={onSave}><Plus/>Save Current View</button></div>;
 }
 
 function CollectionEditor({state,collections,templates,onClose,onSave}:{state:NonNullable<CollectionEditorState>;collections:Collection[];templates:Array<{id:string;name:string}>;onClose:()=>void;onSave:(input:any)=>void}){
   const current=state.collection;
-  const [name,setName]=useState(current?.name||'');const [parent,setParent]=useState(current?.parentCollectionId||state.parentId||'');const [description,setDescription]=useState(current?.description||'');const [measurable,setMeasurable]=useState(Boolean(current?.measurable));const [target,setTarget]=useState(String(current?.targetItemCount||''));const [privacy,setPrivacy]=useState<PortfolioVisibility>(current?.privacy||'Private');const [template,setTemplate]=useState(current?.customFieldTemplateId||'');const [view,setView]=useState<PortfolioViewMode>(current?.defaultView||'grid');
+  const [name,setName]=useState(current?.name||'');
+  const [parent,setParent]=useState(current?.parentCollectionId||state.parentId||'');
+  const [description,setDescription]=useState(current?.description||'');
+  const [coverImage,setCoverImage]=useState(current?.coverImage||'');
+  const [icon,setIcon]=useState(current?.icon||'folder');
+  const [color,setColor]=useState(current?.color||'#ff2338');
+  const [measurable,setMeasurable]=useState(Boolean(current?.measurable));
+  const [target,setTarget]=useState(String(current?.targetItemCount||''));
+  const [privacy,setPrivacy]=useState<PortfolioVisibility>(current?.privacy||'Private');
+  const [template,setTemplate]=useState(current?.customFieldTemplateId||'');
+  const [view,setView]=useState<PortfolioViewMode>(current?.defaultView||'grid');
   const descendants=current?descendantIds(current.id,collections):new Set<string>();
-  return <Modal title={state.mode==='edit'?'Edit Collection':'Create Collection'} subtitle="Organization only. Deleting or moving a collection never silently deletes owned items." onClose={onClose}><div className="vxp2-form grid"><label>Name<input value={name} onChange={e=>setName(e.target.value)}/></label><label>Parent<select value={parent} onChange={e=>setParent(e.target.value)}><option value="">Root</option>{collections.filter(collection=>!descendants.has(collection.id)).map(collection=><option key={collection.id} value={collection.id}>{collectionPath(collection.id,collections).map(c=>c.name).join(' / ')}</option>)}</select></label><label className="wide">Description<textarea value={description} onChange={e=>setDescription(e.target.value)}/></label><label className="check"><input type="checkbox" checked={measurable} onChange={e=>setMeasurable(e.target.checked)}/>Track completion</label>{measurable?<label>Target item count<input type="number" min="0" value={target} onChange={e=>setTarget(e.target.value)}/></label>:null}<label>Privacy<select value={privacy} onChange={e=>setPrivacy(e.target.value as PortfolioVisibility)}><option>Private</option><option>Friends</option><option>Community</option><option>Public</option></select></label><label>Custom field template<select value={template} onChange={e=>setTemplate(e.target.value)}><option value="">None</option>{templates.map(row=><option key={row.id} value={row.id}>{row.name}</option>)}</select></label><label>Default view<select value={view} onChange={e=>setView(e.target.value as PortfolioViewMode)}>{['grid','list','table','gallery','compact'].map(row=><option key={row}>{row}</option>)}</select></label></div><footer className="vxp2-modal-footer"><button onClick={onClose}>Cancel</button><button className="red" disabled={!name.trim()} onClick={()=>onSave({name:name.trim(),parentCollectionId:parent||undefined,description,measurable,targetItemCount:measurable?Number(target)||0:undefined,privacy,customFieldTemplateId:template||undefined,defaultView:view})}>Save Collection</button></footer></Modal>;
+  return <Modal title={state.mode==='edit'?'Edit Collection':'Create Collection'} subtitle="Organization only. Deleting or moving a collection never silently deletes owned items." onClose={onClose}>
+    <div className="vxp2-form grid">
+      <label>Name<input value={name} onChange={e=>setName(e.target.value)}/></label>
+      <label>Parent<select value={parent} onChange={e=>setParent(e.target.value)}><option value="">Root</option>{collections.filter(collection=>!descendants.has(collection.id)).map(collection=><option key={collection.id} value={collection.id}>{collectionPath(collection.id,collections).map(c=>c.name).join(' / ')}</option>)}</select></label>
+      <label className="wide">Description<textarea value={description} onChange={e=>setDescription(e.target.value)}/></label>
+      <label className="wide">Cover image URL<input value={coverImage} onChange={e=>setCoverImage(e.target.value)} placeholder="https://…"/></label>
+      <label>Icon / label<input value={icon} onChange={e=>setIcon(e.target.value)} placeholder="folder"/></label>
+      <label>Accent color<input type="color" value={/^#[0-9a-f]{6}$/i.test(color)?color:'#ff2338'} onChange={e=>setColor(e.target.value)}/></label>
+      <label className="check"><input type="checkbox" checked={measurable} onChange={e=>setMeasurable(e.target.checked)}/>Track completion</label>
+      {measurable?<label>Target item count<input type="number" min="0" value={target} onChange={e=>setTarget(e.target.value)}/></label>:null}
+      <label>Privacy<select value={privacy} onChange={e=>setPrivacy(e.target.value as PortfolioVisibility)}><option>Private</option><option>Friends</option><option>Community</option><option>Public</option></select></label>
+      <label>Custom field template<select value={template} onChange={e=>setTemplate(e.target.value)}><option value="">None</option>{templates.map(row=><option key={row.id} value={row.id}>{row.name}</option>)}</select></label>
+      <label>Default view<select value={view} onChange={e=>setView(e.target.value as PortfolioViewMode)}>{['grid','list','table','gallery','compact'].map(row=><option key={row}>{row}</option>)}</select></label>
+    </div>
+    <footer className="vxp2-modal-footer"><button onClick={onClose}>Cancel</button><button className="red" disabled={!name.trim()} onClick={()=>onSave({name:name.trim(),parentCollectionId:parent||undefined,description,coverImage:coverImage||undefined,icon:icon||'folder',color,measurable,targetItemCount:measurable?Number(target)||0:undefined,privacy,customFieldTemplateId:template||undefined,defaultView:view})}>Save Collection</button></footer>
+  </Modal>;
 }
 
 function ManualItemModal({collections,templates,onClose,onSave}:{collections:Collection[];templates:Array<{id:string;name:string}>;onClose:()=>void;onSave:(input:any)=>void}){
   const [name,setName]=useState('');const [category,setCategory]=useState('');const [collectionId,setCollection]=useState('');const [purchasePrice,setPaid]=useState('');const [currentValue,setValue]=useState('');const [quantity,setQuantity]=useState('1');const [condition,setCondition]=useState('');const [purchaseDate,setDate]=useState('');const [image,setImage]=useState('');const [notes,setNotes]=useState('');const [templateId,setTemplate]=useState('');
   return <Modal title="Create Custom Item" subtitle="Use this only when the catalog does not have the product. It can be reconciled later without losing ownership data." onClose={onClose}><div className="vxp2-manual-banner"><Search/><span><strong>Prefer canonical Search when possible.</strong><small>Known product metadata should not be retyped into the owned copy.</small></span><button onClick={()=>location.assign('/search')}>Search Catalog</button></div><div className="vxp2-form grid"><label className="wide">Item name<input value={name} onChange={e=>setName(e.target.value)}/></label><label>Category<input value={category} onChange={e=>setCategory(e.target.value)} placeholder="Action Figures"/></label><label>Collection<select value={collectionId} onChange={e=>setCollection(e.target.value)}><option value="">All Items</option>{collections.map(collection=><option key={collection.id} value={collection.id}>{collectionPath(collection.id,collections).map(c=>c.name).join(' / ')}</option>)}</select></label><label>Price paid<input type="number" min="0" value={purchasePrice} onChange={e=>setPaid(e.target.value)}/></label><label>Current value<input type="number" min="0" value={currentValue} onChange={e=>setValue(e.target.value)}/></label><label>Quantity<input type="number" min="1" value={quantity} onChange={e=>setQuantity(e.target.value)}/></label><label>Condition<input value={condition} onChange={e=>setCondition(e.target.value)}/></label><label>Purchase date<input type="date" value={purchaseDate} onChange={e=>setDate(e.target.value)}/></label><label>Field template<select value={templateId} onChange={e=>setTemplate(e.target.value)}><option value="">None</option>{templates.map(row=><option key={row.id} value={row.id}>{row.name}</option>)}</select></label><label className="wide">Image URL<input value={image} onChange={e=>setImage(e.target.value)}/></label><label className="wide">Notes<textarea value={notes} onChange={e=>setNotes(e.target.value)}/></label></div><footer className="vxp2-modal-footer"><button onClick={onClose}>Cancel</button><button className="red" disabled={!name.trim()} onClick={()=>onSave({name:name.trim(),category:category.trim()||'Miscellaneous',collectionId,purchasePrice:Number(purchasePrice)||0,currentValue:Number(currentValue)||0,quantity:Math.max(1,Number(quantity)||1),condition,purchaseDate,image,notes,templateId})}>Add Owned Item</button></footer></Modal>;
+}
+
+function TemplateManager({templates,onClose,onChange}:{templates:PortfolioFieldTemplate[];onClose:()=>void;onChange:(templates:PortfolioFieldTemplate[])=>void}){
+  const [selectedId,setSelectedId]=useState(templates[0]?.id||'');
+  const [newName,setNewName]=useState('');
+  const selected=templates.find(template=>template.id===selectedId);
+  const create=()=>{
+    const name=newName.trim();if(!name)return;
+    const now=new Date().toISOString();
+    const next:PortfolioFieldTemplate={id:newPortfolioId('template'),name,fields:[],createdAt:now,updatedAt:now};
+    onChange([...templates,next]);setSelectedId(next.id);setNewName('');
+  };
+  const update=(next:PortfolioFieldTemplate)=>onChange(templates.map(template=>template.id===next.id?next:template));
+  const addField=()=>{
+    if(!selected)return;
+    const label=window.prompt('Field label');if(!label)return;
+    const rawType=window.prompt('Field type: Text, Long Text, Number, Currency, Date, Boolean, Single Select, Multi Select, URL, Rating, Measurement, Relation, File / Document, Custom Status','Text')||'Text';
+    const allowed:PortfolioFieldType[]=['Text','Long Text','Number','Currency','Date','Boolean','Single Select','Multi Select','URL','Rating','Measurement','Relation','File / Document','Custom Status'];
+    const type=(allowed.includes(rawType as PortfolioFieldType)?rawType:'Text') as PortfolioFieldType;
+    const options=['Single Select','Multi Select','Custom Status'].includes(type)?(window.prompt('Options separated by commas','')||'').split(',').map(x=>x.trim()).filter(Boolean):undefined;
+    const defaultValue=window.prompt('Default value (optional)','')||'';
+    update({...selected,fields:[...selected.fields,{id:newPortfolioId('field'),label:label.trim(),type,options,defaultValue}],updatedAt:new Date().toISOString()});
+  };
+  const remove=()=>{
+    if(!selected||!window.confirm('Delete template "'+selected.name+'"? Existing item custom-field values are preserved.'))return;
+    onChange(templates.filter(template=>template.id!==selected.id));setSelectedId(templates.find(template=>template.id!==selected.id)?.id||'');
+  };
+  return <Modal title="Custom Field Templates" subtitle="Reusable metadata schemas apply to new owned copies without forcing one schema on every category." onClose={onClose}>
+    <div className="vxp2-template-manager">
+      <aside><div className="new"><input value={newName} onChange={e=>setNewName(e.target.value)} placeholder="Template name"/><button onClick={create}><Plus/>Create</button></div>{templates.map(template=><button className={selectedId===template.id?'active':''} key={template.id} onClick={()=>setSelectedId(template.id)}><span><strong>{template.name}</strong><small>{template.fields.length} fields</small></span><ChevronRight/></button>)}{!templates.length?<p>No templates yet.</p>:null}</aside>
+      <main>{selected?<><header><div><strong>{selected.name}</strong><span>Reusable ownership metadata</span></div><div><button onClick={addField}><Plus/>Add Field</button><button className="danger" onClick={remove}><Trash2/>Delete</button></div></header><div className="fields">{selected.fields.map((field,index)=><div key={field.id}><span><strong>{field.label}</strong><small>{field.type}{field.options?.length?' · '+field.options.join(', '):''}</small></span><input value={field.defaultValue||''} onChange={e=>update({...selected,fields:selected.fields.map((row,i)=>i===index?{...row,defaultValue:e.target.value}:row),updatedAt:new Date().toISOString()})} placeholder="Default value"/><button onClick={()=>update({...selected,fields:selected.fields.filter(row=>row.id!==field.id),updatedAt:new Date().toISOString()})}><X/></button></div>)}</div></>:<div className="empty"><Settings2/><strong>Create a template</strong><p>Examples: Marvel Legends, Pokémon Raw Card, Graded Card, Guitar, Comic, Sneaker.</p></div>}</main>
+    </div>
+    <footer className="vxp2-modal-footer"><button className="red" onClick={onClose}>Done</button></footer>
+  </Modal>;
 }
 
 function Modal({title,subtitle,onClose,children}:{title:string;subtitle:string;onClose:()=>void;children:ReactNode}){return <div className="vxp2-modal-backdrop" onMouseDown={event=>event.currentTarget===event.target&&onClose()}><section className="vxp2-modal"><header><div><strong>{title}</strong><span>{subtitle}</span></div><button onClick={onClose}><X/></button></header>{children}</section></div>}
