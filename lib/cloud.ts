@@ -19,6 +19,58 @@ export async function sendLogin(config:CloudConfig,email:string){return request(
 
 export async function sendPasswordReset(config:CloudConfig,email:string){const redirect=location.origin+'/';return request(config,'/auth/v1/recover?'+new URLSearchParams({redirect_to:redirect}),{method:'POST',body:JSON.stringify({email})})}
 export async function updatePassword(config:CloudConfig,password:string){const session=await freshSession(config);const user=await request(config,'/auth/v1/user',{method:'PUT',body:JSON.stringify({password})},session.access_token);const updated={...session,user,recovery:false};keep(updated);return updated}
+
+export type AuthCapabilities={google:boolean;apple:boolean;phone:boolean};
+export type MfaFactor={id:string;friendly_name?:string;factor_type?:'totp'|'phone'|string;status?:'verified'|'unverified'|string;phone?:string;created_at?:string;updated_at?:string};
+export type MfaEnrollment={id:string;type:string;friendly_name?:string;totp?:{qr_code?:string;secret?:string;uri?:string}};
+export type MfaState={factors:MfaFactor[];verified:MfaFactor[];currentLevel:'aal1'|'aal2';nextLevel:'aal1'|'aal2'};
+
+export async function authCapabilities(config:CloudConfig):Promise<AuthCapabilities>{
+  const settings=await request(config,'/auth/v1/settings');
+  const external=settings?.external&&typeof settings.external==='object'?settings.external:{};
+  return {google:external.google===true,apple:external.apple===true,phone:settings?.phone===true||settings?.external?.phone===true};
+}
+export function startOAuth(config:CloudConfig,provider:'google'|'apple'){
+  const params=new URLSearchParams({provider,redirect_to:location.origin+'/'});
+  try{localStorage.setItem('vexum.onboarding.pending','1')}catch{}
+  location.assign(config.url+'/auth/v1/authorize?'+params.toString());
+}
+function jwtPayload(token:string):Record<string,any>{
+  try{
+    const part=token.split('.')[1];if(!part)return {};
+    const normalized=part.replace(/-/g,'+').replace(/_/g,'/');
+    const padded=normalized+'='.repeat((4-normalized.length%4)%4);
+    return JSON.parse(decodeURIComponent(Array.from(atob(padded)).map(char=>'%'+char.charCodeAt(0).toString(16).padStart(2,'0')).join('')));
+  }catch{return {}}
+}
+export async function mfaState(config:CloudConfig):Promise<MfaState>{
+  const session=await freshSession(config);
+  const user=await request(config,'/auth/v1/user',{},session.access_token);
+  const factors=Array.isArray(user?.factors)?user.factors.filter((factor:any)=>factor&&typeof factor.id==='string') as MfaFactor[]:[];
+  const verified=factors.filter(factor=>factor.status==='verified');
+  const payload=jwtPayload(session.access_token);
+  const currentLevel: 'aal1'|'aal2'=payload.aal==='aal2'?'aal2':'aal1';
+  return {factors,verified,currentLevel,nextLevel:verified.length?'aal2':'aal1'};
+}
+export async function enrollTotp(config:CloudConfig,friendlyName='VEXUM Authenticator'):Promise<MfaEnrollment>{
+  const session=await freshSession(config);
+  return request(config,'/auth/v1/factors',{method:'POST',body:JSON.stringify({factor_type:'totp',friendly_name:friendlyName})},session.access_token);
+}
+export async function challengeMfa(config:CloudConfig,factorId:string){
+  const session=await freshSession(config);
+  return request(config,'/auth/v1/factors/'+encodeURIComponent(factorId)+'/challenge',{method:'POST',body:JSON.stringify({})},session.access_token);
+}
+export async function verifyMfa(config:CloudConfig,factorId:string,challengeId:string,code:string){
+  const session=await freshSession(config);
+  const value=await request(config,'/auth/v1/factors/'+encodeURIComponent(factorId)+'/verify',{method:'POST',body:JSON.stringify({challenge_id:challengeId,code})},session.access_token);
+  const next=sessionFromAuth(value);
+  if(!next)throw new Error('MFA verified but the upgraded session was not returned. Sign in again.');
+  return next;
+}
+export async function unenrollMfa(config:CloudConfig,factorId:string){
+  const session=await freshSession(config);
+  return request(config,'/auth/v1/factors/'+encodeURIComponent(factorId),{method:'DELETE'},session.access_token);
+}
 export async function logout(config:CloudConfig){try{const session=await freshSession(config);await request(config,'/auth/v1/logout?scope=local',{method:'POST'},session.access_token)}finally{keep(null)}}
 export type CloudWorkspace={payload:Store;revision:number;updated_at:string};
 const IMAGE_BUCKET='collector-images';
