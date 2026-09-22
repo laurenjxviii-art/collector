@@ -1,13 +1,13 @@
 'use client';
 
-import {useMemo,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import {
   ArrowDown,ArrowUp,Bell,Check,ChevronRight,Download,Eye,Globe2,GripVertical,KeyRound,
   LayoutDashboard,Link2,LockKeyhole,LogOut,Palette,RefreshCw,Shield,SlidersHorizontal,
   Trash2,UserRound,X
 } from 'lucide-react';
 import {useWorkspace} from '../lib/useWorkspace';
-import {updatePassword} from '../lib/cloud';
+import {challengeMfa,enrollTotp,mfaState,unenrollMfa,updatePassword,verifyMfa,type MfaEnrollment,type MfaState} from '../lib/cloud';
 import {
   ALL_MODULES,MODULE_GROUPS,MODULE_LABELS,normalizePlatformState,type PlatformState,type VexumModuleId,type Visibility
 } from '../lib/platform';
@@ -70,12 +70,42 @@ function ProfileSettings({platform,onSave,email}:{platform:PlatformState;onSave:
 
 function SecuritySettings({platform,config,session,onSave,onMessage}:{platform:PlatformState;config:any;session:any;onSave:(p:PlatformState)=>void;onMessage:(m:string)=>void}){
   const [password,setPassword]=useState('');const [confirm,setConfirm]=useState('');const [busy,setBusy]=useState(false);
+  const [mfa,setMfa]=useState<MfaState|null>(null);const [mfaBusy,setMfaBusy]=useState(false);const [mfaError,setMfaError]=useState('');
+  const [enrollment,setEnrollment]=useState<MfaEnrollment|null>(null);const [challengeId,setChallengeId]=useState('');const [code,setCode]=useState('');
+
+  const syncMfa=async()=>{
+    if(!config||!session){setMfa(null);return}
+    setMfaBusy(true);setMfaError('');
+    try{
+      const state=await mfaState(config);setMfa(state);
+      const status=state.currentLevel==='aal2'?'verified':state.verified.length?'pending':'not_configured';
+      const method=state.verified.some(f=>f.factor_type==='totp')?'authenticator':state.verified.some(f=>f.factor_type==='phone')?'phone':undefined;
+      if(platform.security.mfaStatus!==status||platform.security.mfaMethod!==method)onSave({...platform,security:{...platform.security,mfaStatus:status,mfaMethod:method}});
+    }catch(err){setMfaError(err instanceof Error?err.message:'Unable to read MFA status.')}finally{setMfaBusy(false)}
+  };
+  useEffect(()=>{void syncMfa()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[Boolean(config),session?.user?.id]);
+
   const changePassword=async()=>{if(!config||!session){onMessage('Sign in to change the cloud account password.');return}if(password.length<6||password!==confirm){onMessage('Passwords must match and be at least 6 characters.');return}setBusy(true);try{await updatePassword(config,password);setPassword('');setConfirm('');onMessage('Password updated.')}catch(err){onMessage(err instanceof Error?err.message:'Password update failed.')}finally{setBusy(false)}};
-  return <><SectionHead title="Account & Security" subtitle="Passwords use the existing Supabase auth session. MFA is never marked verified unless a real provider flow exists."/>
+  const beginTotp=async()=>{if(!config||!session)return;setMfaBusy(true);setMfaError('');try{const next=await enrollTotp(config,'VEXUM Authenticator');const challenge=await challengeMfa(config,next.id);setEnrollment(next);setChallengeId(challenge.id);setCode('')}catch(err){setMfaError(err instanceof Error?err.message:'Unable to start authenticator enrollment.')}finally{setMfaBusy(false)}};
+  const beginSessionChallenge=async()=>{if(!config||!mfa?.verified[0])return;setMfaBusy(true);setMfaError('');try{const factor=mfa.verified[0];const challenge=await challengeMfa(config,factor.id);setEnrollment({id:factor.id,type:factor.factor_type||'totp',friendly_name:factor.friendly_name});setChallengeId(challenge.id);setCode('')}catch(err){setMfaError(err instanceof Error?err.message:'Unable to start MFA challenge.')}finally{setMfaBusy(false)}};
+  const verify=async()=>{if(!config||!enrollment||!challengeId||code.trim().length<6)return;setMfaBusy(true);setMfaError('');try{await verifyMfa(config,enrollment.id,challengeId,code.trim());setEnrollment(null);setChallengeId('');setCode('');await syncMfa();onMessage('Multi-factor authentication verified for this session.')}catch(err){setMfaError(err instanceof Error?err.message:'Invalid authenticator code.')}finally{setMfaBusy(false)}};
+  const removeFactor=async(id:string)=>{if(!config)return;if(!window.confirm('Remove this MFA factor from your VEXUM account?'))return;setMfaBusy(true);setMfaError('');try{await unenrollMfa(config,id);await syncMfa()}catch(err){setMfaError(err instanceof Error?err.message:'Unable to remove MFA factor. You may need to verify MFA on this session first.')}finally{setMfaBusy(false)}};
+
+  return <><SectionHead title="Account & Security" subtitle="Password and MFA controls are backed by the signed-in Supabase Auth account. VEXUM never marks MFA complete without a verified factor/session."/>
     <SettingRow label="Account" description={session?.user.email||'Local-only workspace'}><span className={'vxt-status '+(session?'good':'warn')}>{session?'SIGNED IN':'LOCAL'}</span></SettingRow>
     <div className="vxt-security-block"><header><KeyRound/><div><strong>Change Password</strong><span>Update the password on your signed-in VEXUM account.</span></div></header><div className="two"><input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="New password"/><input type="password" value={confirm} onChange={e=>setConfirm(e.target.value)} placeholder="Confirm password"/></div><button disabled={busy||!password} onClick={changePassword}>{busy?'Updating…':'Update Password'}</button></div>
-    <div className="vxt-security-block"><header><LockKeyhole/><div><strong>Multi-Factor Authentication</strong><span>Required before external Financial connections can be enabled.</span></div></header><div className="vxt-provider-state"><span className="warn">NOT CONFIGURED</span><p>The current VEXUM deployment does not yet have a verified Supabase MFA enrollment UI. Authenticator/SMS/email factors are therefore not faked or marked complete.</p></div></div>
-    <SettingRow label="Financial Security Gate" description="Block external financial-account connections until MFA is verified."><Toggle checked={platform.security.requireMfaForExternalFinancial} onChange={checked=>onSave({...platform,security:{...platform.security,requireMfaForExternalFinancial:checked}})}/></SettingRow>
+    <div className="vxt-security-block vxt-mfa"><header><LockKeyhole/><div><strong>Multi-Factor Authentication</strong><span>Authenticator-app MFA is backed by Supabase Auth and gates future external Financial connections.</span></div></header>
+      {!session?<div className="vxt-provider-state"><span className="warn">SIGN IN REQUIRED</span><p>Sign in to configure MFA for your VEXUM account.</p></div>:<>
+        <div className="vxt-mfa-summary"><span className={'vxt-status '+(mfa?.currentLevel==='aal2'?'good':mfa?.verified.length?'warn':'')}>{mfaBusy?'CHECKING…':mfa?.currentLevel==='aal2'?'AAL2 VERIFIED':mfa?.verified.length?'VERIFICATION REQUIRED':'NOT CONFIGURED'}</span><p>{mfa?.verified.length?mfa.verified.length+' verified factor'+(mfa.verified.length===1?'':'s')+' on this account.':'No verified MFA factors are currently attached to this account.'}</p><button onClick={()=>void syncMfa()} disabled={mfaBusy}><RefreshCw/>Refresh</button></div>
+        {mfa?.factors.map(factor=><div className="vxt-factor" key={factor.id}><span><strong>{factor.friendly_name||'MFA factor'}</strong><small>{factor.factor_type||'factor'} · {factor.status||'unknown'}</small></span><button onClick={()=>void removeFactor(factor.id)} disabled={mfaBusy}><Trash2/>Remove</button></div>)}
+        {enrollment?<div className="vxt-enrollment">{enrollment.totp?.qr_code?<img src={enrollment.totp.qr_code} alt="Authenticator QR code"/>:null}<div><strong>{enrollment.totp?'Scan with your authenticator app':'Verify this session'}</strong>{enrollment.totp?.secret?<><span>Manual secret</span><code>{enrollment.totp.secret}</code></>:null}<label>6-digit code<input inputMode="numeric" autoComplete="one-time-code" value={code} onChange={e=>setCode(e.target.value.replace(/\D/g,'').slice(0,6))} placeholder="000000"/></label><div><button onClick={()=>{setEnrollment(null);setChallengeId('');setCode('')}}>Cancel</button><button className="primary" onClick={()=>void verify()} disabled={mfaBusy||code.length<6}>Verify</button></div></div></div>:<div className="vxt-mfa-actions">{!mfa?.verified.length?<button onClick={()=>void beginTotp()} disabled={mfaBusy}><LockKeyhole/>Set Up Authenticator App</button>:mfa.currentLevel!=='aal2'?<button onClick={()=>void beginSessionChallenge()} disabled={mfaBusy}><Shield/>Verify This Session</button>:<span className="vxt-status good"><Check/>SESSION PROTECTED</span>}</div>}
+        {mfaError?<p className="vxt-mfa-error">{mfaError}</p>:null}
+        <p className="vxt-security-note">Supabase Auth currently supports authenticator-app and phone MFA. It does not issue recovery codes; a second verified factor is the supported recovery strategy.</p>
+      </>}
+    </div>
+    <SettingRow label="Financial Security Gate" description="Block external financial-account connections until the current account/session has verified MFA."><Toggle checked={platform.security.requireMfaForExternalFinancial} onChange={checked=>onSave({...platform,security:{...platform.security,requireMfaForExternalFinancial:checked}})}/></SettingRow>
     <SettingRow label="Sessions" description="This client can see the current session only; a server-backed all-sessions manager is not configured."><span className="vxt-status">CURRENT DEVICE</span></SettingRow>
   </>;
 }
