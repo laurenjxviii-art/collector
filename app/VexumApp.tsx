@@ -11,7 +11,8 @@ import VexumSearch from './search/VexumSearch';
 import VexumWishlist from './VexumWishlist';
 import VexumFinancial from './VexumFinancial';
 import VexumSetup from './VexumSetup';
-import {useWorkspace} from '../lib/useWorkspace';
+import VexumSell from './VexumSell';
+import VexumSocial from './VexumSocial';
 
 type View='home'|'portfolio'|'search'|'wishlist'|'sell'|'setup'|'financial'|'social';
 type Tone='red'|'green'|'orange'|'muted';
@@ -294,34 +295,11 @@ function SearchPage({initialQuery='',initialProductId=''}:{initialQuery?:string;
   return <PageFrame hero="search"><VexumSearch initialQuery={initialQuery} initialProductId={initialProductId}/></PageFrame>;
 }
 function SetupPage(){return <PageFrame hero="setup"><VexumSetup/></PageFrame>;}
-function fmtMoney(value:number){
-  return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(value);
-}
-function SellPage(){
-  const workspace=useWorkspace();
-  const owned=workspace.data.items.filter(item=>item.status==='owned');
-  const wishlist=Object.values(workspace.data.wishlist||{}).filter(record=>!record.archived);
-  return <PageFrame hero="plain">
-    <section className="vx-page-title"><div><h1>Sell</h1><p>Turn owned items into supply without creating duplicate product identities.</p></div><HeroMeta text="“One catalog. Ownership, wants, and supply stay linked.”"/></section>
-    <div className="vx-fin-stats">
-      <Stat label="Owned Products" value={String(owned.length)} change="Portfolio source of truth" tone="muted"/>
-      <Stat label="Wishlist Demand Context" value={String(wishlist.length)} change="Private user data only" tone="muted"/>
-      <Stat label="Community Listings" value="Unavailable" change="Marketplace provider not connected" tone="muted"/>
-      <Stat label="Trade Matches" value="Unavailable" change="Social marketplace not connected" tone="muted"/>
-      <Stat label="Sell Revenue" value="Unavailable" change="No listing ledger connected" tone="muted"/>
-    </div>
-    <div className="vx-fin-bottom">
-      <section className="vx-panel vx-truth-panel"><PanelHead title="Sell Integration Boundary"/><div className="vx-fin-empty"><ShoppingBag/><strong>Canonical supply path is ready</strong><p>Owned Portfolio items already carry the product identity Sell should reuse. Listing creation, seller reputation, community demand matching, offers, shipping, and payment settlement are not connected yet, so VEXUM does not invent them.</p></div></section>
-      <section className="vx-panel"><PanelHead title="Recently Owned"/>{owned.slice(0,6).map(item=><div className="vx-preorder-fin" key={item.id}><div className="vx-mini-product"><Layers3/></div><div><strong>{item.name}</strong><span>{item.category} · {item.condition}</span></div><b>{fmtMoney(item.currentValue)}</b><em>{item.quantity} owned</em></div>)}{!owned.length?<div className="vx-fin-empty"><span>No owned items available.</span></div>:null}</section>
-    </div>
-  </PageFrame>;
-}
+function SellPage(){return <PageFrame hero="sell"><VexumSell/></PageFrame>;}
 
 function FinancialPage(){return <PageFrame hero="financial"><VexumFinancial/></PageFrame>;}
 function PortfolioPage(){return <PageFrame hero="plain"><VexumPortfolio/></PageFrame>;}
-function SocialPage(){
-  return <PageFrame hero="plain"><section className="vx-page-title"><div><h1>Social</h1><p>Collectors, communities, drops, and setups.</p></div><HeroMeta text="“Collect together. Build bigger.”"/></section><Tabs items={['For You','Following','Communities','Drops','Marketplace']}/><div className="vx-social-grid"><section className="vx-panel vx-feed"><article><header><div className="vx-avatar small">J</div><div><strong>jordan</strong><span>@jordan · 2h</span></div></header><p>The setup is finally starting to feel right. Red lighting was absolutely the move.</p><div className="vx-social-photo"><Star/></div><footer>♡ 248 &nbsp;&nbsp; ◇ 31 &nbsp;&nbsp; ↗ Share</footer></article><article><header><div className="vx-avatar small">C</div><div><strong>collectorfall</strong><span>@collectorfall · 4h</span></div></header><p>Who else is hunting the Final Swing figure this week?</p></article></section><aside className="vx-panel"><PanelHead title="Trending"/>{['#MarvelLegends','#SpiderMan','#CollectionSetup','#Restock','#VEXUM'].map((name,index)=><div className="vx-trend-row" key={name}><b>{name}</b><span>{[32,28,21,18,15][index]}k posts</span></div>)}</aside></div></PageFrame>;
-}
+function SocialPage(){return <PageFrame hero="social"><VexumSocial/></PageFrame>;}
 
 export default function VexumApp({
   initialView='home',
