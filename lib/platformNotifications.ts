@@ -2,6 +2,7 @@ import type {Store} from './model';
 import {normalizeLifeData,todayKey,type LifeTask} from './life';
 import {normalizeFinancialData} from './financial';
 import {normalizePlatformState,type PlatformState} from './platform';
+import type {SellWorkspace} from './sellCloud';
 
 export type VexumNotificationCategory='Tasks'|'Radar'|'Sell'|'Financial'|'Social'|'Calendar'|'Collecting'|'Setup';
 export type VexumNotification={
@@ -79,6 +80,21 @@ export function buildVexumNotifications(store:Store,platformInput?:PlatformState
     if(a.urgency!==b.urgency)return a.urgency==='high'?-1:1;
     return a.occurredAt.localeCompare(b.occurredAt);
   });
+}
+
+export function buildSellNotifications(sell:SellWorkspace):VexumNotification[]{
+  const rows:VexumNotification[]=[];
+  for(const offer of sell.offers.filter(offer=>offer.status==='pending')){
+    const listing=sell.listings.find(item=>item.id===offer.listing_id);
+    rows.push({id:'sell-offer:'+offer.id,category:'Sell',title:'Marketplace offer waiting',detail:(listing?.title||'Listing')+' · $'+offer.amount.toFixed(2)+' · '+(offer.provider||'manual'),route:'/sell',occurredAt:offer.created_at,urgency:'normal'});
+  }
+  for(const order of sell.orders.filter(order=>['paid','preparing_shipment'].includes(order.status))){
+    rows.push({id:'sell-ship:'+order.id,category:'Sell',title:'Order needs shipping',detail:(order.buyer_label||order.provider||'Order')+' · $'+order.item_subtotal.toFixed(2),route:'/sell',occurredAt:order.created_at,urgency:'high'});
+  }
+  for(const returned of sell.returns.filter(item=>['requested','approved','in_transit'].includes(item.status))){
+    rows.push({id:'sell-return:'+returned.id,category:'Sell',title:'Return needs attention',detail:returned.reason||'Open return',route:'/sell',occurredAt:returned.opened_at,urgency:'high'});
+  }
+  return rows.toSorted((a,b)=>a.urgency===b.urgency?b.occurredAt.localeCompare(a.occurredAt):a.urgency==='high'?-1:1);
 }
 
 export function completeNotificationTask(store:Store,taskId:string):Store{
