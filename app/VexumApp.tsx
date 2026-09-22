@@ -31,6 +31,8 @@ import {
 
 type View=VexumModuleId|'settings';
 
+const ACCOUNT_REQUIRED_VIEWS=new Set<View>(['sell','social']);
+
 const ROUTES:Record<View,string>={
   home:'/',life:'/life',portfolio:'/portfolio',search:'/search',wishlist:'/wishlist',sell:'/sell',
   setup:'/setup',financial:'/financial',social:'/social',settings:'/settings'
@@ -157,12 +159,19 @@ export default function VexumApp({
   },[]);
 
   useEffect(()=>{
+    if(!workspace.ready||workspace.session||!ACCOUNT_REQUIRED_VIEWS.has(view))return;
+    setAccountOpen(true);
+  },[workspace.ready,workspace.session,view]);
+
+  useEffect(()=>{
     const onPop=()=>setView(viewFromPath(window.location.pathname));
     window.addEventListener('popstate',onPop);return()=>window.removeEventListener('popstate',onPop);
   },[]);
 
   const navigate=(next:View)=>{
-    setView(next);setProfileOpen(false);setNotificationsOpen(false);
+    setProfileOpen(false);setNotificationsOpen(false);
+    if(!workspace.session&&ACCOUNT_REQUIRED_VIEWS.has(next)){setAccountOpen(true);return}
+    setView(next);
     if(typeof window==='undefined')return;
     if(next==='search'&&window.location.pathname.startsWith('/search'))return;
     const path=ROUTES[next];
@@ -196,7 +205,7 @@ export default function VexumApp({
     <NotificationCenter open={notificationsOpen} onClose={()=>setNotificationsOpen(false)} workspace={workspace} navigate={navigate}/>
     <CommandCenter open={commandOpen} onClose={()=>setCommandOpen(false)} workspace={workspace} navigate={navigate} onQuickAdd={openQuick}/>
     <ProfileMenu open={profileOpen} onClose={()=>setProfileOpen(false)} displayName={displayName} email={workspace.session?.user.email||''} navigate={navigate} signOut={workspace.signOut} onAccount={()=>setAccountOpen(true)}/>
-    {accountOpen?<CloudPanel config={workspace.config} session={workspace.session} status={workspace.status} error={workspace.error} needsMigration={workspace.needsMigration} conflict={workspace.conflict} busy={workspace.busy} pending={workspace.pending} close={()=>setAccountOpen(false)} migrate={workspace.migrate} refresh={workspace.refresh} signOut={async()=>{await workspace.signOut();setAccountOpen(false)}} retry={workspace.retry} backup={()=>{const blob=new Blob([JSON.stringify(workspace.data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='vexum-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),500)}} recovery={()=>{const data=workspace.recovery();if(!data){window.alert('No conflict recovery backup is available on this device.');return}const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='vexum-recovery.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),500)}}/>:null}
+    {accountOpen?<CloudPanel authOnly={!workspace.session} config={workspace.config} session={workspace.session} status={workspace.status} error={workspace.error} needsMigration={workspace.needsMigration} conflict={workspace.conflict} busy={workspace.busy} pending={workspace.pending} close={()=>setAccountOpen(false)} migrate={workspace.migrate} refresh={workspace.refresh} signOut={async()=>{await workspace.signOut();setAccountOpen(false)}} retry={workspace.retry} backup={()=>{const blob=new Blob([JSON.stringify(workspace.data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='vexum-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),500)}} recovery={()=>{const data=workspace.recovery();if(!data){window.alert('No conflict recovery backup is available on this device.');return}const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='vexum-recovery.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),500)}}/>:null}
     <MfaSessionGate config={workspace.config} session={workspace.session} onSignOut={workspace.signOut} onVerified={()=>workspace.update({...workspace.data,platform:{...platform,security:{...platform.security,mfaStatus:'verified',mfaMethod:'authenticator'}}})}/>
     {workspace.ready&&onboardingPending?<VexumOnboarding onComplete={()=>setOnboardingPending(false)}/>:null}
   </div>;
