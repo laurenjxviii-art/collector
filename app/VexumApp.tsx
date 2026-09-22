@@ -18,6 +18,7 @@ import VexumSocial from './VexumSocial';
 import VexumSettings from './VexumSettings';
 import VexumOnboarding from './VexumOnboarding';
 import {useWorkspace} from '../lib/useWorkspace';
+import {challengeMfa,mfaState,verifyMfa,type CloudConfig,type Session} from '../lib/cloud';
 import {
   MODULE_GROUPS,MODULE_LABELS,normalizePlatformState,type VexumModuleId
 } from '../lib/platform';
@@ -98,6 +99,19 @@ function ProfileMenu({open,onClose,displayName,email,navigate,signOut}:{open:boo
   </div>;
 }
 
+function MfaSessionGate({config,session,onVerified,onSignOut}:{config:CloudConfig|null;session:Session|null;onVerified:()=>void;onSignOut:()=>Promise<void>}){
+  const [required,setRequired]=useState(false);const [factorId,setFactorId]=useState('');const [challengeId,setChallengeId]=useState('');const [code,setCode]=useState('');const [error,setError]=useState('');const [busy,setBusy]=useState(false);const [checked,setChecked]=useState(false);
+  useEffect(()=>{
+    if(!config?.configured||!session){setChecked(true);setRequired(false);return}
+    let alive=true;
+    (async()=>{try{const state=await mfaState(config);if(!alive)return;if(state.currentLevel==='aal1'&&state.nextLevel==='aal2'&&state.verified[0]){setRequired(true);setFactorId(state.verified[0].id);const challenge=await challengeMfa(config,state.verified[0].id);if(alive)setChallengeId(challenge.id)}}catch(err){if(alive)setError(err instanceof Error?err.message:'Unable to check MFA.')}finally{if(alive)setChecked(true)}})();
+    return()=>{alive=false};
+  },[config?.configured,session?.user.id]);
+  if(!checked||!required)return null;
+  const verify=async()=>{if(!config||!factorId||!challengeId||code.length<6)return;setBusy(true);setError('');try{await verifyMfa(config,factorId,challengeId,code);setRequired(false);onVerified()}catch(err){setError(err instanceof Error?err.message:'Unable to verify MFA.')}finally{setBusy(false)}};
+  return <div className="vxp-mfa-gate"><section><LockKeyhole/><span>SECURITY CHECK</span><h2>Verify your VEXUM account</h2><p>This account has multi-factor authentication enabled. Enter the code from your authenticator app before continuing.</p><label>Authenticator code<input autoFocus inputMode="numeric" autoComplete="one-time-code" value={code} onChange={e=>setCode(e.target.value.replace(/\D/g,'').slice(0,6))} onKeyDown={e=>{if(e.key==='Enter')void verify()}} placeholder="000000"/></label>{error?<div className="error">{error}</div>:null}<div><button onClick={()=>void onSignOut()}>Sign Out</button><button className="primary" disabled={busy||code.length<6} onClick={()=>void verify()}>{busy?'Verifying…':'Verify & Continue'}</button></div></section></div>;
+}
+
 export default function VexumApp({
   initialView='home',initialSearchQuery='',initialProductId=''
 }:{
@@ -172,6 +186,7 @@ export default function VexumApp({
     <NotificationCenter open={notificationsOpen} onClose={()=>setNotificationsOpen(false)} workspace={workspace} navigate={navigate}/>
     <CommandCenter open={commandOpen} onClose={()=>setCommandOpen(false)} workspace={workspace} navigate={navigate} onQuickAdd={openQuick}/>
     <ProfileMenu open={profileOpen} onClose={()=>setProfileOpen(false)} displayName={displayName} email={workspace.session?.user.email||''} navigate={navigate} signOut={workspace.signOut}/>
+    <MfaSessionGate config={workspace.config} session={workspace.session} onSignOut={workspace.signOut} onVerified={()=>workspace.update({...workspace.data,platform:{...platform,security:{...platform.security,mfaStatus:'verified',mfaMethod:'authenticator'}}})}/>
     {workspace.ready&&onboardingPending?<VexumOnboarding onComplete={()=>setOnboardingPending(false)}/>:null}
   </div>;
 }
