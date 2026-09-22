@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import VexumPortfolio from './VexumPortfolio';
 import VexumSearch from './search/VexumSearch';
+import VexumWishlist from './VexumWishlist';
 
 type View='home'|'portfolio'|'search'|'wishlist'|'setup'|'financial'|'social';
 type Tone='red'|'green'|'orange'|'muted';
@@ -284,53 +285,7 @@ function HomePage(){
   </PageFrame>;
 }
 
-function WishlistPage(){
-  const rows=[
-    {name:'Spider-Man Final Swing',sub:'Marvel Legends',cat:'Action Figures',priority:'Grail',target:'$120',market:'$185',msrp:'$120',stock:'In Stock',retailer:'BBTS',change:'+54%'},
-    {name:'Nike SB Dunk Low Spider-Man',sub:'Sneakers',cat:'Sneakers',priority:'High',target:'$120',market:'$148',msrp:'$120',stock:'In Stock',retailer:'StockX',change:'+23%'},
-    {name:'Pokémon 151 ETB',sub:'Scarlet & Violet',cat:'Trading Cards',priority:'Medium',target:'$90',market:'$134',msrp:'$60',stock:'In Stock',retailer:'TCGPlayer',change:'+49%'},
-    {name:'Hot Toys Spider-Man Advanced Suit 2.0',sub:'Collectibles',cat:'Action Figures',priority:'High',target:'$250',market:'$310',msrp:'$250',stock:'Preorder',retailer:'Sideshow',change:'+24%'},
-    {name:'Venom (Comic Ver.)',sub:'MAFEX',cat:'Action Figures',priority:'Low',target:'$80',market:'$92',msrp:'$75',stock:'Limited Stock',retailer:'AmiAmi',change:'+15%'},
-    {name:'PlayStation 5 Pro',sub:'Console',cat:'Gaming',priority:'Medium',target:'$650',market:'$699',msrp:'$699',stock:'In Stock',retailer:'Best Buy',change:'+8%'},
-  ];
-  return <PageFrame hero="wishlist">
-    <section className="vx-page-title"><div><h1>My Wishlist</h1><p>Track. Target. Collect.</p></div><HeroMeta/></section>
-    <Tabs items={['Overview','All Items','On Sale','Grails','Preorders','Price Drops']}/>
-    <div className="vx-wish-stats">
-      <Stat label="Total Wishlist Items" value="27" change="↑ +4 this month" tone="green"/>
-      <Stat label="Items On Sale" value="8" change="↓ 3 new deals" tone="green"/>
-      <Stat label="Grails" value="5" change="◷ 18% of wishlist" tone="muted"/>
-      <Stat label="Price Drop Opportunities" value="11" change="↓ Potential buys" tone="green"/>
-      <Stat label="Potential Savings" value="$1,342" change="◷ Based on target prices" tone="muted"/>
-    </div>
-    <div className="vx-wishlist-layout">
-      <section className="vx-panel vx-wishlist-table">
-        <div className="vx-table-headline"><h3>Wishlist Items (27)</h3><div><button>Sort: Priority</button><button><SlidersHorizontal/>Filter</button><button><Layers3/></button></div></div>
-        <div className="vx-table-cols"><span/><span>Item</span><span>Priority</span><span>Target Price</span><span>Current Market</span><span>MSRP</span><span>Availability</span><span>Alerts</span><span>Actions</span></div>
-        {rows.map((row,index)=><div className="vx-wish-row" key={row.name}>
-          <button className="vx-check"/>
-          <div className="vx-wish-item"><div className={'vx-wish-pic p'+index}><Layers3/></div><span><strong>{row.name}</strong><small>{row.sub}</small><em>{row.cat}</em></span></div>
-          <span className={'vx-priority '+row.priority.toLowerCase()}><Star/>{row.priority}</span>
-          <b>{row.target}</b><span><b>{row.market}</b><em className="tone-red">↑ {row.change}</em></span><b>{row.msrp}</b>
-          <span className={'vx-stock '+row.stock.toLowerCase().replace(' ','-')}><i/>{row.stock}<small>{row.retailer}</small></span>
-          <span className="vx-row-actions"><button><Star/></button><button><Eye/></button><button><Layers3/></button><button><ShoppingBag/></button></span>
-          <button className="vx-more">•••</button>
-        </div>)}
-      </section>
-      <aside className="vx-wishlist-side">
-        <section className="vx-panel"><PanelHead title="Hobby Budget" action="Manage"/><div className="vx-budget-number"><strong>$286 <small>/ $500</small></strong><span>57%</span></div><div className="vx-progress"><i style={{width:'57%'}}/></div><div className="vx-budget-cards"><div><b>$214</b><span>Remaining</span></div><div><b>$1,034</b><span>Planned Purchases</span></div><div><b className="tone-red">-$748</b><span>Over Budget</span></div></div></section>
-        <section className="vx-panel"><PanelHead title="Preorder Commitments" action="View All"/><div className="vx-side-total"><span>4 Active Preorders</span><b>$620</b></div>{['Hot Toys Venom','SHF Gojo (Reissue)','LEGO Rivendell'].map((name,index)=><div className="vx-preorder" key={name}><div className="vx-mini-product"><Layers3/></div><strong>{name}</strong><span>{['Q2 2025','Q1 2025','Mar 2055'][index]}</span><b>{['$280','$90','$250'][index]}</b></div>)}</section>
-        <section className="vx-panel"><PanelHead title="Grail Savings Progress" action="View All"/><div className="vx-grail"><div className="vx-mini-product red"><Layers3/></div><div><strong>Spider-Man Final Swing</strong><span>$86 / $120</span><small>Target: $120</small><div className="vx-progress"><i style={{width:'72%'}}/></div></div><b>72%</b></div></section>
-      </aside>
-    </div>
-    <section className="vx-opportunities"><PanelHead title="Recommended Opportunities" action="View All Opportunities →"/><div className="vx-op-grid">{[
-      {title:'Items Under Target (3)',sub:'Great time to buy',item:'Nike SB Dunk Low',price:'$118',pct:'-2%'},
-      {title:'In Stock Locally (2)',sub:'At nearby retailers',item:'Funko Pop! Miles Morales',price:'$14.99',pct:'-0%'},
-      {title:'Best Deals Right Now (5)',sub:'Highest savings vs target',item:'Pokémon 151 ETB',price:'$89',pct:'-1%'},
-    ].map(card=><div className="vx-op-card" key={card.title}><div><strong>{card.title}</strong><span>{card.sub}</span></div><div className="vx-mini-product"><Layers3/></div><b>{card.item}</b><strong>{card.price}</strong><em>{card.pct}</em><span>›</span></div>)}</div></section>
-  </PageFrame>;
-}
-
+function WishlistPage(){return <PageFrame hero="wishlist"><VexumWishlist/></PageFrame>;}
 function SearchPage({initialQuery='',initialProductId=''}:{initialQuery?:string;initialProductId?:string}){
   return <PageFrame hero="search"><VexumSearch initialQuery={initialQuery} initialProductId={initialProductId}/></PageFrame>;
 }
@@ -437,13 +392,23 @@ export default function VexumApp({
     if(typeof window==='undefined')return;
     if(next==='search'){
       if(!window.location.pathname.startsWith('/search'))window.history.pushState({},'','/search');
-    }else if(window.location.pathname.startsWith('/search')){
+      return;
+    }
+    if(next==='wishlist'){
+      if(window.location.pathname!=='/wishlist')window.history.pushState({},'','/wishlist');
+      return;
+    }
+    if(window.location.pathname.startsWith('/search')||window.location.pathname==='/wishlist'){
       window.history.pushState({},'','/');
     }
   };
 
   useEffect(()=>{
-    const onPop=()=>setView(window.location.pathname.startsWith('/search')?'search':'home');
+    const onPop=()=>{
+      if(window.location.pathname.startsWith('/search'))setView('search');
+      else if(window.location.pathname==='/wishlist')setView('wishlist');
+      else setView('home');
+    };
     window.addEventListener('popstate',onPop);
     return ()=>window.removeEventListener('popstate',onPop);
   },[]);

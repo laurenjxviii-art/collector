@@ -1,4 +1,5 @@
 import './vexum-reset.css';
+import './vexum-wishlist.css';
 import type {Metadata} from 'next';
 
 export const metadata:Metadata={
