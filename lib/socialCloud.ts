@@ -326,6 +326,7 @@ export async function createSocialPost(config:CloudConfig,session:Session,input:
   setup?:{setupId:string;safeSnapshot:SocialSetupTag['safe_snapshot']};
   collectionIds?:string[];
   metadata?:Record<string,unknown>;
+  imageUrl?:string;
 }){
   const rows=await supabaseRest<SocialPostRow[]>(config,session,'/rest/v1/collector_posts',{
     method:'POST',
@@ -336,7 +337,8 @@ export async function createSocialPost(config:CloudConfig,session:Session,input:
       body:input.text.trim(),
       visibility:input.visibility,
       community_id:input.communityId||null,
-      metadata:input.metadata||{}
+      metadata:input.metadata||{},
+      image_url:input.imageUrl||''
     })
   },'return=representation');
   const post=rows[0];
