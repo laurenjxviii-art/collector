@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect,useMemo,useState} from 'react';
+import {useMemo,useState} from 'react';
 import type {ReactNode} from 'react';
 import {
   AlertTriangle,Bell,CalendarDays,ChevronRight,CircleDollarSign,GripVertical,Layers3,
@@ -113,7 +113,6 @@ export default function VexumHome(){
   const [configureTarget,setConfigureTarget]=useState<HomeWidgetId|null>(null);
   const [configureValue,setConfigureValue]=useState('');
   const [resetOpen,setResetOpen]=useState(false);
-  const [dailyBriefOpen,setDailyBriefOpen]=useState(false);
 
   const owned=workspace.data.items.filter(item=>item.status==='owned'&&!item.archivedAt);
   const sold=workspace.data.items.filter(item=>item.status==='sold');
@@ -212,19 +211,6 @@ export default function VexumHome(){
     capacityRows[0]?{before:capacityRows[0].name+' is ',value:capacityRows[0].pct+'% full',after:'.',tone:capacityRows[0].pct>=90?'red':capacityRows[0].pct>=75?'orange':'muted'}:{before:'No measured Setup capacity needs attention.'}
   ];
 
-  useEffect(()=>{
-    if(!workspace.ready||!workspace.session?.user.id)return;
-    const now=new Date();
-    const localDate=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');
-    const key='vexum.dailyBrief.'+workspace.session.user.id;
-    try{
-      if(localStorage.getItem(key)!==localDate){
-        localStorage.setItem(key,localDate);
-        const timer=window.setTimeout(()=>setDailyBriefOpen(true),350);
-        return()=>window.clearTimeout(timer);
-      }
-    }catch{}
-  },[workspace.ready,workspace.session?.user.id]);
 
   const updateDashboard=(widgets:HomeWidgetLayout[])=>workspace.update({...workspace.data,homeDashboard:{version:1,widgets,updatedAt:new Date().toISOString()}});
   const hide=(id:HomeWidgetId)=>updateDashboard(state.widgets.map(widget=>widget.id===id?{...widget,visible:false}:widget));
@@ -390,13 +376,6 @@ export default function VexumHome(){
       footer={<><button className="vxui-button secondary" onClick={()=>{setConfigureTarget(null);setConfigureValue('')}}>Cancel</button><button className="vxui-button primary" onClick={saveConfigure}>Save</button></>}>
       <label className="vxh-config-field">{configureTarget==='portfolioPerformance'?'Chart interval':'Rows'}<input autoFocus value={configureValue} onChange={e=>setConfigureValue(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')saveConfigure()}} placeholder={configureTarget==='portfolioPerformance'?'30D':'5'}/></label>
       <small className="vxh-config-help">{configureTarget==='portfolioPerformance'?'Allowed: 7D, 30D, 3M, 6M, 1Y, ALL':'Allowed: 1–12 rows'}</small>
-    </VexumDialog>
-    <VexumDialog open={dailyBriefOpen} onClose={()=>setDailyBriefOpen(false)} title="WELCOME BACK." eyebrow="VEXUM" description="HERE'S YOUR VEXUM BRIEF." size="xl" className="vxh-daily-brief-dialog">
-      <div className="vxh-daily-brief">
-        <div className="vxh-daily-mark"><Sparkles/><span>DAILY INTELLIGENCE</span></div>
-        <div className="vxh-daily-lines">{briefLines.slice(0,8).map((line,index)=><p key={index} style={{animationDelay:(index*90)+'ms'}}>{line.before}{line.value?<strong className={line.tone?'tone-'+line.tone:''}>{line.value}</strong>:null}{line.after}</p>)}</div>
-        <footer><span>Shown once per local calendar day on your first authenticated VEXUM open.</span><button className="vxui-button primary" onClick={()=>setDailyBriefOpen(false)}>Enter VEXUM</button></footer>
-      </div>
     </VexumDialog>
     <VexumConfirmDialog open={resetOpen} onClose={()=>setResetOpen(false)} onConfirm={confirmReset} title="Reset Home layout?" description="This restores the official VEXUM widget layout. Your Portfolio, Financial, Wishlist, Life, and other underlying data will not be deleted." confirmLabel="Reset Layout" danger/>
   </div>;
