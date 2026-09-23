@@ -6,6 +6,7 @@ import {
   Maximize2,PackageOpen,Plus,Redo2,Ruler,Search,Tags,Undo2
 } from 'lucide-react';
 import {useWorkspace} from '../lib/useWorkspace';
+import {VexumPageSkeleton} from './VexumUi';
 import {
   EMPTY_SETUP,newSetupId,normalizeSetupData,
   setupLocationLabel,setupObjectFit,setupObjectPath,
@@ -207,7 +208,7 @@ export default function VexumSetup(){
   const filteredObjects=objects.filter(o=>!query||[o.name,o.type,setupObjectPath(setup,o.id)].join(' ').toLowerCase().includes(query.toLowerCase()));
   const filteredItems=owned.filter(item=>!query||[item.name,item.category,item.location].join(' ').toLowerCase().includes(query.toLowerCase()));
 
-  if(!workspace.ready)return <div className="vxsup-page"><div className="vxsup-loading">Loading Setup workspace…</div></div>;
+  if(!workspace.ready)return <div className="vxsup-page"><VexumPageSkeleton label="Loading Setup workspace…"/></div>;
 
   return <div className="vxsup-page">
     <section className="vxsup-title">

@@ -3,6 +3,7 @@
 import {useEffect,useState} from 'react';
 import {Link2,LockKeyhole,RefreshCw,Unplug} from 'lucide-react';
 import type {CloudConfig,Session} from '../lib/cloud';
+import {VexumConfirmDialog} from './VexumUi';
 import type {PlatformState} from '../lib/platform';
 import {
   completePlaidLinkSession,createPlaidLinkToken,disconnectPlaid,exchangePlaidPublicToken,loadPlaidSnapshot,openPlaidLink,plaidBlockedProducts,syncPlaid,
@@ -20,6 +21,7 @@ export default function PlaidConnection({config,session,platform,onSave,onMessag
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
   const [mfaTick,setMfaTick]=useState(0);
+  const [disconnectTarget,setDisconnectTarget]=useState<{itemId:string;name:string}|null>(null);
   const mfaReady=platform.security.mfaStatus==='verified';
   const connected=Boolean(snapshot?.items?.length);
   const hasError=Boolean(snapshot?.items?.some(item=>item.status==='error'||item.status==='needs_update'));
@@ -105,10 +107,11 @@ export default function PlaidConnection({config,session,platform,onSave,onMessag
     try{setSnapshot(await syncPlaid(config,itemId));onMessage('Plaid financial data synchronized.')}
     catch(err){setError(err instanceof Error?err.message:'Plaid sync failed.')}finally{setBusy(false)}
   }
-  async function disconnect(itemId:string,name:string){
-    if(!config||!confirm('Disconnect '+name+' from VEXUM? Synced Plaid data for this institution will be removed; manual Financial data will stay.'))return;
+  async function disconnect(){
+    if(!config||!disconnectTarget)return;
+    const {itemId,name}=disconnectTarget;
     setBusy(true);setError('');
-    try{setSnapshot(await disconnectPlaid(config,itemId));onMessage(name+' disconnected. Manual Financial data was not changed.')}
+    try{setSnapshot(await disconnectPlaid(config,itemId));setDisconnectTarget(null);onMessage(name+' disconnected. Manual Financial data was not changed.')}
     catch(err){setError(err instanceof Error?err.message:'Unable to disconnect institution.')}finally{setBusy(false)}
   }
 
@@ -122,10 +125,11 @@ export default function PlaidConnection({config,session,platform,onSave,onMessag
       {!mfaReady&&platform.security.requireMfaForExternalFinancial?<p><LockKeyhole/>MFA must be verified before an external financial connection can be enabled.</p>:null}
       {configured===false?<p>Plaid server credentials were not detected by this deployment.</p>:null}
       {configured&&environment?<p>Plaid environment: {environment.toUpperCase()}. Access tokens stay server-side and are encrypted before storage.</p>:null}
-      {snapshot?.items.map(item=><div className="vxt-plaid-item" key={item.item_id}><span><strong>{item.institution_name||'Connected institution'}</strong><small>{item.status==='needs_update'?'Login/update required':item.status==='error'?(item.error_code||'Connection error'):'Connected'}{item.last_synced_at?' · synced '+new Date(item.last_synced_at).toLocaleString():''}</small></span><span><button disabled={busy} onClick={()=>void begin(item.item_id)}>Reconnect</button><button disabled={busy} className="danger" onClick={()=>void disconnect(item.item_id,item.institution_name||'institution')}><Unplug/>Disconnect</button></span></div>)}
+      {snapshot?.items.map(item=><div className="vxt-plaid-item" key={item.item_id}><span><strong>{item.institution_name||'Connected institution'}</strong><small>{item.status==='needs_update'?'Login/update required':item.status==='error'?(item.error_code||'Connection error'):'Connected'}{item.last_synced_at?' · synced '+new Date(item.last_synced_at).toLocaleString():''}</small></span><span><button disabled={busy} onClick={()=>void begin(item.item_id)}>Reconnect</button><button disabled={busy} className="danger" onClick={()=>setDisconnectTarget({itemId:item.item_id,name:item.institution_name||'institution'})}><Unplug/>Disconnect</button></span></div>)}
       {blocked.map(row=><p className="vxt-plaid-product-state" key={row.itemId+row.product}><strong>{row.institution} · {row.product}</strong>: {row.state.status.toUpperCase()}{row.state.errorCode?' · '+row.state.errorCode:''}{row.state.message?' — '+row.state.message:''}</p>)}
       {error?<p className="vxt-plaid-error">{error}</p>:null}
       <p>Manual Financial records remain separate and are never deleted by Plaid connect, sync, reconnect, or disconnect.</p>
     </footer>
+    <VexumConfirmDialog open={Boolean(disconnectTarget)} onClose={()=>setDisconnectTarget(null)} onConfirm={disconnect} title="Disconnect financial institution?" description={'Disconnect '+(disconnectTarget?.name||'this institution')+' from VEXUM? Synced Plaid data for this institution will be removed, but manual Financial data will stay.'} confirmLabel="Disconnect" danger busy={busy}/>
   </div>;
 }

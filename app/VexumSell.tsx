@@ -8,6 +8,7 @@ import {
   Store,Tag,Truck,WalletCards,X
 } from 'lucide-react';
 import {useWorkspace} from '../lib/useWorkspace';
+import {VexumDialog,VexumPageSkeleton} from './VexumUi';
 import {normalizeSetupData} from '../lib/setup';
 import {normalizeFinancialData,newFinancialId} from '../lib/financial';
 import {ensureCollectorProfile} from '../lib/socialCloud';
@@ -199,7 +200,7 @@ export default function VexumSell(){
     finally{setBusy(false)}
   }
 
-  if(!workspace.ready||loading)return <div className="vxsel-page"><div className="vxsel-loading">Loading seller workspace…</div></div>;
+  if(!workspace.ready||loading)return <div className="vxsel-page"><VexumPageSkeleton label="Loading seller workspace…"/></div>;
 
   return <div className="vxsel-page">
     <section className="vxsel-title"><div><span>SELL</span><h1>Commerce Control</h1><p>One owned copy, one inventory identity, and a full path from listing through order, shipment, Financial result, and Sold Archive.</p></div><aside><strong>{session?'Normalized commerce data':'Local mode'}</strong><small>{session?'Seller economics remain private under RLS.':'Sign in to create listings and orders.'}</small></aside></section>
@@ -374,5 +375,5 @@ function ShipmentComposer({order,onClose,onSave,busy}:{order?:SellOrder;onClose:
 }
 
 function Modal({title,subtitle,onClose,children}:{title:string;subtitle:string;onClose:()=>void;children:ReactNode}){
-  return <div className="vxsel-modal-backdrop" onMouseDown={e=>{if(e.currentTarget===e.target)onClose()}}><section className="vxsel-modal"><header><div><strong>{title}</strong><span>{subtitle}</span></div><button onClick={onClose}><X/></button></header>{children}</section></div>;
+  return <VexumDialog open onClose={onClose} title={title} description={subtitle} size="lg" className="vxsel-shared-dialog">{children}</VexumDialog>;
 }

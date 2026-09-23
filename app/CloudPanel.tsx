@@ -3,6 +3,7 @@ import {createPortal} from 'react-dom';
 import {useEffect,useRef,useState} from 'react';
 import {X,Cloud,RefreshCw,Download,LogOut,LockKeyhole,Smartphone,Eye,EyeOff,KeyRound,Mail} from 'lucide-react';
 import {CloudConfig,Session,authCapabilities,signInPassword,signUpPassword,sendPasswordReset,startOAuth,updatePassword} from '../lib/cloud';
+import {requestVexumConfirm} from './VexumUi';
 
 export default function CloudPanel({authOnly=false,authReason='',config,session,status,error,needsMigration,conflict,busy,pending,close,migrate,refresh,signOut,retry,backup,recovery}:{authOnly?:boolean;authReason?:string;config:CloudConfig|null;session:Session|null;status:string;error:string;needsMigration:boolean;conflict:boolean;busy:boolean;pending:boolean;close:()=>void;migrate:(local:boolean)=>Promise<void>;refresh:()=>Promise<void>;signOut:()=>Promise<void>;retry:()=>void;backup:()=>void;recovery:()=>void}){
   const [sending,setSending]=useState(false),[message,setMessage]=useState(''),[create,setCreate]=useState(false),[showPassword,setShowPassword]=useState(false),[resetMode,setResetMode]=useState(false),[recoveryMode,setRecoveryMode]=useState(Boolean(session?.recovery)),[portalReady,setPortalReady]=useState(false);
@@ -67,6 +68,7 @@ export default function CloudPanel({authOnly=false,authReason='',config,session,
   }
 
   const authView=authOnly&&!session;
+  const messageIsError=/match|invalid|unable|error|already has|failed|wrong|expired|not configured/i.test(message);
   const authDescription=authReason
     ? `Sign in to access ${authReason}. Your VEXUM data stays synced across your devices.`
     : 'Sign in to keep your VEXUM data synced across your devices.';
@@ -85,15 +87,16 @@ export default function CloudPanel({authOnly=false,authReason='',config,session,
           <h3>Set a new password</h3><p>Choose the password you want to use for VEXUM.</p>
           <label>New password<div className="password-field"><input ref={firstInput} name="password" type={showPassword?'text':'password'} autoComplete="new-password" minLength={6} required/><button type="button" className="password-toggle" aria-label={showPassword?'Hide password':'Show password'} onClick={()=>setShowPassword(!showPassword)}>{showPassword?<EyeOff size={16}/>:<Eye size={16}/>}</button></div></label>
           <label>Confirm password<input name="confirmPassword" type={showPassword?'text':'password'} autoComplete="new-password" minLength={6} required/></label>
-          <button className="primary auth-submit" disabled={sending}><KeyRound size={15}/> {sending?'Saving…':'Save new password'}</button>{message&&<p role="status" className="auth-message">{message}</p>}
+          <button className="primary auth-submit" disabled={sending}><KeyRound size={15}/> {sending?'Saving…':'Save new password'}</button>{message&&<p role={messageIsError?'alert':'status'} className={'auth-message '+(messageIsError?'error':'success')}>{message}</p>}
         </form>
         :!session&&resetMode?<form className="auth-form auth-reset" onSubmit={async e=>{e.preventDefault();await requestReset(e.currentTarget)}}>
           <div className="auth-symbol"><KeyRound/></div><div className="auth-intro"><h3 id="vexum-auth-title">Reset password</h3><p>Enter your email and VEXUM will send you a recovery link.</p></div>
           <label className="auth-field"><span><Mail/> Email</span><input ref={firstInput} name="email" type="email" autoComplete="email" required placeholder="Email"/></label>
           <button className="primary auth-submit" disabled={sending}>{sending?'Sending…':'Send reset link'}</button>
-          <button type="button" className="text-button auth-switch" onClick={()=>{setResetMode(false);setMessage('')}}>Back to sign in</button>{message&&<p role="status" className="auth-message">{message}</p>}
+          <button type="button" className="text-button auth-switch" onClick={()=>{setResetMode(false);setMessage('')}}>Back to sign in</button>{message&&<p role={messageIsError?'alert':'status'} className={'auth-message '+(messageIsError?'error':'success')}>{message}</p>}
         </form>
         :!session?<form className="auth-form" onSubmit={async e=>{e.preventDefault();await authenticate(e.currentTarget)}}>
+          {create?<div className="auth-step">ACCOUNT SETUP · STEP 1 OF 3</div>:null}
           <div className="auth-symbol"><LockKeyhole/></div>
           <div className="auth-intro">
             <h3 id="vexum-auth-title">{create?'Create your account':'Sign in with email'}</h3>
@@ -106,14 +109,14 @@ export default function CloudPanel({authOnly=false,authReason='',config,session,
           <button className="primary auth-submit auth-main-submit" disabled={sending}>{sending?'Working…':create?'Create Account':'Get Started'}</button>
           <div className="auth-divider"><span>{create?'or sign up with':'or sign in with'}</span></div>
           <div className="auth-provider-row">
-            <button type="button" className="auth-provider-icon-button google" aria-label="Sign in with Google" disabled={!providers.google||sending} title={providers.google?'Sign in with Google':'Google sign-in is not enabled yet'} onClick={()=>beginSocialAuth('google')}><span aria-hidden="true">G</span></button>
-            <button type="button" className="auth-provider-icon-button apple" aria-label="Sign in with Apple" disabled={!providers.apple||sending} title={providers.apple?'Sign in with Apple':'Apple sign-in is not enabled yet'} onClick={()=>beginSocialAuth('apple')}><span aria-hidden="true"></span></button>
+            <button type="button" className="auth-provider-button google" disabled={!providers.google||sending} title={providers.google?'Continue with Google':'Google sign-in is not enabled yet'} onClick={()=>beginSocialAuth('google')}><span className="provider-icon" aria-hidden="true">G</span><strong>Continue with Google</strong><i aria-hidden="true"/></button>
+            <button type="button" className="auth-provider-button apple" disabled={!providers.apple||sending} title={providers.apple?'Continue with Apple':'Apple sign-in is not enabled yet'} onClick={()=>beginSocialAuth('apple')}><span className="provider-icon" aria-hidden="true"></span><strong>Continue with Apple</strong><i aria-hidden="true"/></button>
           </div>
           <div className="auth-account-switch">{create?'Already have an account?':'New to VEXUM?'} <button type="button" onClick={()=>{setCreate(!create);setResetMode(false);setMessage('')}}>{create?'Sign in':'Create account'}</button></div>
           {(!providers.google||!providers.apple)?<p className="auth-provider-note">Social sign-in activates automatically when its Supabase provider is configured.</p>:null}
-          {message&&<p role="status" className="auth-message">{message}</p>}
+          {message&&<p role={messageIsError?'alert':'status'} className={'auth-message '+(messageIsError?'error':'success')}>{message}</p>}
         </form>
-        :<><p className="account-email">{session.user.email||'Signed in'}</p><p className="sync-explainer"><b>Cloud connected.</b> Edits upload automatically and this device checks for newer cloud changes every 30 seconds.</p>{needsMigration?<div className="migration-box"><h3>Finishing cloud setup</h3><p>Your local collection can be copied into the cloud now.</p><button className="primary" disabled={busy} onClick={()=>migrate(true)}>Copy this device’s collection</button></div>:<><button className="secondary" disabled={busy||status==='Syncing…'} onClick={async()=>{if(pending&&!confirm('Load the latest cloud version? Your current edits will be kept in a local recovery backup.'))return;await refresh()}}><RefreshCw size={14}/> {busy?'Loading…':'Load latest cloud version'}</button>{pending&&!conflict&&<button className="text-button" disabled={busy} onClick={retry}>Retry sync</button>}{conflict&&<p>Download your edits as a backup before loading the cloud version.</p>}</>}<button className="secondary backup-button" onClick={backup}><Download size={14}/> Download collection backup</button><button className="text-button" onClick={recovery}>Download latest conflict recovery</button><button className="text-button" disabled={busy||status==='Syncing…'} onClick={signOut}><LogOut size={14}/> Sign out on this device</button></>}
+        :<><p className="account-email">{session.user.email||'Signed in'}</p><p className="sync-explainer"><b>Cloud connected.</b> Edits upload automatically and this device checks for newer cloud changes every 30 seconds.</p>{needsMigration?<div className="migration-box"><h3>Finishing cloud setup</h3><p>Your local collection can be copied into the cloud now.</p><button className="primary" disabled={busy} onClick={()=>migrate(true)}>Copy this device’s collection</button></div>:<><button className="secondary" disabled={busy||status==='Syncing…'} onClick={async()=>{if(pending){const approved=await requestVexumConfirm({title:'Load latest cloud version?',description:'Your current edits will be kept in a local recovery backup before VEXUM loads the latest cloud version.',confirmLabel:'Load Latest'});if(!approved)return}await refresh()}}><RefreshCw size={14}/> {busy?'Loading…':'Load latest cloud version'}</button>{pending&&!conflict&&<button className="text-button" disabled={busy} onClick={retry}>Retry sync</button>}{conflict&&<p>Download your edits as a backup before loading the cloud version.</p>}</>}<button className="secondary backup-button" onClick={backup}><Download size={14}/> Download collection backup</button><button className="text-button" onClick={recovery}>Download latest conflict recovery</button><button className="text-button" disabled={busy||status==='Syncing…'} onClick={signOut}><LogOut size={14}/> Sign out on this device</button></>}
         {!authView?<div className="iphone-tip"><Smartphone size={17}/><div><b>Use on iPhone</b><p>Open the same VEXUM address in Safari, sign in with the same email and password, then Share → Add to Home Screen.</p></div></div>:null}
       </div>
     </section>

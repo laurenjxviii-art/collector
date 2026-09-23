@@ -6,6 +6,7 @@ import {
   CreditCard,Landmark,Link2,LockKeyhole,Plus,Receipt,ShieldCheck,Target,WalletCards
 } from 'lucide-react';
 import {useWorkspace} from '../lib/useWorkspace';
+import {VexumPageSkeleton} from './VexumUi';
 import {
   EMPTY_FINANCIAL,financialAccountIsDebt,financialCash,financialDebt,financialNetWorth,
   incomeTotal,expenseTotal,newFinancialId,normalizeFinancialData,
@@ -145,7 +146,7 @@ export default function VexumFinancial(){
     ['Active preorder balance',exactMoney(preorderTotal)]
   ],[monthIncome,monthExpenses,hobbySpend,collectionValue,costBasis,preorderTotal]);
 
-  if(!workspace.ready)return <div className="vxf-page"><div className="vxf-loading">Loading Financial workspace…</div></div>;
+  if(!workspace.ready)return <div className="vxf-page"><VexumPageSkeleton label="Loading Financial workspace…"/></div>;
 
   return <div className="vxf-page">
     <section className="vxf-title">

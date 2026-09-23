@@ -10,6 +10,7 @@ import {emptyLifeData,newLifeId,normalizeLifeData,parseNaturalTask,todayKey,type
 import {normalizeFinancialData,newFinancialId} from '../../lib/financial';
 import {buildSellNotifications,buildVexumNotifications,completeNotificationTask,type VexumNotification,type VexumNotificationCategory} from '../../lib/platformNotifications';
 import {loadSellWorkspace} from '../../lib/sellCloud';
+import {VexumDialog,pushVexumToast,requestVexumPrompt} from '../VexumUi';
 import {normalizePlatformState,type PlatformState,type VexumModuleId} from '../../lib/platform';
 
 type Workspace=ReturnType<typeof useWorkspace>;
@@ -48,7 +49,7 @@ export function QuickAddPanel({open,onClose,workspace,navigate,initialType}:{ope
   });
   const activeSelected=selected&&available.some(item=>item.id===selected)?selected:undefined;
 
-  const saveSimple=()=>{
+  const saveSimple=async()=>{
     const value=text.trim();if(!value)return;
     const now=new Date().toISOString();
     if(activeSelected==='task'||activeSelected==='reminder'){
@@ -77,7 +78,7 @@ export function QuickAddPanel({open,onClose,workspace,navigate,initialType}:{ope
       workspace.update({...workspace.data,life:{...life,captures:[{id:newLifeId('capture'),text:value,createdAt:now,organized:false},...life.captures]}});onClose();navigate('life');return;
     }
     if(activeSelected==='expense'){
-      const amount=Number(window.prompt('Expense amount','0')||0);if(!(amount>0))return;
+      const raw=await requestVexumPrompt({title:'Expense amount',description:'Enter the amount for '+value+'.',label:'Amount',defaultValue:'',placeholder:'0.00',inputType:'number',confirmLabel:'Add Expense'});if(raw===null)return;const amount=Number(raw);if(!(amount>0)){pushVexumToast({title:'Enter a valid amount.',kind:'warning'});return}
       const financial=normalizeFinancialData(workspace.data.financial);
       workspace.update({...workspace.data,financial:{...financial,transactions:[{id:newFinancialId('tx'),date:todayKey(),direction:'expense',amount,merchant:value,category:'Shopping',subcategory:'',description:'Quick Add expense',isRecurring:false,isHobby:false,createdAt:now,updatedAt:now},...financial.transactions]}});
       onClose();navigate('financial');return;
@@ -91,9 +92,9 @@ export function QuickAddPanel({open,onClose,workspace,navigate,initialType}:{ope
     setSelected(type);setText('');
   };
 
-  return <div className="vxp-platform-backdrop" onMouseDown={e=>e.currentTarget===e.target&&onClose()}><section className="vxp-quick-panel" role="dialog" aria-modal="true" aria-labelledby="vexum-quick-title"><header><div><span>QUICK ADD</span><h2 id="vexum-quick-title">{activeSelected?QUICK.find(x=>x.id===activeSelected)?.label:'What do you want to add?'}</h2></div><button aria-label="Close Quick Add" onClick={onClose}><X/></button></header>
-    {!activeSelected?<div className="vxp-quick-grid">{available.map(item=><button key={item.id} onClick={()=>choose(item.id)}>{item.icon}<span><strong>{item.label}</strong><small>{item.description}</small></span><ChevronRight/></button>)}</div>:<div className="vxp-quick-entry"><label>{activeSelected==='expense'?'What did you spend on?':activeSelected==='note'?'Capture note':activeSelected==='event'?'Describe the event':activeSelected==='workout'?'Workout plan name':activeSelected==='habit'?'Habit name':activeSelected==='goal'?'Goal':'Describe the task'}<input autoFocus value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')saveSimple()}} placeholder={activeSelected==='task'||activeSelected==='reminder'?'pay electric bill friday at 8 pm':'Type and press Enter…'}/></label><p>{activeSelected==='task'||activeSelected==='reminder'||activeSelected==='event'?'VEXUM parses common dates, weekdays, and times locally. You can refine every field inside Life afterward.':'This creates the minimum viable record so capture stays fast.'}</p><footer><button onClick={()=>setSelected(undefined)}>Back</button><button className="primary" disabled={!text.trim()} onClick={saveSimple}>Add</button></footer></div>}
-  </section></div>;
+  return <VexumDialog open onClose={onClose} title={activeSelected?QUICK.find(x=>x.id===activeSelected)?.label||'Quick Add':'What do you want to add?'} eyebrow="QUICK ADD" size="lg" className="vxp-quick-shared">
+    {!activeSelected?<div className="vxp-quick-grid">{available.map(item=><button key={item.id} onClick={()=>choose(item.id)}>{item.icon}<span><strong>{item.label}</strong><small>{item.description}</small></span><ChevronRight/></button>)}</div>:<div className="vxp-quick-entry"><label>{activeSelected==='expense'?'What did you spend on?':activeSelected==='note'?'Capture note':activeSelected==='event'?'Describe the event':activeSelected==='workout'?'Workout plan name':activeSelected==='habit'?'Habit name':activeSelected==='goal'?'Goal':'Describe the task'}<input autoFocus value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')void saveSimple()}} placeholder={activeSelected==='task'||activeSelected==='reminder'?'pay electric bill friday at 8 pm':'Type and press Enter…'}/></label><p>{activeSelected==='task'||activeSelected==='reminder'||activeSelected==='event'?'VEXUM parses common dates, weekdays, and times locally. You can refine every field inside Life afterward.':'This creates the minimum viable record so capture stays fast.'}</p><footer><button onClick={()=>setSelected(undefined)}>Back</button><button className="primary" disabled={!text.trim()} onClick={()=>void saveSimple()}>Add</button></footer></div>}
+  </VexumDialog>;
 }
 
 export function NotificationCenter({open,onClose,workspace,navigate}:{open:boolean;onClose:()=>void;workspace:Workspace;navigate:Navigate}){
@@ -155,7 +156,9 @@ export function CommandCenter({open,onClose,workspace,navigate,onQuickAdd}:{open
   const matches=!clean?results.slice(0,8):results.filter(row=>(row.title+' '+row.detail+' '+row.keywords+' '+row.kind).toLowerCase().includes(clean)).slice(0,12);
 
   const go=(route:VexumModuleId|'settings')=>{setQuery('');onClose();navigate(route)};
-  return <div className="vxp-platform-backdrop command" onMouseDown={e=>e.currentTarget===e.target&&onClose()}><section className="vxp-command" role="dialog" aria-modal="true" aria-label="VEXUM command center"><header><Search/><input aria-label="Search VEXUM or type a command" autoFocus value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search VEXUM or type a command…"/><kbd aria-hidden="true">ESC</kbd></header><div className="vxp-command-body"><section><span>COMMANDS</span>{commands.map(command=><button key={command.label} onClick={()=>'type'in command&&command.type?(onClose(),onQuickAdd(command.type)):go(command.route!)}><Sparkles/><strong>{command.label}</strong><ChevronRight/></button>)}</section><section><span>{clean?'RESULTS':'RECENT / RELEVANT'}</span>{matches.map(row=><button key={row.id} onClick={()=>go(row.route)}><ResultIcon kind={row.kind}/><span><strong>{row.title}</strong><small>{row.kind} · {row.detail}</small></span><ChevronRight/></button>)}{!matches.length?<div className="vxp-panel-empty compact">Nothing in your VEXUM workspace matches “{query}”.</div>:null}</section></div></section></div>;
+  return <VexumDialog open onClose={onClose} title="VEXUM command center" size="lg" className="vxp-command-shared" hideHeader>
+    <div className="vxp-command"><header><Search/><input aria-label="Search VEXUM or type a command" autoFocus value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search VEXUM or type a command…"/><kbd aria-hidden="true">ESC</kbd></header><div className="vxp-command-body"><section><span>COMMANDS</span>{commands.map(command=><button key={command.label} onClick={()=>'type'in command&&command.type?(onClose(),onQuickAdd(command.type)):go(command.route!)}><Sparkles/><strong>{command.label}</strong><ChevronRight/></button>)}</section><section><span>{clean?'RESULTS':'RECENT / RELEVANT'}</span>{matches.map(row=><button key={row.id} onClick={()=>go(row.route)}><ResultIcon kind={row.kind}/><span><strong>{row.title}</strong><small>{row.kind} · {row.detail}</small></span><ChevronRight/></button>)}{!matches.length?<div className="vxp-panel-empty compact">Nothing in your VEXUM workspace matches “{query}”.</div>:null}</section></div></div>
+  </VexumDialog>;
 }
 
 function ResultIcon({kind}:{kind:string}){if(kind==='Task')return <ListTodo/>;if(kind==='Event')return <CalendarDays/>;if(kind==='Goal')return <Goal/>;if(kind==='Workout')return <Dumbbell/>;if(kind==='Transaction')return <CircleDollarSign/>;return <Layers3/>}

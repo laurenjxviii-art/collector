@@ -10,6 +10,7 @@ import {DEMO_PRODUCTS} from '../lib/search/demo';
 import type {NormalizedProduct,UserProductRelationship} from '../lib/search/types';
 import type {Item} from '../lib/model';
 import {useWorkspace} from '../lib/useWorkspace';
+import {VexumDialog} from './VexumUi';
 import {
   WISHLIST_ALERT_KEYS,WISHLIST_ALERT_LABELS,alertDefaults,conditionOptions,daysTracked,grailProgress,
   newWishlistRecord,normalizeWishlistRecord,preorderCommitment,snapshotFromProduct,wishlistEvent,
@@ -989,8 +990,7 @@ function EditModal({entry,onClose,onSave}:{entry:WishlistEntry;onClose:()=>void;
     onSave(next);
   }
 
-  return <div className="vxw-modal-backdrop"><div className="vxw-modal vxw-edit-modal">
-    <header><div><span>EDIT WISHLIST ITEM</span><h2>{entry.name}</h2><p>Product identity stays canonical; these fields describe how you want to acquire it.</p></div><button onClick={onClose}><X/></button></header>
+  return <VexumDialog open onClose={onClose} title={entry.name} eyebrow="EDIT WISHLIST ITEM" description="Product identity stays canonical; these fields describe how you want to acquire it." size="lg" className="vxw-shared-dialog vxw-edit-modal">
     <div className="vxw-modal-scroll">
       <section className="vxw-form-section"><h3>Acquisition</h3><div className="vxw-form-grid three">
         <label>Priority<select value={priority} onChange={e=>setPriority(e.target.value as WishlistPriority)}><option>Low</option><option>Medium</option><option>High</option><option>Grail</option></select></label>
@@ -1022,7 +1022,7 @@ function EditModal({entry,onClose,onSave}:{entry:WishlistEntry;onClose:()=>void;
       </div>:null}</section>
     </div>
     <footer><button onClick={onClose}>Cancel</button><button className="vxw-primary" onClick={submit}><Check/>Save Changes</button></footer>
-  </div></div>;
+  </VexumDialog>;
 }
 
 function PlanModal({entry,onClose,onSave}:{entry:WishlistEntry;onClose:()=>void;onSave:(month:string,deadline:string,quantity:number)=>void}){
@@ -1031,7 +1031,7 @@ function PlanModal({entry,onClose,onSave}:{entry:WishlistEntry;onClose:()=>void;
   const [deadline,setDeadline]=useState(entry.record.deadline||'');
   const [quantity,setQuantity]=useState(entry.record.quantityWanted);
   const planned=mode==='Someday'?'Someday':mode==='This Month'?new Date().toISOString().slice(0,7):mode==='Next Month'?nextMonth():mode==='Specific'?month:'';
-  return <div className="vxw-modal-backdrop"><div className="vxw-modal small"><header><div><span>PLAN PURCHASE</span><h2>{entry.name}</h2><p>Planning timing is not a purchase recommendation.</p></div><button onClick={onClose}><X/></button></header><div className="vxw-modal-scroll"><div className="vxw-form-grid"><label>Plan<select value={mode} onChange={e=>setMode(e.target.value)}><option>This Month</option><option>Next Month</option><option>Specific</option><option>Someday</option><option>No Plan</option></select></label>{mode==='Specific'?<label>Month<input type="month" value={month} onChange={e=>setMonth(e.target.value)}/></label>:null}<label>Quantity<input type="number" min="1" value={quantity} onChange={e=>setQuantity(Math.max(1,Number(e.target.value)))}/></label><label>Deadline<input type="date" value={deadline} onChange={e=>setDeadline(e.target.value)}/></label></div><section className="vxw-provider-state unavailable compact"><WalletCards/><div><strong>Financial impact requires real Financial data</strong><p>The plan is saved now and can be consumed by Financial forecasting without duplicating the commitment.</p></div></section></div><footer><button onClick={onClose}>Cancel</button><button className="vxw-primary" onClick={()=>onSave(planned,deadline,quantity)}><CalendarDays/>Save Plan</button></footer></div></div>;
+  return <VexumDialog open onClose={onClose} title={entry.name} eyebrow="PLAN PURCHASE" description="Planning timing is not a purchase recommendation." size="sm" className="vxw-shared-dialog"><div className="vxw-modal-scroll"><div className="vxw-form-grid"><label>Plan<select value={mode} onChange={e=>setMode(e.target.value)}><option>This Month</option><option>Next Month</option><option>Specific</option><option>Someday</option><option>No Plan</option></select></label>{mode==='Specific'?<label>Month<input type="month" value={month} onChange={e=>setMonth(e.target.value)}/></label>:null}<label>Quantity<input type="number" min="1" value={quantity} onChange={e=>setQuantity(Math.max(1,Number(e.target.value)))}/></label><label>Deadline<input type="date" value={deadline} onChange={e=>setDeadline(e.target.value)}/></label></div><section className="vxw-provider-state unavailable compact"><WalletCards/><div><strong>Financial impact requires real Financial data</strong><p>The plan is saved now and can be consumed by Financial forecasting without duplicating the commitment.</p></div></section></div><footer><button onClick={onClose}>Cancel</button><button className="vxw-primary" onClick={()=>onSave(planned,deadline,quantity)}><CalendarDays/>Save Plan</button></footer></VexumDialog>;
 }
 
 function PurchaseModal({entry,busy,onClose,onConfirm}:{entry:WishlistEntry;busy:boolean;onClose:()=>void;onConfirm:(purchase:NonNullable<WishlistRecord['purchase']>)=>void}){
@@ -1045,13 +1045,13 @@ function PurchaseModal({entry,busy,onClose,onConfirm}:{entry:WishlistEntry;busy:
   const [receipt,setReceipt]=useState('');
   const [delivery,setDelivery]=useState('');
   const unit=Math.max(0,Number(price)||0),ship=Math.max(0,Number(shipping)||0),taxValue=Math.max(0,Number(tax)||0),total=unit*quantity+ship+taxValue;
-  return <div className="vxw-modal-backdrop"><div className="vxw-modal small"><header><div><span>MARK PURCHASED</span><h2>{entry.name}</h2><p>Creates/updates the Portfolio item, archives Wishlist history, and stops irrelevant alerts.</p></div><button onClick={onClose}><X/></button></header><div className="vxw-modal-scroll">{entry.ownedQuantity>0?<div className="vxw-purchase-warning"><AlertTriangle/><span>You already own {entry.ownedQuantity}. Confirming adds another owned copy.</span></div>:null}<div className="vxw-form-grid">
+  return <VexumDialog open onClose={onClose} title={entry.name} eyebrow="MARK PURCHASED" description="Creates or updates the Portfolio item, archives Wishlist history, and stops irrelevant alerts." size="sm" className="vxw-shared-dialog"><div className="vxw-modal-scroll">{entry.ownedQuantity>0?<div className="vxw-purchase-warning"><AlertTriangle/><span>You already own {entry.ownedQuantity}. Confirming adds another owned copy.</span></div>:null}<div className="vxw-form-grid">
     <label>Unit price paid<input inputMode="decimal" value={price} onChange={e=>setPrice(e.target.value)}/></label><label>Quantity<input type="number" min="1" value={quantity} onChange={e=>setQuantity(Math.max(1,Number(e.target.value)))}/></label>
     <label>Shipping<input inputMode="decimal" value={shipping} onChange={e=>setShipping(e.target.value)}/></label><label>Tax<input inputMode="decimal" value={tax} onChange={e=>setTax(e.target.value)}/></label>
     <label>Retailer / seller<input value={retailer} onChange={e=>setRetailer(e.target.value)}/></label><label>Purchase date<input type="date" value={date} onChange={e=>setDate(e.target.value)}/></label>
     <label>Condition<select value={condition} onChange={e=>setCondition(e.target.value)}>{conditionOptions(entry.category).map(value=><option key={value}>{value}</option>)}</select></label><label>Expected delivery<input type="date" value={delivery} onChange={e=>setDelivery(e.target.value)}/></label>
     <label className="wide">Receipt / order reference<input value={receipt} onChange={e=>setReceipt(e.target.value)} placeholder="Optional URL or order reference"/></label>
-  </div><div className="vxw-purchase-total"><span>Estimated recorded total</span><strong>{money(total)}</strong></div></div><footer><button onClick={onClose}>Cancel</button><button className="vxw-primary" disabled={busy} onClick={()=>onConfirm({retailer:retailer||undefined,unitPrice:unit,shipping:ship,tax:taxValue,total,purchaseDate:date,condition,quantity,receipt:receipt||undefined,expectedDelivery:delivery||undefined})}><PackageCheck/>{busy?'Saving…':'Mark Purchased'}</button></footer></div></div>;
+  </div><div className="vxw-purchase-total"><span>Estimated recorded total</span><strong>{money(total)}</strong></div></div><footer><button onClick={onClose}>Cancel</button><button className="vxw-primary" disabled={busy} onClick={()=>onConfirm({retailer:retailer||undefined,unitPrice:unit,shipping:ship,tax:taxValue,total,purchaseDate:date,condition,quantity,receipt:receipt||undefined,expectedDelivery:delivery||undefined})}><PackageCheck/>{busy?'Saving…':'Mark Purchased'}</button></footer></VexumDialog>;
 }
 
 function BulkModal({entries,onClose,onApply}:{entries:WishlistEntry[];onClose:()=>void;onApply:(patch:{priority?:WishlistPriority;plannedMonth?:string;condition?:string;retailer?:string;alerts?:'on'|'off';archive?:boolean})=>void}){
@@ -1062,18 +1062,18 @@ function BulkModal({entries,onClose,onApply}:{entries:WishlistEntry[];onClose:()
   const [alerts,setAlerts]=useState('');
   const [archive,setArchive]=useState(false);
   const options=Array.from(new Set(entries.flatMap(entry=>conditionOptions(entry.category))));
-  return <div className="vxw-modal-backdrop"><div className="vxw-modal small"><header><div><span>BULK EDIT</span><h2>{entries.length} Wishlist items</h2><p>Blank fields are left unchanged.</p></div><button onClick={onClose}><X/></button></header><div className="vxw-modal-scroll"><div className="vxw-form-grid">
+  return <VexumDialog open onClose={onClose} title={entries.length+' Wishlist items'} eyebrow="BULK EDIT" description="Blank fields are left unchanged." size="sm" className="vxw-shared-dialog"><div className="vxw-modal-scroll"><div className="vxw-form-grid">
     <label>Priority<select value={priority} onChange={e=>setPriority(e.target.value)}><option value="">No change</option><option>Low</option><option>Medium</option><option>High</option><option>Grail</option></select></label>
     <label>Planned month<input type="month" value={plan} onChange={e=>setPlan(e.target.value)}/></label>
     <label>Condition<select value={condition} onChange={e=>setCondition(e.target.value)}><option value="">No change</option>{options.map(value=><option key={value}>{value}</option>)}</select></label>
     <label>Add retailer<input value={retailer} onChange={e=>setRetailer(e.target.value)} placeholder="Optional"/></label>
     <label>Alerts<select value={alerts} onChange={e=>setAlerts(e.target.value)}><option value="">No change</option><option value="on">Priority defaults on</option><option value="off">All off</option></select></label>
     <label className="vxw-check-filter"><input type="checkbox" checked={archive} onChange={e=>setArchive(e.target.checked)}/>Archive selected</label>
-  </div></div><footer><button onClick={onClose}>Cancel</button><button className="vxw-primary" onClick={()=>onApply({priority:priority as WishlistPriority||undefined,plannedMonth:plan||undefined,condition:condition||undefined,retailer:retailer||undefined,alerts:alerts as 'on'|'off'||undefined,archive})}><Check/>Apply to {entries.length}</button></footer></div></div>;
+  </div></div><footer><button onClick={onClose}>Cancel</button><button className="vxw-primary" onClick={()=>onApply({priority:priority as WishlistPriority||undefined,plannedMonth:plan||undefined,condition:condition||undefined,retailer:retailer||undefined,alerts:alerts as 'on'|'off'||undefined,archive})}><Check/>Apply to {entries.length}</button></footer></VexumDialog>;
 }
 
 function BudgetModal({value,onClose,onSave}:{value?:number;onClose:()=>void;onSave:(value:number)=>void}){
   const [budget,setBudget]=useState(value===undefined?'':String(value));
   const parsed=Math.max(0,Number(budget)||0);
-  return <div className="vxw-modal-backdrop"><div className="vxw-modal small"><header><div><span>FINANCIAL CONTEXT</span><h2>Monthly Hobby Budget</h2><p>This is a target for context, not a spending restriction.</p></div><button onClick={onClose}><X/></button></header><div className="vxw-modal-scroll"><div className="vxw-form-grid"><label className="wide">Monthly hobby budget<input inputMode="decimal" value={budget} onChange={e=>setBudget(e.target.value)} placeholder="500"/></label></div><section className="vxw-provider-state saved compact"><WalletCards/><div><strong>Workspace-backed target</strong><p>VEXUM compares this target with purchase prices recorded in Portfolio plus Wishlist/preorder commitments. It does not infer bank balances.</p></div></section></div><footer><button onClick={onClose}>Cancel</button><button className="vxw-primary" onClick={()=>onSave(parsed)}><Check/>Save Budget</button></footer></div></div>;
+  return <VexumDialog open onClose={onClose} title="Monthly Hobby Budget" eyebrow="FINANCIAL CONTEXT" description="This is a target for context, not a spending restriction." size="sm" className="vxw-shared-dialog"><div className="vxw-modal-scroll"><div className="vxw-form-grid"><label className="wide">Monthly hobby budget<input inputMode="decimal" value={budget} onChange={e=>setBudget(e.target.value)} placeholder="500"/></label></div><section className="vxw-provider-state saved compact"><WalletCards/><div><strong>Workspace-backed target</strong><p>VEXUM compares this target with purchase prices recorded in Portfolio plus Wishlist/preorder commitments. It does not infer bank balances.</p></div></section></div><footer><button onClick={onClose}>Cancel</button><button className="vxw-primary" onClick={()=>onSave(parsed)}><Check/>Save Budget</button></footer></VexumDialog>;
 }

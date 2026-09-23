@@ -15,6 +15,7 @@ import {normalizePortfolioPreferences} from '../lib/portfolio';
 import {habitMomentum,normalizeLifeData,todayKey} from '../lib/life';
 import {normalizePlatformState,type VexumModuleId} from '../lib/platform';
 import type {Collection,Item,Store} from '../lib/model';
+import {VexumBadge,VexumConfirmDialog,VexumDialog,pushVexumToast} from './VexumUi';
 
 type Tone='green'|'red'|'orange'|'muted';
 
@@ -45,7 +46,7 @@ function DashboardChart({values}:{values:number[]}){
 }
 
 function SourceBadge({source}:{source:'live'|'demo'|'mixed'}){
-  return <span className={'vxh-source '+source}>{source==='live'?'LIVE':source==='mixed'?'MIXED':'DEMO'}</span>;
+  return <VexumBadge className="vxh-source" tone={source==='live'?'success':source==='demo'?'warning':'danger'}>{source==='live'?'LIVE':source==='mixed'?'MIXED':'DEMO'}</VexumBadge>;
 }
 
 function WidgetShell({layout,editing,dragged,onDragStart,onDrop,onHide,onResize,onConfigure,menuFor,setMenuFor,source,children}:{
@@ -104,6 +105,9 @@ export default function VexumHome({onQuickAdd}:{onQuickAdd?:()=>void}={}){
   const [dragged,setDragged]=useState<HomeWidgetId|null>(null);
   const [menuFor,setMenuFor]=useState<HomeWidgetId|null>(null);
   const [libraryOpen,setLibraryOpen]=useState(false);
+  const [configureTarget,setConfigureTarget]=useState<HomeWidgetId|null>(null);
+  const [configureValue,setConfigureValue]=useState('');
+  const [resetOpen,setResetOpen]=useState(false);
 
   const owned=workspace.data.items.filter(item=>item.status==='owned'&&!item.archivedAt);
   const sold=workspace.data.items.filter(item=>item.status==='sold');
@@ -192,19 +196,23 @@ export default function VexumHome({onQuickAdd}:{onQuickAdd?:()=>void}={}){
   };
   const configure=(id:HomeWidgetId)=>{
     const widget=state.widgets.find(entry=>entry.id===id);if(!widget)return;
-    if(id==='portfolioPerformance'){
-      const value=window.prompt('Default chart interval: 7D, 30D, 3M, 6M, 1Y, or ALL',String(widget.config.interval||'30D'));
-      if(!value)return;
-      updateDashboard(state.widgets.map(entry=>entry.id===id?{...entry,config:{...entry.config,interval:value.toUpperCase()}}:entry));
-      return;
+    if(id==='portfolioPerformance'){setConfigureTarget(id);setConfigureValue(String(widget.config.interval||'30D'));return}
+    if(['purchases','sales','progress'].includes(id)){setConfigureTarget(id);setConfigureValue(String(widget.config.count||5));return}
+    pushVexumToast({title:'No settings for this widget yet.',message:'This widget is already using the VEXUM default configuration.',kind:'info'});
+  };
+  const saveConfigure=()=>{
+    if(!configureTarget)return;
+    if(configureTarget==='portfolioPerformance'){
+      const value=configureValue.trim().toUpperCase();
+      if(!['7D','30D','3M','6M','1Y','ALL'].includes(value)){pushVexumToast({title:'Choose a valid interval.',message:'Use 7D, 30D, 3M, 6M, 1Y, or ALL.',kind:'warning'});return}
+      updateDashboard(state.widgets.map(entry=>entry.id===configureTarget?{...entry,config:{...entry.config,interval:value}}:entry));
+    }else{
+      const value=Number(configureValue);
+      if(!Number.isFinite(value)||value<1){pushVexumToast({title:'Enter a valid row count.',message:'Choose a number from 1 to 12.',kind:'warning'});return}
+      updateDashboard(state.widgets.map(entry=>entry.id===configureTarget?{...entry,config:{...entry.config,count:Math.min(12,Math.round(value))}}:entry));
     }
-    if(['purchases','sales','progress'].includes(id)){
-      const value=Number(window.prompt('How many rows should this widget show?',String(widget.config.count||5)));
-      if(!Number.isFinite(value)||value<1)return;
-      updateDashboard(state.widgets.map(entry=>entry.id===id?{...entry,config:{...entry.config,count:Math.min(12,Math.round(value))}}:entry));
-      return;
-    }
-    window.alert('This widget uses its default configuration. More module-specific controls can layer onto this same widget record later.');
+    setConfigureTarget(null);setConfigureValue('');
+    pushVexumToast({title:'Widget updated.',kind:'success'});
   };
   const drop=(target:HomeWidgetId)=>{
     if(!dragged||dragged===target)return;
@@ -216,7 +224,8 @@ export default function VexumHome({onQuickAdd}:{onQuickAdd?:()=>void}={}){
     const next=state.widgets.toSorted((a,b)=>(order.get(a.id)??999)-(order.get(b.id)??999)).map((widget,index)=>({...widget,x:index%4,y:Math.floor(index/4)}));
     updateDashboard(next);setDragged(null);
   };
-  const reset=()=>{if(window.confirm('Reset Home to the official VEXUM default layout?'))workspace.update({...workspace.data,homeDashboard:defaultHomeDashboard()})};
+  const reset=()=>setResetOpen(true);
+  const confirmReset=()=>{workspace.update({...workspace.data,homeDashboard:defaultHomeDashboard()});setResetOpen(false);pushVexumToast({title:'Home layout reset.',kind:'success'})};
 
   const widgetModule=(id:HomeWidgetId):VexumModuleId|undefined=>{
     if(['collectionValue','costBasis','profitLoss','portfolioPerformance','progress','purchases'].includes(id))return 'portfolio';
@@ -270,7 +279,7 @@ export default function VexumHome({onQuickAdd}:{onQuickAdd?:()=>void}={}){
       return shell(<div className="vxh-brief"><div className="vxh-brief-lead"><Sparkles/><span><strong>{greeting()}{profileName?', '+profileName:''}.</strong><small>What changed and what needs attention.</small></span></div>{rows.map(([label,value,tone])=><div className="vxh-brief-row" key={label}><span>{label}</span><strong className={'tone-'+tone}>{value}</strong></div>)}</div>);
     }
     if(layout.id==='wishlist')return shell(<div className="vxh-list">{(liveWishlist.length?liveWishlist.map(record=>({name:record.snapshot?.name||record.productId,sub:'Target '+money(record.targetPrice||record.maximumPrice||0),value:money(record.currentMarket||0),tone:'green' as Tone})):DEMO_HOME_DATA.wishlist.map(row=>({name:row[0],sub:'Target '+row[2]+' · '+row[4],value:row[3],tone:'green' as Tone}))).map(row=><div key={row.name}><Star/><span><strong>{row.name}</strong><small>{row.sub}</small></span><b className={'tone-'+row.tone}>{row.value}</b></div>)}<button onClick={()=>location.assign('/wishlist')}>Open Wishlist <ChevronRight/></button></div>);
-    if(layout.id==='radar')return shell(<div className="vxh-radar">{DEMO_HOME_DATA.radar.map(row=><div key={row[1]}><em>{row[0]}</em><span><strong>{row[1]}</strong><small>{row[3]}</small></span><b>{row[2]}</b></div>)}<p>Demo fixture until Radar/provider events are wired to Home.</p></div>);
+    if(layout.id==='radar')return shell(<div className="vxh-radar">{DEMO_HOME_DATA.radar.map(row=><div key={row[1]}><VexumBadge tone={row[0]==='RESTOCK'?'success':row[0]==='DROP'?'danger':'info'}>{row[0]}</VexumBadge><span><strong>{row[1]}</strong><small>{row[3]}</small></span><b>{row[2]}</b></div>)}<p>Demo fixture until Radar/provider events are wired to Home.</p></div>);
     if(layout.id==='progress'){
       const rows=progressRows.length?progressRows:DEMO_HOME_DATA.progress.map(row=>({name:row[0],count:row[1],total:row[2]}));
       return shell(<div className="vxh-progress-list">{rows.slice(0,Number(layout.config.count)||3).map(row=>{const pct=row.total?Math.min(100,Math.round(row.count/row.total*100)):0;return <div key={row.name}><span><strong>{row.name}</strong><b>{row.count} / {row.total} · {pct}%</b></span><div className="vxh-progress"><i style={{width:pct+'%'}}/></div></div>})}</div>);
@@ -319,6 +328,12 @@ export default function VexumHome({onQuickAdd}:{onQuickAdd?:()=>void}={}){
     </div>
     {libraryOpen&&editing?<section className="vxh-library vx-panel"><header><div><strong>Widget Library</strong><span>Hidden widgets can be restored. Widgets for disabled modules stay out of the way until that module is enabled.</span></div><button onClick={()=>setLibraryOpen(false)}><X/></button></header><div>{hidden.length?hidden.map(widget=><button key={widget.id} onClick={()=>show(widget.id)}><span>{widgetIcon(widget.id)}</span><strong>{HOME_WIDGET_TITLES[widget.id]}</strong><Plus/></button>):<p>Every current widget is visible.</p>}</div></section>:null}
     <div className="vxh-grid">{visible.map(render)}</div>
+    <VexumDialog open={Boolean(configureTarget)} onClose={()=>{setConfigureTarget(null);setConfigureValue('')}} title="Configure Widget" eyebrow="HOME" description={configureTarget==='portfolioPerformance'?'Choose the default chart interval.':'Choose how many rows this widget should display.'} size="sm"
+      footer={<><button className="vxui-button secondary" onClick={()=>{setConfigureTarget(null);setConfigureValue('')}}>Cancel</button><button className="vxui-button primary" onClick={saveConfigure}>Save</button></>}>
+      <label className="vxh-config-field">{configureTarget==='portfolioPerformance'?'Chart interval':'Rows'}<input autoFocus value={configureValue} onChange={e=>setConfigureValue(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')saveConfigure()}} placeholder={configureTarget==='portfolioPerformance'?'30D':'5'}/></label>
+      <small className="vxh-config-help">{configureTarget==='portfolioPerformance'?'Allowed: 7D, 30D, 3M, 6M, 1Y, ALL':'Allowed: 1–12 rows'}</small>
+    </VexumDialog>
+    <VexumConfirmDialog open={resetOpen} onClose={()=>setResetOpen(false)} onConfirm={confirmReset} title="Reset Home layout?" description="This restores the official VEXUM widget layout. Your Portfolio, Financial, Wishlist, Life, and other underlying data will not be deleted." confirmLabel="Reset Layout" danger/>
   </div>;
 }
 

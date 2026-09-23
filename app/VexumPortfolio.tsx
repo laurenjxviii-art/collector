@@ -15,6 +15,7 @@ import {
 } from '../lib/portfolio';
 import {normalizeSetupData} from '../lib/setup';
 import PortfolioItemDetail from './portfolio/PortfolioItemDetail';
+import {VexumDialog,pushVexumToast,requestVexumConfirm,requestVexumPrompt} from './VexumUi';
 import {
   collectionPath,collectionStats,computePortfolioAnalytics,descendantIds,healthScore,itemLocation,norm,
   portfolioAudit,portfolioMoney,type AuditIssue
@@ -151,15 +152,18 @@ export default function VexumPortfolio(){
     setCollectionEditor(null);
   };
 
-  const archiveCollection=(collection:Collection)=>{
+  const archiveCollection=async(collection:Collection)=>{
     const contained=store.items.filter(item=>item.collectionId===collection.id&&item.status==='owned');
     let destination='';
     if(contained.length){
-      const choice=window.prompt('This collection contains '+contained.length+' owned record(s). Type PARENT to move them to the parent collection, or ALL to move them to All Items. Nothing will be deleted.','ALL');
+      const choice=await requestVexumPrompt({title:'Move items before archiving',description:'This collection contains '+contained.length+' owned record(s). Nothing will be deleted.',label:'Destination',defaultValue:'ALL',placeholder:'ALL or PARENT',confirmLabel:'Continue'});
       if(!choice)return;
-      destination=choice.toUpperCase()==='PARENT'?(collection.parentCollectionId||''):'';
+      const normalized=choice.trim().toUpperCase();
+      if(!['ALL','PARENT'].includes(normalized)){pushVexumToast({title:'Choose ALL or PARENT.',kind:'warning'});return}
+      destination=normalized==='PARENT'?(collection.parentCollectionId||''):'';
     }
-    if(!window.confirm('Archive "'+collection.name+'"? Owned items will be preserved.'))return;
+    const approved=await requestVexumConfirm({title:'Archive collection?',description:'Archive "'+collection.name+'"? Owned items will be preserved and remain in VEXUM.',confirmLabel:'Archive Collection'});
+    if(!approved)return;
     const now=new Date().toISOString();
     workspace.update({...store,
       collections:store.collections.map(row=>row.id===collection.id?{...row,archivedAt:now}:row),
@@ -182,24 +186,30 @@ export default function VexumPortfolio(){
     workspace.update({...store,items:store.items.map(item=>selectedIds.has(item.id)?{...item,collectionId,updatedAt:now}:item)});
     setSelectedIds(new Set());
   };
-  const bulkTag=()=>{
-    const tag=window.prompt('Tag selected items');if(!tag)return;
-    workspace.update({...store,items:store.items.map(item=>selectedIds.has(item.id)?{...item,tags:[...new Set([...(item.tags||[]),tag])],updatedAt:new Date().toISOString()}:item)});
+  const bulkTag=async()=>{
+    const tag=await requestVexumPrompt({title:'Tag selected items',description:selectedIds.size+' item record(s) selected.',label:'Tag',placeholder:'Add a tag',confirmLabel:'Add Tag'});if(!tag?.trim())return;
+    workspace.update({...store,items:store.items.map(item=>selectedIds.has(item.id)?{...item,tags:[...new Set([...(item.tags||[]),tag.trim()])],updatedAt:new Date().toISOString()}:item)});
+    pushVexumToast({title:'Tag added.',message:selectedIds.size+' item record(s) updated.',kind:'success'});
   };
-  const bulkField=()=>{
+  const bulkField=async()=>{
     if(!selectedIds.size)return;
-    const field=window.prompt('Custom field name to change for selected items');if(!field)return;
-    const value=window.prompt('New value for "'+field+'"');if(value===null)return;
+    const field=await requestVexumPrompt({title:'Edit custom field',description:selectedIds.size+' item record(s) selected.',label:'Field name',placeholder:'Field name',confirmLabel:'Next'});if(!field?.trim())return;
+    const value=await requestVexumPrompt({title:'Set field value',description:'Update "'+field.trim()+'" on the selected items.',label:'New value',defaultValue:'',confirmLabel:'Apply'});if(value===null)return;
     const now=new Date().toISOString();
-    workspace.update({...store,items:store.items.map(item=>selectedIds.has(item.id)?{...item,customFields:{...item.customFields,[field]:value},updatedAt:now}:item)});
+    workspace.update({...store,items:store.items.map(item=>selectedIds.has(item.id)?{...item,customFields:{...item.customFields,[field.trim()]:value},updatedAt:now}:item)});
+    pushVexumToast({title:'Custom field updated.',kind:'success'});
   };
-  const bulkArchive=()=>{
-    if(!window.confirm('Archive '+selectedIds.size+' selected item record(s)? They remain in workspace history.'))return;
+  const bulkArchive=async()=>{
+    const approved=await requestVexumConfirm({title:'Archive selected items?',description:'Archive '+selectedIds.size+' selected item record(s)? They remain in VEXUM workspace history.',confirmLabel:'Archive Items'});
+    if(!approved)return;
     const now=new Date().toISOString();workspace.update({...store,items:store.items.map(item=>selectedIds.has(item.id)?{...item,archivedAt:now,updatedAt:now}:item)});setSelectedIds(new Set());
+    pushVexumToast({title:'Items archived.',kind:'success'});
   };
-  const bulkDelete=()=>{
-    if(!window.confirm('Permanently delete '+selectedIds.size+' selected item record(s)? This cannot be undone.'))return;
+  const bulkDelete=async()=>{
+    const approved=await requestVexumConfirm({title:'Permanently delete selected items?',description:'Permanently delete '+selectedIds.size+' selected item record(s)? This cannot be undone.',confirmLabel:'Delete Permanently',danger:true});
+    if(!approved)return;
     workspace.update({...store,items:store.items.filter(item=>!selectedIds.has(item.id))});setSelectedIds(new Set());
+    pushVexumToast({title:'Items deleted.',kind:'success'});
   };
   const exportItems=(rows:Item[],format:'json'|'csv')=>{
     if(format==='json')return download('vexum-portfolio.json',JSON.stringify(rows,null,2));
@@ -211,11 +221,12 @@ export default function VexumPortfolio(){
     download('vexum-portfolio.csv',[header.map(csvCell).join(','),...body].join('\n'),'text/csv');
   };
 
-  const saveCurrentView=()=>{
-    const name=window.prompt('Saved view name');if(!name)return;
+  const saveCurrentView=async()=>{
+    const name=await requestVexumPrompt({title:'Save current view',label:'View name',placeholder:'My Portfolio View',confirmLabel:'Save View'});if(!name?.trim())return;
     const now=new Date().toISOString();
-    const view:PortfolioSavedView={id:newPortfolioId('view'),name,view:preferences.view,sort:preferences.sort,columns:preferences.columns,filters:preferences.filters,collectionId:activeCollectionId||undefined,createdAt:now,updatedAt:now};
+    const view:PortfolioSavedView={id:newPortfolioId('view'),name:name.trim(),view:preferences.view,sort:preferences.sort,columns:preferences.columns,filters:preferences.filters,collectionId:activeCollectionId||undefined,createdAt:now,updatedAt:now};
     persistPreferences({savedViews:[...preferences.savedViews,view],activeSavedViewId:view.id});
+    pushVexumToast({title:'View saved.',kind:'success'});
   };
   const applySavedView=(view:PortfolioSavedView)=>{
     workspace.update({...store,portfolioPreferences:{...preferences,view:view.view,sort:view.sort,columns:view.columns,filters:view.filters,activeSavedViewId:view.id}});
@@ -252,9 +263,9 @@ export default function VexumPortfolio(){
       <PortfolioItems rows={filtered} store={store} view={preferences.view} columns={preferences.columns} selectedIds={selectedIds} onSelect={id=>setSelectedIds(current=>{const next=new Set(current);if(next.has(id))next.delete(id);else next.add(id);return next})} onOpen={setSelectedItemId} onFavorite={item=>updateItem({...item,favorite:!item.favorite,updatedAt:new Date().toISOString()})}/>
     </section>:null}
     {section==='analytics'?<PortfolioAnalytics store={store} analytics={analytics} issues={issues} onCategory={category=>{setCategoryFilter(category);setActiveCollectionId('');setSection('items')}}/>:null}
-    {section==='audit'?<PortfolioAudit store={store} issues={issues} health={health} focus={auditFocus} onFocus={setAuditFocus} onOpenItem={id=>setSelectedItemId(id)} onBulkFix={(kind,value)=>{
+    {section==='audit'?<PortfolioAudit store={store} issues={issues} health={health} focus={auditFocus} onFocus={setAuditFocus} onOpenItem={id=>setSelectedItemId(id)} onBulkFix={async(kind,value)=>{
       const ids=new Set(issues.filter(issue=>issue.kind===kind).map(issue=>issue.itemId));if(!ids.size)return;
-      if(!window.confirm('Apply this reviewed fix to '+ids.size+' affected record(s)?'))return;
+      const approved=await requestVexumConfirm({title:'Apply reviewed fix?',description:'Apply this fix to '+ids.size+' affected record(s)?',confirmLabel:'Apply Fix'});if(!approved)return;
       const now=new Date().toISOString();
       workspace.update({...store,items:store.items.map(item=>{
         if(!ids.has(item.id))return item;
@@ -434,18 +445,23 @@ function TemplateManager({templates,onClose,onChange}:{templates:PortfolioFieldT
     onChange([...templates,next]);setSelectedId(next.id);setNewName('');
   };
   const update=(next:PortfolioFieldTemplate)=>onChange(templates.map(template=>template.id===next.id?next:template));
-  const addField=()=>{
+  const addField=async()=>{
     if(!selected)return;
-    const label=window.prompt('Field label');if(!label)return;
-    const rawType=window.prompt('Field type: Text, Long Text, Number, Currency, Date, Boolean, Single Select, Multi Select, URL, Rating, Measurement, Relation, File / Document, Custom Status','Text')||'Text';
+    const label=await requestVexumPrompt({title:'Add custom field',description:selected.name,label:'Field label',placeholder:'Series',confirmLabel:'Next'});if(!label?.trim())return;
+    const rawType=await requestVexumPrompt({title:'Field type',description:'Text, Long Text, Number, Currency, Date, Boolean, Single Select, Multi Select, URL, Rating, Measurement, Relation, File / Document, or Custom Status.',label:'Type',defaultValue:'Text',confirmLabel:'Next'})||'Text';
     const allowed:PortfolioFieldType[]=['Text','Long Text','Number','Currency','Date','Boolean','Single Select','Multi Select','URL','Rating','Measurement','Relation','File / Document','Custom Status'];
     const type=(allowed.includes(rawType as PortfolioFieldType)?rawType:'Text') as PortfolioFieldType;
-    const options=['Single Select','Multi Select','Custom Status'].includes(type)?(window.prompt('Options separated by commas','')||'').split(',').map(x=>x.trim()).filter(Boolean):undefined;
-    const defaultValue=window.prompt('Default value (optional)','')||'';
+    let options:string[]|undefined;
+    if(['Single Select','Multi Select','Custom Status'].includes(type)){
+      const rawOptions=await requestVexumPrompt({title:'Field options',description:'Separate options with commas.',label:'Options',defaultValue:'',confirmLabel:'Next'});if(rawOptions===null)return;
+      options=rawOptions.split(',').map(x=>x.trim()).filter(Boolean);
+    }
+    const defaultValue=await requestVexumPrompt({title:'Default value',description:'Optional.',label:'Default value',defaultValue:'',confirmLabel:'Add Field'});if(defaultValue===null)return;
     update({...selected,fields:[...selected.fields,{id:newPortfolioId('field'),label:label.trim(),type,options,defaultValue}],updatedAt:new Date().toISOString()});
   };
-  const remove=()=>{
-    if(!selected||!window.confirm('Delete template "'+selected.name+'"? Existing item custom-field values are preserved.'))return;
+  const remove=async()=>{
+    if(!selected)return;
+    const approved=await requestVexumConfirm({title:'Delete template?',description:'Delete template "'+selected.name+'"? Existing item custom-field values are preserved.',confirmLabel:'Delete Template',danger:true});if(!approved)return;
     onChange(templates.filter(template=>template.id!==selected.id));setSelectedId(templates.find(template=>template.id!==selected.id)?.id||'');
   };
   return <Modal title="Custom Field Templates" subtitle="Reusable metadata schemas apply to new owned copies without forcing one schema on every category." onClose={onClose}>
@@ -457,7 +473,7 @@ function TemplateManager({templates,onClose,onChange}:{templates:PortfolioFieldT
   </Modal>;
 }
 
-function Modal({title,subtitle,onClose,children}:{title:string;subtitle:string;onClose:()=>void;children:ReactNode}){return <div className="vxp2-modal-backdrop" onMouseDown={event=>event.currentTarget===event.target&&onClose()}><section className="vxp2-modal"><header><div><strong>{title}</strong><span>{subtitle}</span></div><button onClick={onClose}><X/></button></header>{children}</section></div>}
+function Modal({title,subtitle,onClose,children}:{title:string;subtitle:string;onClose:()=>void;children:ReactNode}){return <VexumDialog open onClose={onClose} title={title} description={subtitle} size="lg" className="vxp2-shared-dialog">{children}</VexumDialog>}
 
 function SimpleLine({values}:{values:number[]}){
   const rows=values.filter(Number.isFinite);

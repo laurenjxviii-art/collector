@@ -23,7 +23,7 @@
 .auth-symbol svg{width:15px;height:15px}
 .auth-intro{text-align:center;margin:0 0 18px}
 .auth-intro h3{margin:0 0 6px!important;font-size:18px!important;letter-spacing:-.025em;color:#f5f5f6}
-.auth-intro p{max-width:290px;margin:0 auto!important;font-size:14px!important;line-height:1.55!important;color:#7d8189c85!important}
+.auth-intro p{max-width:290px;margin:0 auto!important;font-size:14px!important;line-height:1.55!important;color:#7d8189!important}
 .auth-field{display:block;margin:10px 0!important}
 .auth-field>span{display:flex;align-items:center;gap:6px;margin:0 0 6px;color:#8c9199;font-size:14px;font-weight:650}
 .auth-field>span svg{width:11px;height:11px}
@@ -42,12 +42,14 @@
 .auth-form .auth-main-submit:hover:not(:disabled){background:#fff}
 .auth-divider{display:flex;align-items:center;gap:10px;margin:14px 0 10px;color:#595e66;font-size:14px;text-align:center}
 .auth-divider:before,.auth-divider:after{content:"";height:1px;background:#25282d;flex:1}
-.auth-provider-row{display:flex;align-items:center;justify-content:center;gap:20px}
-.auth-provider-icon-button{width:34px;height:34px;display:grid;place-items:center;margin:0!important;border:1px solid #2d3036;border-radius:9px;background:#15171a;color:#f5f5f5;font-size:14px;font-weight:850}
-.auth-provider-icon-button:hover:not(:disabled){background:#202227;border-color:#4a4e55}
-.auth-provider-icon-button:disabled{opacity:.32;cursor:not-allowed}
-.auth-provider-icon-button.google span{font-family:inherit;font-weight:800}
-.auth-provider-icon-button.apple span{font-size:17px;line-height:1}
+.auth-provider-row{display:grid;grid-template-columns:1fr;gap:7px}
+.auth-provider-button{width:100%;height:40px;display:grid;grid-template-columns:24px 1fr 24px;align-items:center;gap:8px;margin:0!important;border:1px solid #2d3036;border-radius:8px;background:#121417;color:#f5f5f5;padding:0 11px;font-size:14px;font-weight:650;text-align:center}
+.auth-provider-button:hover:not(:disabled){background:#191b1f;border-color:#4a4e55}
+.auth-provider-button:disabled{opacity:.36;cursor:not-allowed}
+.auth-provider-button .provider-icon{width:24px;height:24px;display:grid;place-items:center;font-weight:800}
+.auth-provider-button.apple .provider-icon{font-size:17px;line-height:1}
+.auth-provider-button strong{font:inherit;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.auth-provider-button>i{width:24px}
 .auth-account-switch{text-align:center;margin:14px 0 0;color:#666b73;font-size:14px}
 .auth-account-switch button{margin:0!important;padding:0;border:0;background:transparent;color:#c9cbd0;font-size:14px;font-weight:700}
 .auth-account-switch button:hover{color:#fff;text-decoration:underline}
@@ -58,3 +60,7 @@
 @keyframes vxAuthFade{from{opacity:0}to{opacity:1}}
 @keyframes vxAuthCard{from{opacity:0;transform:scale(.985) translateY(4px)}to{opacity:1;transform:scale(1) translateY(0)}}
 @media(max-width:560px){.cloud-overlay{padding:12px}.cloud-panel.auth-modal{width:min(390px,100%);max-height:calc(100dvh - 24px)}.auth-modal .cloud-body{padding:8px 20px 22px}.auth-modal .auth-modal-header{padding:12px 13px 0}}
+
+.auth-step{width:max-content;margin:0 auto 9px;color:#7d8189;font-size:10px;font-weight:700;letter-spacing:.12em}
+.auth-message.error{border-color:#5b2229;background:#160d10;color:#ff8792!important}
+.auth-message.success{border-color:#27493b;background:#0a120f;color:#8adfbe!important}
