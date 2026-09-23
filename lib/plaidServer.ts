@@ -10,6 +10,12 @@ export type PlaidStoredItem={
   error_message:string;products:unknown;available_products:unknown;billed_products:unknown;product_status:Record<string,PlaidProductState>;
   last_webhook_at?:string|null;last_webhook_code:string;last_link_session_id:string;
 };
+export type PlaidLinkSessionRow={
+  id:string;user_id:string;plaid_item_id:string|null;mode:'connect'|'update';
+  status:'pending'|'completed'|'expired'|'superseded'|'cancelled';link_token:string;expires_at:string;
+  oauth_state_id:string;received_redirect_uri:string;plaid_link_session_id:string;
+  created_at:string;updated_at:string;completed_at?:string|null;
+};
 
 export class PlaidRouteError extends Error{
   status:number;code:string;detail?:unknown;
@@ -144,6 +150,90 @@ export async function listStoredPlaidItems(userId:string){
   return dbSelect<PlaidStoredItem[]>('collector_plaid_items','select=*&user_id='+eq(userId)+'&order=created_at.asc');
 }
 
+
+function plaidRedirectUri(){
+  const configured=(process.env.PLAID_REDIRECT_URI||'https://vexum.app/plaid/oauth').trim();
+  let parsed:URL;
+  try{parsed=new URL(configured)}catch{throw new PlaidRouteError(503,'PLAID_REDIRECT_INVALID','PLAID_REDIRECT_URI must be a valid absolute URL.')}
+  if(parsed.search||parsed.hash)throw new PlaidRouteError(503,'PLAID_REDIRECT_INVALID','PLAID_REDIRECT_URI cannot contain query parameters or a hash fragment.');
+  const localhost=['localhost','127.0.0.1','::1'].includes(parsed.hostname);
+  if(parsed.protocol!=='https:'&&!(plaidEnvironment()==='sandbox'&&localhost)){
+    throw new PlaidRouteError(503,'PLAID_REDIRECT_INVALID','Plaid OAuth redirect URIs must use HTTPS outside Sandbox localhost testing.');
+  }
+  return parsed.toString();
+}
+
+async function expireStalePlaidLinkSessions(userId:string){
+  const stamp=now();
+  await dbPatch(
+    'collector_plaid_link_sessions',
+    'user_id='+eq(userId)+'&status=eq.pending&expires_at=lt.'+encodeURIComponent(stamp),
+    {status:'expired',updated_at:stamp}
+  );
+}
+async function storePlaidLinkSession(userId:string,itemId:string|undefined,mode:'connect'|'update',linkToken:string,expiration:string){
+  if(!linkToken||!expiration)throw new PlaidRouteError(502,'PLAID_LINK_TOKEN_INVALID','Plaid did not return a usable Link token.');
+  await expireStalePlaidLinkSessions(userId);
+  await dbPatch(
+    'collector_plaid_link_sessions',
+    'user_id='+eq(userId)+'&status=eq.pending',
+    {status:'superseded',updated_at:now()}
+  );
+  const rows=await db<PlaidLinkSessionRow[]>('collector_plaid_link_sessions',{
+    method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify([{
+      user_id:userId,plaid_item_id:itemId||null,mode,status:'pending',link_token:linkToken,expires_at:expiration,
+      oauth_state_id:'',received_redirect_uri:'',plaid_link_session_id:'',created_at:now(),updated_at:now()
+    }])
+  });
+  const row=rows?.[0];
+  if(!row?.id)throw new PlaidRouteError(502,'PLAID_LINK_SESSION_STORE_FAILED','VEXUM could not persist the Plaid Link session.');
+  return row;
+}
+function validateReceivedRedirectUri(receivedRedirectUri:string){
+  let received:URL,expected:URL;
+  try{received=new URL(receivedRedirectUri);expected=new URL(plaidRedirectUri())}
+  catch{throw new PlaidRouteError(400,'PLAID_OAUTH_REDIRECT_INVALID','The Plaid OAuth return URL is invalid.')}
+  if(received.origin!==expected.origin||received.pathname!==expected.pathname||received.hash){
+    throw new PlaidRouteError(400,'PLAID_OAUTH_REDIRECT_MISMATCH','The Plaid OAuth return URL does not match the configured redirect URI.');
+  }
+  const keys=[...received.searchParams.keys()];
+  if(!keys.length||keys.some(key=>key!=='oauth_state_id')||!received.searchParams.get('oauth_state_id')){
+    throw new PlaidRouteError(400,'PLAID_OAUTH_STATE_INVALID','The Plaid OAuth return URL is missing a valid oauth_state_id.');
+  }
+  return {oauthStateId:String(received.searchParams.get('oauth_state_id')||''),receivedRedirectUri:received.toString()};
+}
+export async function loadPlaidLinkSession(userId:string,sessionId?:string,receivedRedirectUri?:string){
+  await expireStalePlaidLinkSessions(userId);
+  const query=sessionId
+    ? 'select=*&user_id='+eq(userId)+'&id='+eq(sessionId)+'&limit=1'
+    : 'select=*&user_id='+eq(userId)+'&status=eq.pending&order=created_at.desc&limit=1';
+  const rows=await dbSelect<PlaidLinkSessionRow[]>('collector_plaid_link_sessions',query);
+  const row=rows?.[0];
+  if(!row)throw new PlaidRouteError(404,'PLAID_LINK_SESSION_NOT_FOUND','No active Plaid Link session was found for this VEXUM account.');
+  if(row.status!=='pending')throw new PlaidRouteError(409,'PLAID_LINK_SESSION_INACTIVE','That Plaid Link session is no longer active.');
+  if(new Date(row.expires_at).getTime()<=Date.now()){
+    await dbPatch('collector_plaid_link_sessions','user_id='+eq(userId)+'&id='+eq(row.id),{status:'expired',updated_at:now()});
+    throw new PlaidRouteError(410,'PLAID_LINK_SESSION_EXPIRED','That Plaid Link session expired. Start the bank connection again.');
+  }
+  if(receivedRedirectUri){
+    const validated=validateReceivedRedirectUri(receivedRedirectUri);
+    await dbPatch('collector_plaid_link_sessions','user_id='+eq(userId)+'&id='+eq(row.id),{
+      oauth_state_id:validated.oauthStateId,received_redirect_uri:validated.receivedRedirectUri,updated_at:now()
+    });
+    row.oauth_state_id=validated.oauthStateId;
+    row.received_redirect_uri=validated.receivedRedirectUri;
+  }
+  return row;
+}
+export async function completePlaidLinkSession(userId:string,sessionId:string,expectedMode?:'connect'|'update',plaidLinkSessionId=''){
+  const row=await loadPlaidLinkSession(userId,sessionId);
+  if(expectedMode&&row.mode!==expectedMode)throw new PlaidRouteError(409,'PLAID_LINK_SESSION_MODE_MISMATCH','The Plaid Link session mode does not match this completion request.');
+  await dbPatch('collector_plaid_link_sessions','user_id='+eq(userId)+'&id='+eq(sessionId),{
+    status:'completed',plaid_link_session_id:plaidLinkSessionId||row.plaid_link_session_id||'',completed_at:now(),updated_at:now()
+  });
+  return row;
+}
+
 function publicBaseUrl(req?:Request){
   const configured=(process.env.PLAID_PUBLIC_BASE_URL||process.env.NEXT_PUBLIC_SITE_URL||'').replace(/\/$/,'');
   if(configured)return configured;
@@ -156,7 +246,7 @@ function publicBaseUrl(req?:Request){
 }
 export async function createPlaidLinkToken(req:Request,userId:string,itemId?:string){
   const webhook=(process.env.PLAID_WEBHOOK_URL||'https://vexum.app/api/plaid/webhook').replace(/\/$/,'');
-  const redirect=process.env.PLAID_REDIRECT_URI||'https://vexum.app/settings';
+  const redirect=plaidRedirectUri();
   const base:any={
     user:{client_user_id:userId},
     client_name:'VEXUM',
@@ -187,7 +277,9 @@ export async function createPlaidLinkToken(req:Request,userId:string,itemId?:str
       result=await plaidRequest<any>('/link/token/create',base);
     }else throw error;
   }
-  return {linkToken:String(result.link_token||''),expiration:String(result.expiration||''),mode:itemId?'update':'connect',itemId:itemId||null,warnings};
+  const linkToken=String(result.link_token||''),expiration=String(result.expiration||'');
+  const linkSession=await storePlaidLinkSession(userId,itemId,itemId?'update':'connect',linkToken,expiration);
+  return {linkToken,expiration,mode:itemId?'update':'connect',itemId:itemId||null,warnings,sessionId:linkSession.id,redirectUri:redirect};
 }
 
 async function institutionName(institutionId:string,fallback=''){
@@ -443,8 +535,14 @@ export async function syncPlaidItem(userId:string,itemId:string,scope:'all'|'tra
   return productStatus;
 }
 
-export async function exchangePublicToken(userId:string,publicToken:string,metadata?:{institutionId?:string;institutionName?:string;linkSessionId?:string}){
+export async function exchangePublicToken(userId:string,publicToken:string,metadata?:{
+  institutionId?:string;institutionName?:string;linkSessionId?:string;linkSessionRecordId?:string
+}){
   if(!publicToken)throw new PlaidRouteError(400,'PUBLIC_TOKEN_REQUIRED','Plaid did not return a public token.');
+  const linkSessionRecordId=String(metadata?.linkSessionRecordId||'');
+  if(!linkSessionRecordId)throw new PlaidRouteError(400,'PLAID_LINK_SESSION_REQUIRED','A server-backed Plaid Link session is required.');
+  const linkSession=await loadPlaidLinkSession(userId,linkSessionRecordId);
+  if(linkSession.mode!=='connect')throw new PlaidRouteError(409,'PLAID_LINK_SESSION_MODE_MISMATCH','This Plaid Link session is not a new-connection session.');
   const exchange=await plaidRequest<any>('/item/public_token/exchange',{public_token:publicToken});
   const accessToken=String(exchange.access_token||''),itemId=String(exchange.item_id||'');
   if(!accessToken||!itemId)throw new PlaidRouteError(502,'PLAID_EXCHANGE_FAILED','Plaid did not return an access token and Item ID.');
@@ -457,6 +555,7 @@ export async function exchangePublicToken(userId:string,publicToken:string,metad
     product_status:{},last_link_session_id:String(metadata?.linkSessionId||''),created_at:now(),updated_at:now()
   }],'item_id');
   try{await refreshItemMetadata(userId,itemId,accessToken,institution)}catch{}
+  await completePlaidLinkSession(userId,linkSessionRecordId,'connect',String(metadata?.linkSessionId||''));
   await syncPlaidItem(userId,itemId,'all');
   return itemId;
 }
