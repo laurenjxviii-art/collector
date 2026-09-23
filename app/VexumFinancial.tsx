@@ -6,7 +6,8 @@ import {
   CreditCard,Landmark,Link2,LockKeyhole,Plus,Receipt,ShieldCheck,Target,WalletCards
 } from 'lucide-react';
 import {useWorkspace} from '../lib/useWorkspace';
-import {VexumPageSkeleton} from './VexumUi';
+import {VexumPageSkeleton,pushVexumToast} from './VexumUi';
+import PlaidConnection from './PlaidConnection';
 import {
   EMPTY_FINANCIAL,financialAccountIsDebt,financialCash,financialDebt,financialNetWorth,
   incomeTotal,expenseTotal,newFinancialId,normalizeFinancialData,
@@ -161,7 +162,7 @@ export default function VexumFinancial({section,onSectionChange}:{section?:strin
 
     {tab==='Overview'&&<>
       <div className="vxf-metrics">
-        <Metric label="Cash" value={viewFinancial.accounts.length?money(financialCash(viewFinancial)):'Not set'} sub={viewFinancial.accounts.length?(connectedFinancial.accounts.length?connectedFinancial.accounts.length+' Plaid + '+financial.accounts.length+' manual':'Manual accounts'):'Add manual accounts'} />
+        <Metric label="Cash" value={viewFinancial.accounts.length?money(financialCash(viewFinancial)):'Not set'} sub={connectedFinancial.accounts.length?connectedFinancial.accounts.length+' connected account'+(connectedFinancial.accounts.length===1?'':'s'):financial.accounts.length?'Existing manual records':'Connect a bank to begin'} />
         <Metric label="Debt" value={debtAccounts.length?money(financialDebt(viewFinancial)):'Not set'} sub={debtAccounts.length?debtAccounts.length+' debt account'+(debtAccounts.length===1?'':'s'):'No debt accounts recorded'} tone={debtAccounts.length?'orange':'muted'}/>
         <Metric label="Financial Net Worth" value={viewFinancial.accounts.length?money(financialNetWorth(viewFinancial)):'Not set'} sub="Accounts only · collection excluded" tone={viewFinancial.accounts.length&&financialNetWorth(viewFinancial)>=0?'green':'muted'}/>
         <Metric label="Collection Value" value={money(collectionValue)} sub="Estimated market value" tone="green"/>
@@ -208,20 +209,20 @@ export default function VexumFinancial({section,onSectionChange}:{section?:strin
             <div><span>Recurring streams</span><strong>{plaidSnapshot.recurring.length}</strong></div>
             <div><span>Investment holdings</span><strong>{plaidSnapshot.holdings.length}</strong></div>
             <div><span>Liabilities</span><strong>{plaidSnapshot.liabilities.length}</strong></div>
-            {productIssues.length?<p className="vxf-plaid-warning"><AlertTriangle/>Some Plaid products need attention. Open Settings → Connected Apps for the exact permission/error code.</p>:<p><ShieldCheck/>Plaid data is stored separately from manual Financial records.</p>}
-          </div>:<div className="vxf-empty"><Landmark/><strong>Bank connection not configured</strong><p>Manual Financial works now. Use Settings → Connected Apps → Connect with Plaid to add live balances, transactions, liabilities, recurring activity, and investments.</p>{plaidLoadError?<small>{plaidLoadError}</small>:null}</div>}
+            {productIssues.length?<p className="vxf-plaid-warning"><AlertTriangle/>Some connected financial data needs attention. Open Accounts or Settings → Connections to manage the affected institution.</p>:<p><ShieldCheck/>Connected financial data is synchronized securely through Plaid.</p>}
+          </div>:<div className="vxf-empty"><Landmark/><strong>No bank connection yet</strong><p>Connect an institution under Accounts or Settings → Connections to add live balances, transactions, liabilities, recurring activity, and investments.</p>{plaidLoadError?<small>{plaidLoadError}</small>:null}</div>}
         </section>
       </div>
     </>}
 
     {tab==='Accounts'&&<section className="vxf-panel vxf-full">
-      <Head title="Accounts" action={<button className="red" onClick={()=>setComposer(composer==='account'?null:'account')}><Plus/>Add Manual Account</button>}/>
-      {composer==='account'?<AccountForm onCancel={()=>setComposer(null)} onSave={account=>{save({...financial,accounts:[...financial.accounts,account]});setComposer(null)}}/>:null}
+      <Head title="Accounts"/>
+      <div className="vxf-plaid-manager"><PlaidConnection config={workspace.config} session={workspace.session} platform={platform} onSave={next=>workspace.update({...workspace.data,platform:next})} onMessage={message=>pushVexumToast({title:'Financial accounts',message,kind:/fail|error|unable|couldn't|cannot/i.test(message)?'error':'success'})}/></div>
       <div className="vxf-account-grid">
-        {viewFinancial.accounts.map(account=><article key={account.id} className="vxf-account"><header><span className={financialAccountIsDebt(account)?'debt':'asset'}>{financialAccountIsDebt(account)?<CreditCard/>:<Landmark/>}</span><div><strong>{account.name}</strong><small>{account.institution||ACCOUNT_LABELS[account.type]} · {account.isConnected?'Plaid':'Manual'}</small></div>{account.isConnected?<span className="vxf-connected-badge">PLAID</span>:<button onClick={()=>removeAccount(account.id)}>Remove</button>}</header><b>{exactMoney(account.currentBalance)}</b><footer><span>{ACCOUNT_LABELS[account.type]}</span>{account.apr!==undefined?<span>{account.apr}% APR</span>:null}{account.creditLimit!==undefined?<span>{money(account.creditLimit)} limit</span>:null}</footer></article>)}
-        {!viewFinancial.accounts.length?<div className="vxf-empty wide"><Landmark/><strong>No financial accounts recorded</strong><p>Add a manual balance or connect an institution through Plaid in Settings.</p></div>:null}
+        {viewFinancial.accounts.map(account=><article key={account.id} className="vxf-account"><header><span className={financialAccountIsDebt(account)?'debt':'asset'}>{financialAccountIsDebt(account)?<CreditCard/>:<Landmark/>}</span><div><strong>{account.name}</strong><small>{account.institution||ACCOUNT_LABELS[account.type]}{account.isConnected?'':' · Existing manual record'}</small></div>{!account.isConnected?<button onClick={()=>removeAccount(account.id)}>Remove</button>:null}</header><b>{exactMoney(account.currentBalance)}</b><footer><span>{ACCOUNT_LABELS[account.type]}</span>{account.apr!==undefined?<span>{account.apr}% APR</span>:null}{account.creditLimit!==undefined?<span>{money(account.creditLimit)} limit</span>:null}</footer></article>)}
+        {!viewFinancial.accounts.length?<div className="vxf-empty wide"><Landmark/><strong>No financial accounts connected</strong><p>Use Connect Bank above to securely add a bank, credit card, loan, or investment institution.</p></div>:null}
       </div>
-      <div className="vxf-boundary"><AlertTriangle/><span><strong>Connection boundary</strong> VEXUM never receives or stores bank-login credentials. Plaid access tokens stay encrypted and server-side; manual accounts remain separate.</span></div>
+      <div className="vxf-boundary"><ShieldCheck/><span><strong>Secure connection</strong> Bank credentials are handled by Plaid, not VEXUM. You can connect additional institutions at any time.</span></div>
     </section>}
 
     {tab==='Spending'&&<section className="vxf-panel vxf-full">
@@ -248,7 +249,7 @@ export default function VexumFinancial({section,onSectionChange}:{section?:strin
 
     {tab==='Debt'&&<section className="vxf-panel vxf-full">
       <Head title="Debt"/>
-      {!debtAccounts.length?<div className="vxf-empty"><CreditCard/><strong>No debt accounts recorded</strong><p>Add a manual credit card or loan under Accounts to model balances, APR, utilization, and payment scenarios.</p></div>:<div className="vxf-debt-grid">{debtAccounts.map(account=><DebtCard key={account.id} account={account} extra={safeNumber(debtExtra)}/>)}</div>}
+      {!debtAccounts.length?<div className="vxf-empty"><CreditCard/><strong>No debt accounts recorded</strong><p>Connect a credit card or loan under Accounts to sync balances and available liability details.</p></div>:<div className="vxf-debt-grid">{debtAccounts.map(account=><DebtCard key={account.id} account={account} extra={safeNumber(debtExtra)}/>)}</div>}
       {debtAccounts.length?<div className="vxf-debt-control"><label>Scenario extra payment / month <span>$</span><input inputMode="decimal" value={debtExtra} onChange={e=>setDebtExtra(e.target.value)}/></label><small>Scenario math uses the recorded balance/APR/minimum payment only. It does not modify an account or initiate payments.</small></div>:null}
       <div className="vxf-context-pair"><div><span>Last 30 days · hobby spending</span><strong>{exactMoney(hobbySpend)}</strong></div><div><span>Debt balances recorded</span><strong>{exactMoney(financialDebt(viewFinancial))}</strong></div></div>
     </section>}

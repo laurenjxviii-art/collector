@@ -74,3 +74,8 @@
 .vxf-connected-badge,.vxf-source-mark{justify-self:end;display:inline-flex;align-items:center;justify-content:center;width:fit-content;height:22px;color:#53d6ad;border:1px solid #24513f;border-radius:11px;padding:0 8px;background:#09130f;font-size:11px;line-height:1;font-weight:700;letter-spacing:.05em;white-space:nowrap}
 .vxf-source-mark{align-self:center}
 @media(max-width:900px){.vxf-plaid-summary{grid-template-columns:repeat(2,1fr)}}
+
+/* Financial Accounts is Plaid-first; legacy manual records remain readable but cannot be newly created. */
+.vxf-plaid-manager{padding:11px;border-bottom:1px solid #202226;background:#070809}
+.vxf-plaid-manager .vxt-connection{margin:0}
+.vxf-plaid-manager+.vxf-account-grid{padding-top:12px}

@@ -97,3 +97,9 @@
 .vxt-settings-dialog .vxt-nav section{margin-bottom:6px}
 .vxt-settings-dialog .vxt-nav button{height:36px}
 @media(max-width:760px){.vxt-accent-picker{justify-content:flex-start}.vxt-empty-service{margin:12px;padding:20px}}
+
+/* Plaid multi-institution actions */
+.vxt-plaid-connection>aside{align-items:flex-end}
+.vxt-plaid-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap}
+.vxt-plaid-actions button.primary{border-color:color-mix(in srgb,var(--vx-red) 55%,#303239);background:color-mix(in srgb,var(--vx-red) 12%,#0d0e10);color:#fff}
+@media(max-width:760px){.vxt-connection{grid-template-columns:1fr}.vxt-connection>aside{align-items:flex-start;justify-content:space-between}.vxt-plaid-actions{justify-content:flex-start}.vxt-plaid-item{align-items:flex-start;flex-direction:column}.vxt-plaid-item>span:last-child{width:100%}}
