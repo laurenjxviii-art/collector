@@ -152,7 +152,11 @@ export async function listStoredPlaidItems(userId:string){
 
 
 export function plaidRedirectUri(){
-  const configured=(process.env.PLAID_REDIRECT_URI||'https://vexum.app/plaid/oauth').trim();
+  const envValue=(process.env.PLAID_REDIRECT_URI||'').trim();
+  // Migrate the pre-OAuth VEXUM Settings callback automatically if it is still present in Vercel.
+  const configured=!envValue||/^https:\/\/vexum\.app\/settings\/?$/.test(envValue)
+    ? 'https://vexum.app/plaid/oauth'
+    : envValue;
   let parsed:URL;
   try{parsed=new URL(configured)}catch{throw new PlaidRouteError(503,'PLAID_REDIRECT_INVALID','PLAID_REDIRECT_URI must be a valid absolute URL.')}
   if(parsed.search||parsed.hash)throw new PlaidRouteError(503,'PLAID_REDIRECT_INVALID','PLAID_REDIRECT_URI cannot contain query parameters or a hash fragment.');
