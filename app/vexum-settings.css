@@ -81,3 +81,13 @@
 .vxt-accent-control{display:flex;align-items:center;gap:8px}.vxt-accent-control input[type="color"]{width:42px;height:34px;padding:3px;border:1px solid #34373d;border-radius:6px;background:#0d0e10}.vxt-accent-control input:not([type="color"]){width:104px;height:34px;border:1px solid #34373d;border-radius:6px;background:#0d0e10;color:#fff;padding:0 9px;text-transform:uppercase}
 .vxt-password-field,.vxt-password-stack label{display:flex;flex-direction:column;gap:7px;color:#aeb1b7;font-size:14px;font-weight:600}.vxt-password-stack{display:grid;gap:12px}.vxt-password-field input,.vxt-password-stack input{height:40px;border:1px solid #34373d;border-radius:7px;background:#0d0e10;color:#fff;padding:0 11px;outline:0}.vxt-password-field input:focus,.vxt-password-stack input:focus{border-color:var(--vx-red);box-shadow:0 0 0 3px color-mix(in srgb,var(--vx-red) 10%,transparent)}
 html[data-vx-theme="light"] .vxt-accent-control input:not([type="color"]),html[data-vx-theme="light"] .vxt-password-field input,html[data-vx-theme="light"] .vxt-password-stack input{background:#fff;color:#111318;border-color:#cdd1d7}
+
+
+/* Financial connection action polish */
+.vxt-connection aside button.primary{border-color:color-mix(in srgb,var(--vx-red) 45%,#303239);background:color-mix(in srgb,var(--vx-red) 13%,#0d0e10);color:#fff}
+.vxt-connection aside button.primary:hover:not(:disabled){border-color:color-mix(in srgb,var(--vx-red) 70%,#303239);background:color-mix(in srgb,var(--vx-red) 19%,#0d0e10)}
+.vxt-plaid-retry{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid #512127;border-radius:6px;background:#130b0d;padding:7px 8px}
+.vxt-plaid-retry .vxt-plaid-error{margin:0!important;min-width:0}
+.vxt-plaid-retry>button{flex:none;height:29px;border:1px solid #6a242c;border-radius:5px;background:#1b0c0f;color:#fff;padding:0 9px}
+.vxt-plaid-item>span:last-child button{white-space:nowrap}
+@media(max-width:700px){.vxt-connection{grid-template-columns:1fr}.vxt-connection aside{justify-content:flex-start;flex-wrap:wrap}.vxt-plaid-item{align-items:flex-start;flex-direction:column}.vxt-plaid-item>span:last-child{width:100%}.vxt-plaid-item>span:last-child button{flex:1;justify-content:center}}

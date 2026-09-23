@@ -74,3 +74,13 @@
 .vxf-connected-badge,.vxf-source-mark{justify-self:end;display:inline-flex;align-items:center;justify-content:center;width:fit-content;height:22px;color:#53d6ad;border:1px solid #24513f;border-radius:11px;padding:0 8px;background:#09130f;font-size:11px;line-height:1;font-weight:700;letter-spacing:.05em;white-space:nowrap}
 .vxf-source-mark{align-self:center}
 @media(max-width:900px){.vxf-plaid-summary{grid-template-columns:repeat(2,1fr)}}
+
+
+/* Financial Accounts — Plaid-first connection manager */
+.vxf-plaid-manager{margin:11px;border-color:#2b2d32;background:#08090a}
+.vxf-plaid-manager>div>span:last-child small{max-width:640px}
+.vxf-plaid-manager footer{padding-top:9px}
+.vxf-account header div{min-width:0}.vxf-account header strong,.vxf-account header small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vxf-account header button{height:28px;padding:0 7px;border:1px solid #303239;border-radius:5px!important;background:#0d0e10!important}
+.vxf-account header button:hover{border-color:#4b4e55;color:#fff}
+@media(max-width:760px){.vxf-plaid-manager{margin:8px}.vxf-account-grid{grid-template-columns:1fr}}
