@@ -7,11 +7,12 @@ import {
   Trash2,UserRound,X
 } from 'lucide-react';
 import {useWorkspace} from '../lib/useWorkspace';
-import {challengeMfa,enrollTotp,mfaQrImageSource,mfaState,unenrollMfa,updatePassword,verifyMfa,type MfaEnrollment,type MfaState} from '../lib/cloud';
+import {challengeMfa,enrollTotp,mfaQrImageSource,mfaState,unenrollMfa,updatePassword,verifyMfa,type CloudConfig,type MfaEnrollment,type MfaState,type Session} from '../lib/cloud';
 import {
   ALL_LIFE_SECTIONS,ALL_MODULES,MODULE_GROUPS,MODULE_LABELS,normalizePlatformState,type LifeSectionId,type PlatformState,type VexumModuleId,type Visibility
 } from '../lib/platform';
 import VexumOnboarding from './VexumOnboarding';
+import PlaidConnection from './PlaidConnection';
 
 type Section='profile'|'security'|'appearance'|'modules'|'widgets'|'notifications'|'privacy'|'connections'|'data';
 
@@ -46,7 +47,7 @@ export default function VexumSettings(){
         {section==='widgets'?<WidgetSettings platform={platform} onSave={save}/>:null}
         {section==='notifications'?<NotificationSettings platform={platform} onSave={save}/>:null}
         {section==='privacy'?<PrivacySettings platform={platform} onSave={save}/>:null}
-        {section==='connections'?<ConnectionSettings platform={platform} onSave={save}/>:null}
+        {section==='connections'?<ConnectionSettings platform={platform} config={workspace.config} session={workspace.session} onSave={save} onMessage={setMessage}/>:null}
         {section==='data'?<DataSettings workspace={workspace}/>:null}
         {message?<div className="vxt-message"><span>{message}</span><button onClick={()=>setMessage('')}><X/></button></div>:null}
       </main>
@@ -171,15 +172,13 @@ function PrivacySettings({platform,onSave}:{platform:PlatformState;onSave:(p:Pla
   </>;
 }
 
-function ConnectionSettings({platform,onSave}:{platform:PlatformState;onSave:(p:PlatformState)=>void}){
-  const financial=platform.connections.financial,calendar=platform.connections.calendar;
+function ConnectionSettings({platform,config,session,onSave,onMessage}:{platform:PlatformState;config:CloudConfig|null;session:Session|null;onSave:(p:PlatformState)=>void;onMessage:(message:string)=>void}){
   return <><SectionHead title="Connected Apps" subtitle="Connections are shown honestly. Unsupported providers never appear connected."/>
-    <div className="vxt-connection"><div><span className="icon"><Link2/></span><span><strong>Financial Accounts</strong><small>Future Plaid connection for spending, debt, cash flow, and recurring bills.</small></span></div><aside><span className="vxt-status warn">NOT CONNECTED</span><button disabled title="Plaid is not configured in this deployment">Connect with Plaid</button></aside><footer>{platform.security.requireMfaForExternalFinancial&&platform.security.mfaStatus!=='verified'?<p><LockKeyhole/>MFA must be verified before an external financial connection can be enabled.</p>:null}<p>Current Financial manual records remain available; VEXUM does not fabricate bank sync data.</p></footer></div>
+    <PlaidConnection config={config} session={session} platform={platform} onSave={onSave} onMessage={onMessage}/>
     <div className="vxt-connection"><div><span className="icon"><Globe2/></span><span><strong>Calendar Connections</strong><small>Google, Apple, and Outlook calendar sync.</small></span></div><aside><span className="vxt-status warn">NOT CONNECTED</span><button disabled>Connect Calendar</button></aside><footer><p>No external calendar provider is configured yet. Life Calendar uses VEXUM-native events.</p></footer></div>
     <div className="vxt-connection"><div><span className="icon"><Link2/></span><span><strong>Marketplaces</strong><small>Sell owns marketplace connection state.</small></span></div><aside><button onClick={()=>location.assign('/sell')}>Open Sell</button></aside></div>
   </>;
 }
-
 function DataSettings({workspace}:{workspace:ReturnType<typeof useWorkspace>}){
   const exportWorkspace=()=>{const blob=new Blob([JSON.stringify(workspace.data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='vexum-workspace-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(url)};
   return <><SectionHead title="Data & Export" subtitle="Your data should be portable. Destructive cloud-account deletion is not exposed without a verified backend endpoint."/>

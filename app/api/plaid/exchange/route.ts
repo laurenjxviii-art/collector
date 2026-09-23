@@ -1,0 +1,4 @@
+import {NextResponse} from 'next/server';
+import {exchangePublicToken,loadPlaidSnapshot,requirePlaidUser,routeError} from '../../../../lib/plaidServer';
+export const runtime='nodejs';export const dynamic='force-dynamic';export const maxDuration=60;
+export async function POST(req:Request){try{const auth=await requirePlaidUser(req,true);const body=await req.json();const publicToken=String(body.publicToken||'');const itemId=await exchangePublicToken(auth.userId,publicToken,{institutionId:String(body.institutionId||''),institutionName:String(body.institutionName||''),linkSessionId:String(body.linkSessionId||'')});return NextResponse.json({itemId,snapshot:await loadPlaidSnapshot(auth.userId)},{headers:{'Cache-Control':'no-store'}})}catch(error){const e=routeError(error);return NextResponse.json(e.body,{status:e.status})}}

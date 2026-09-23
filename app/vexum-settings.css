@@ -26,3 +26,14 @@
 
 .vxt-life-sections{border:1px solid #292b30;border-radius:7px;background:#0a0b0d;margin-top:10px;padding:10px}.vxt-life-sections>header{display:flex;flex-direction:column;border-bottom:1px solid #202226;padding:2px 2px 9px}.vxt-life-sections>header strong{font-size:14px}.vxt-life-sections>header span{font-size:14px;color:#747880;margin-top:2px}.vxt-life-sections>div{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;padding-top:8px}.vxt-life-sections label{height:34px;border:1px solid #24262b;border-radius:5px;background:#0d0e10;display:flex;align-items:center;gap:6px;padding:0 7px;color:#aeb1b7;font-size:14px}.vxt-life-sections .vxt-toggle{transform:scale(.82);transform-origin:left center;margin-right:-5px}
 @media(max-width:760px){.vxt-life-sections>div{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* Plaid connection controls */
+.vxt-plaid-connection footer{display:grid;gap:6px}
+.vxt-plaid-item{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid #26282d;border-radius:6px;background:#08090a;padding:8px}
+.vxt-plaid-item>span:first-child{display:flex;flex-direction:column;min-width:0}.vxt-plaid-item small{color:#7f838b}.vxt-plaid-item>span:last-child{display:flex;gap:6px}
+.vxt-plaid-item button{height:29px;border:1px solid #303239;border-radius:5px;background:#0d0e10;color:#aeb1b7;padding:0 8px}
+.vxt-plaid-item button.danger{border-color:#562129;color:#ff7884}.vxt-plaid-item button svg{width:12px}
+.vxt-plaid-product-state{display:block!important;border-left:2px solid #d38b47;padding-left:8px!important;color:#b4a28e!important}
+.vxt-plaid-error{color:#ff7a86!important}
+.vxt-plaid-connection aside button{display:flex;align-items:center;gap:5px;padding:0 9px}.vxt-plaid-connection aside button svg{width:12px}

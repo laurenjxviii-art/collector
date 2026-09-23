@@ -81,6 +81,7 @@ export async function verifyMfa(config:CloudConfig,factorId:string,challengeId:s
   const next=sessionFromAuth(value);
   if(!next)throw new Error('MFA verified but the upgraded session was not returned. Sign in again.');
   keep(next);
+  try{window.dispatchEvent(new Event('vexum.mfa.verified'))}catch{}
   return next;
 }
 export async function unenrollMfa(config:CloudConfig,factorId:string){

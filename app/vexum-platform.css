@@ -24,6 +24,6 @@
 .vxp-mfa-qr img{display:block;width:100%;height:100%;object-fit:contain}
 .vxp-mfa-enrollment-copy{min-width:0}
 .vxp-mfa-enrollment-copy small{display:block;color:#8f949c;line-height:1.45;margin-bottom:7px}
-.vxp-mfa-enrollment-copy code{display:block;max-width:100%;overflow-wrap:anywhere;border:1px solid #34373d;border-radius:7px;background:#0d0e10;color:#f0f1f3;padding:10px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:14px;letter-spacing:.04em}
+.vxp-mfa-enrollment-copy code{display:block;max-width:100%;overflow-wrap:anywhere;border:1px solid #34373d;border-radius:7px;background:#0d0e10;color:#f0f1f3;padding:10px;font-family:inherit;font-size:14px;letter-spacing:.04em}
 .vxp-mfa-enrollment-copy label{margin-top:14px!important}
 @media(max-width:600px){.vxp-mfa-enrollment{grid-template-columns:1fr}.vxp-mfa-qr{margin:0 auto;width:180px;height:180px}}

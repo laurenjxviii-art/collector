@@ -1,0 +1,4 @@
+import {NextResponse} from 'next/server';
+import {listStoredPlaidItems,loadPlaidSnapshot,requirePlaidUser,routeError,syncPlaidItem} from '../../../../lib/plaidServer';
+export const runtime='nodejs';export const dynamic='force-dynamic';export const maxDuration=60;
+export async function POST(req:Request){try{const auth=await requirePlaidUser(req,true);const body=await req.json().catch(()=>({}));const itemId=typeof body.itemId==='string'&&body.itemId?body.itemId:'';if(itemId)await syncPlaidItem(auth.userId,itemId,'all');else{const items=await listStoredPlaidItems(auth.userId);for(const item of items)await syncPlaidItem(auth.userId,item.item_id,'all')}return NextResponse.json(await loadPlaidSnapshot(auth.userId),{headers:{'Cache-Control':'no-store'}})}catch(error){const e=routeError(error);return NextResponse.json(e.body,{status:e.status})}}

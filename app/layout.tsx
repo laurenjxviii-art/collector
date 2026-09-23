@@ -12,9 +12,9 @@ import './vexum-setup.css';
 import './vexum-social.css';
 import './vexum-sell.css';
 import type {Metadata} from 'next';
-import {Space_Grotesk} from 'next/font/google';
+import {Inter} from 'next/font/google';
 
-const vexumFont=Space_Grotesk({subsets:['latin'],display:'swap',variable:'--font-vexum'});
+const vexumFont=Inter({subsets:['latin'],display:'swap',weight:['400','500','600','700']});
 
 export const metadata:Metadata={
   title:'VEXUM',
@@ -32,5 +32,5 @@ export const viewport={
 };
 
 export default function Layout({children}:{children:React.ReactNode}){
-  return <html lang="en"><body className={vexumFont.variable}>{children}</body></html>;
+  return <html lang="en"><body className={vexumFont.className}>{children}</body></html>;
 }

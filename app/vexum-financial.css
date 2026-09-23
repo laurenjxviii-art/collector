@@ -63,3 +63,14 @@
 /* External finance security gate */
 .vxf-security-gate{min-height:64px;border:1px solid #4f3c28;border-radius:7px;background:#130f0b;margin-bottom:9px;display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:9px;padding:8px 10px}
 .vxf-security-gate.connected{border-color:#24503f;background:#09130f}.vxf-security-gate .icon{width:32px;height:32px;border-radius:6px;border:1px solid #4b3b2a;background:#18120d;display:grid;place-items:center;color:#d79b52}.vxf-security-gate.connected .icon{border-color:#28503f;background:#0a1712;color:#31d398}.vxf-security-gate .icon svg{width:14px}.vxf-security-gate>div:nth-child(2){display:flex;flex-direction:column}.vxf-security-gate strong{font-size:14px}.vxf-security-gate p{font-size:14px;line-height:1.45;color:#797d85;margin:3px 0 0;max-width:850px}.vxf-security-gate button{height:29px;border:1px solid #3b3d43;border-radius:5px;background:#0d0e10;color:#aeb1b7;font-size:14px;padding:0 8px}
+
+
+/* Live Plaid data */
+.vxf-plaid-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#202226}
+.vxf-plaid-summary>div{min-height:72px;background:#090a0c;padding:12px;display:flex;flex-direction:column}
+.vxf-plaid-summary>div span{font-size:14px;color:#777b83}.vxf-plaid-summary>div strong{font-size:18px;margin-top:7px;font-weight:400}
+.vxf-plaid-summary>p{grid-column:1/-1;background:#090a0c;margin:0;padding:10px 12px;color:#7f838b;font-size:14px;display:flex;align-items:center;gap:6px}
+.vxf-plaid-summary>p svg{width:14px}.vxf-plaid-warning{color:#d4a05f!important}
+.vxf-connected-badge,.vxf-source-mark{justify-self:end;font-size:14px;color:#53d6ad;border:1px solid #24513f;border-radius:10px;padding:2px 6px;background:#09130f}
+.vxf-source-mark{align-self:center}
+@media(max-width:900px){.vxf-plaid-summary{grid-template-columns:repeat(2,1fr)}}
