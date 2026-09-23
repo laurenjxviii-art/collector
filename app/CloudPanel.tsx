@@ -22,16 +22,31 @@ export default function CloudPanel({authOnly=false,authReason='',config,session,
     setSending(true);setMessage('');
     try{
       if(create){
+        try{localStorage.setItem('vexum.mfa.signupIntent','1')}catch{}
         const result=await signUpPassword(config!,email,password);
-        if(result.session){try{localStorage.setItem('vexum.onboarding.pending','1')}catch{}location.reload();return}
-        if(result.user?.identities&&Array.isArray(result.user.identities)&&result.user.identities.length===0)setMessage('This email already has a VEXUM account. Sign in instead.');
-        else {try{localStorage.setItem('vexum.onboarding.pending','1')}catch{}setMessage('Account created. Confirm your email if prompted, then sign in.')}
+        if(result.user?.identities&&Array.isArray(result.user.identities)&&result.user.identities.length===0){
+          try{localStorage.removeItem('vexum.mfa.signupIntent');localStorage.removeItem('vexum.mfa.requiredAfterSignupUser')}catch{}
+          setMessage('This email already has a VEXUM account. Sign in instead.');
+          setCreate(false);
+          return;
+        }
+        if(result.user?.id){
+          try{localStorage.setItem('vexum.mfa.requiredAfterSignupUser',result.user.id);localStorage.removeItem('vexum.mfa.signupIntent')}catch{}
+        }
+        try{localStorage.setItem('vexum.onboarding.pending','1')}catch{}
+        if(result.session){location.reload();return}
+        setMessage('Account created. Confirm your email if prompted, then sign in. VEXUM will require authenticator 2FA before onboarding continues.');
         setCreate(false);
       }else{
         await signInPassword(config!,email,password);
         location.reload();
       }
-    }catch(err){setMessage(err instanceof Error?err.message:'Unable to sign in.')}finally{setSending(false)}
+    }catch(err){if(create){try{localStorage.removeItem('vexum.mfa.signupIntent');localStorage.removeItem('vexum.mfa.requiredAfterSignupUser')}catch{}}setMessage(err instanceof Error?err.message:'Unable to sign in.')}finally{setSending(false)}
+  }
+
+  function beginSocialAuth(provider:'google'|'apple'){
+    if(create){try{localStorage.setItem('vexum.mfa.signupIntent','1')}catch{}}
+    startOAuth(config!,provider);
   }
 
   async function requestReset(form:HTMLFormElement){
@@ -91,8 +106,8 @@ export default function CloudPanel({authOnly=false,authReason='',config,session,
           <button className="primary auth-submit auth-main-submit" disabled={sending}>{sending?'Working…':create?'Create Account':'Get Started'}</button>
           <div className="auth-divider"><span>{create?'or sign up with':'or sign in with'}</span></div>
           <div className="auth-provider-row">
-            <button type="button" className="auth-provider-icon-button google" aria-label="Sign in with Google" disabled={!providers.google||sending} title={providers.google?'Sign in with Google':'Google sign-in is not enabled yet'} onClick={()=>startOAuth(config!,'google')}><span aria-hidden="true">G</span></button>
-            <button type="button" className="auth-provider-icon-button apple" aria-label="Sign in with Apple" disabled={!providers.apple||sending} title={providers.apple?'Sign in with Apple':'Apple sign-in is not enabled yet'} onClick={()=>startOAuth(config!,'apple')}><span aria-hidden="true"></span></button>
+            <button type="button" className="auth-provider-icon-button google" aria-label="Sign in with Google" disabled={!providers.google||sending} title={providers.google?'Sign in with Google':'Google sign-in is not enabled yet'} onClick={()=>beginSocialAuth('google')}><span aria-hidden="true">G</span></button>
+            <button type="button" className="auth-provider-icon-button apple" aria-label="Sign in with Apple" disabled={!providers.apple||sending} title={providers.apple?'Sign in with Apple':'Apple sign-in is not enabled yet'} onClick={()=>beginSocialAuth('apple')}><span aria-hidden="true"></span></button>
           </div>
           <div className="auth-account-switch">{create?'Already have an account?':'New to VEXUM?'} <button type="button" onClick={()=>{setCreate(!create);setResetMode(false);setMessage('')}}>{create?'Sign in':'Create account'}</button></div>
           {(!providers.google||!providers.apple)?<p className="auth-provider-note">Social sign-in activates automatically when its Supabase provider is configured.</p>:null}

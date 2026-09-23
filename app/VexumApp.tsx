@@ -19,7 +19,7 @@ import VexumSettings from './VexumSettings';
 import VexumOnboarding from './VexumOnboarding';
 import CloudPanel from './CloudPanel';
 import {useWorkspace} from '../lib/useWorkspace';
-import {challengeMfa,mfaState,verifyMfa,type CloudConfig,type Session} from '../lib/cloud';
+import {challengeMfa,enrollTotp,mfaQrImageSource,mfaState,verifyMfa,type CloudConfig,type MfaEnrollment,type Session} from '../lib/cloud';
 import {
   MODULE_GROUPS,MODULE_LABELS,normalizePlatformState,type VexumModuleId
 } from '../lib/platform';
@@ -105,18 +105,104 @@ function ProfileMenu({open,onClose,displayName,email,navigate,signOut,onAccount}
 }
 
 function MfaSessionGate({config,session,onVerified,onSignOut}:{config:CloudConfig|null;session:Session|null;onVerified:()=>void;onSignOut:()=>Promise<void>}){
-  const [required,setRequired]=useState(false);const [factorId,setFactorId]=useState('');const [challengeId,setChallengeId]=useState('');const [code,setCode]=useState('');const [error,setError]=useState('');const [busy,setBusy]=useState(false);const [checked,setChecked]=useState(false);
+  const [required,setRequired]=useState(false);
+  const [mode,setMode]=useState<'challenge'|'enroll'>('challenge');
+  const [factorId,setFactorId]=useState('');
+  const [enrollment,setEnrollment]=useState<MfaEnrollment|null>(null);
+  const [code,setCode]=useState('');
+  const [error,setError]=useState('');
+  const [busy,setBusy]=useState(false);
+  const [checked,setChecked]=useState(false);
+
   useEffect(()=>{
     if(!config?.configured||!session){setChecked(true);setRequired(false);return}
     let alive=true;
-    (async()=>{try{const state=await mfaState(config);if(!alive)return;if(state.currentLevel==='aal1'&&state.nextLevel==='aal2'&&state.verified[0]){setRequired(true);setFactorId(state.verified[0].id);const challenge=await challengeMfa(config,state.verified[0].id);if(alive)setChallengeId(challenge.id)}}catch(err){if(alive)setError(err instanceof Error?err.message:'Unable to check MFA.')}finally{if(alive)setChecked(true)}})();
+    (async()=>{
+      try{
+        let requiredUser='';
+        let signupIntent=false;
+        try{
+          requiredUser=localStorage.getItem('vexum.mfa.requiredAfterSignupUser')||'';
+          signupIntent=localStorage.getItem('vexum.mfa.signupIntent')==='1';
+          if(!requiredUser&&signupIntent){
+            requiredUser=session.user.id;
+            localStorage.setItem('vexum.mfa.requiredAfterSignupUser',requiredUser);
+            localStorage.removeItem('vexum.mfa.signupIntent');
+          }
+        }catch{}
+        const signupMfaRequired=requiredUser===session.user.id;
+        const state=await mfaState(config);
+        if(!alive)return;
+
+        if(state.currentLevel==='aal2'){
+          if(signupMfaRequired){try{localStorage.removeItem('vexum.mfa.requiredAfterSignupUser')}catch{}}
+          setRequired(false);
+          return;
+        }
+
+        if(state.currentLevel==='aal1'&&state.nextLevel==='aal2'&&state.verified[0]){
+          setMode('challenge');
+          setRequired(true);
+          setFactorId(state.verified[0].id);
+          return;
+        }
+
+        if(signupMfaRequired){
+          setMode('enroll');
+          setRequired(true);
+          const next=await enrollTotp(config,'VEXUM Authenticator');
+          if(!alive)return;
+          setEnrollment(next);
+          setFactorId(next.id);
+        }
+      }catch(err){
+        if(alive){setRequired(true);setError(err instanceof Error?err.message:'Unable to configure required 2FA.')}
+      }finally{
+        if(alive)setChecked(true);
+      }
+    })();
     return()=>{alive=false};
   },[config?.configured,session?.user.id]);
-  if(!checked||!required)return null;
-  const verify=async()=>{if(!config||!factorId||!challengeId||code.length<6)return;setBusy(true);setError('');try{await verifyMfa(config,factorId,challengeId,code);setRequired(false);onVerified()}catch(err){setError(err instanceof Error?err.message:'Unable to verify MFA.')}finally{setBusy(false)}};
-  return <div className="vxp-mfa-gate"><section><LockKeyhole/><span>SECURITY CHECK</span><h2>Verify your VEXUM account</h2><p>This account has multi-factor authentication enabled. Enter the code from your authenticator app before continuing.</p><label>Authenticator code<input autoFocus inputMode="numeric" autoComplete="one-time-code" value={code} onChange={e=>setCode(e.target.value.replace(/\D/g,'').slice(0,6))} onKeyDown={e=>{if(e.key==='Enter')void verify()}} placeholder="000000"/></label>{error?<div className="error">{error}</div>:null}<div><button onClick={()=>void onSignOut()}>Sign Out</button><button className="primary" disabled={busy||code.length<6} onClick={()=>void verify()}>{busy?'Verifying…':'Verify & Continue'}</button></div></section></div>;
-}
 
+  if(!checked||!required)return null;
+
+  const verify=async()=>{
+    if(!config||!factorId||code.length<6)return;
+    setBusy(true);setError('');
+    try{
+      const challenge=await challengeMfa(config,factorId);
+      await verifyMfa(config,factorId,challenge.id,code);
+      if(mode==='enroll'){
+        try{localStorage.removeItem('vexum.mfa.requiredAfterSignupUser');localStorage.removeItem('vexum.mfa.signupIntent')}catch{}
+      }
+      setRequired(false);
+      onVerified();
+    }catch(err){
+      setError(err instanceof Error?err.message:'Unable to verify MFA.');
+    }finally{setBusy(false)}
+  };
+
+  const qrSrc=mfaQrImageSource(enrollment?.totp?.qr_code);
+  return <div className="vxp-mfa-gate"><section className={mode==='enroll'?'vxp-mfa-enroll-card':''}>
+    <LockKeyhole/><span>{mode==='enroll'?'REQUIRED ACCOUNT SECURITY':'SECURITY CHECK'}</span>
+    <h2>{mode==='enroll'?'Set up 2FA to finish signup':'Verify your VEXUM account'}</h2>
+    {mode==='enroll'?<>
+      <p>VEXUM requires authenticator two-factor authentication for new accounts. Scan the QR code in Google Authenticator, Microsoft Authenticator, Authy, 1Password, or another TOTP app, then enter the 6-digit code.</p>
+      <div className="vxp-mfa-enrollment">
+        {qrSrc?<div className="vxp-mfa-qr"><img src={qrSrc} alt="VEXUM authenticator setup QR code"/></div>:null}
+        <div className="vxp-mfa-enrollment-copy">
+          {enrollment?.totp?.secret?<><small>Can't scan it? Enter this setup key manually:</small><code>{enrollment.totp.secret}</code></>:null}
+          <label>6-digit authenticator code<input autoFocus inputMode="numeric" autoComplete="one-time-code" value={code} onChange={e=>setCode(e.target.value.replace(/\D/g,'').slice(0,6))} onKeyDown={e=>{if(e.key==='Enter')void verify()}} placeholder="000000"/></label>
+        </div>
+      </div>
+    </>:<>
+      <p>This account has multi-factor authentication enabled. Enter the code from your authenticator app before continuing.</p>
+      <label>Authenticator code<input autoFocus inputMode="numeric" autoComplete="one-time-code" value={code} onChange={e=>setCode(e.target.value.replace(/\D/g,'').slice(0,6))} onKeyDown={e=>{if(e.key==='Enter')void verify()}} placeholder="000000"/></label>
+    </>}
+    {error?<div className="error">{error}</div>:null}
+    <div><button onClick={()=>void onSignOut()}>Sign Out</button><button className="primary" disabled={busy||code.length<6} onClick={()=>void verify()}>{busy?'Verifying…':mode==='enroll'?'Enable 2FA & Continue':'Verify & Continue'}</button></div>
+  </section></div>;
+}
 export default function VexumApp({
   initialView='home',initialSearchQuery='',initialProductId=''
 }:{

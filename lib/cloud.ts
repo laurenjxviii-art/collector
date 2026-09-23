@@ -25,6 +25,21 @@ export type MfaFactor={id:string;friendly_name?:string;factor_type?:'totp'|'phon
 export type MfaEnrollment={id:string;type:string;friendly_name?:string;totp?:{qr_code?:string;secret?:string;uri?:string}};
 export type MfaState={factors:MfaFactor[];verified:MfaFactor[];currentLevel:'aal1'|'aal2';nextLevel:'aal1'|'aal2'};
 
+export function mfaQrImageSource(value?:string){
+  if(!value)return '';
+  const qr=value.trim();
+  if(/^data:image\//i.test(qr)||/^https?:\/\//i.test(qr)||/^blob:/i.test(qr))return qr;
+  if(/^%3C(?:\?xml|svg)/i.test(qr))return 'data:image/svg+xml;charset=utf-8,'+qr;
+  if(qr.startsWith('<svg')||qr.startsWith('<?xml')||qr.includes('<svg')){
+    return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(qr);
+  }
+  try{
+    const decoded=atob(qr);
+    if(decoded.includes('<svg'))return 'data:image/svg+xml;base64,'+qr;
+  }catch{}
+  return qr;
+}
+
 export async function authCapabilities(config:CloudConfig):Promise<AuthCapabilities>{
   const settings=await request(config,'/auth/v1/settings');
   const external=settings?.external&&typeof settings.external==='object'?settings.external:{};
