@@ -1,6 +1,7 @@
 import './vexum-reset.css';
 import './vexum-ui.css';
 import './vexum-platform.css';
+import './vexum-profile.css';
 import './vexum-onboarding.css';
 import './vexum-settings.css';
 import './cloud.css';
@@ -13,6 +14,7 @@ import './vexum-financial.css';
 import './vexum-setup.css';
 import './vexum-social.css';
 import './vexum-sell.css';
+import './vexum-theme.css';
 import type {Metadata} from 'next';
 import {Inter} from 'next/font/google';
 

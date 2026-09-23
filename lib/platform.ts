@@ -1,5 +1,6 @@
 export type VexumModuleId='home'|'life'|'portfolio'|'search'|'wishlist'|'radar'|'sell'|'setup'|'financial'|'social';
 export type AppearanceDensity='compact'|'standard'|'comfortable';
+export type ThemeMode='dark'|'light';
 export type TextSize='small'|'medium'|'large';
 export type MotionLevel='full'|'reduced';
 export type GlowLevel='off'|'subtle'|'standard';
@@ -18,6 +19,8 @@ export type PlatformIdentity={
 };
 
 export type PlatformAppearance={
+  theme:ThemeMode;
+  accentColor:string;
   density:AppearanceDensity;
   textSize:TextSize;
   motion:MotionLevel;
@@ -98,6 +101,7 @@ export type PlatformState={
   connections:PlatformConnections;
   dashboardLayouts:Record<string,WidgetPlacement[]>;
   widgetPresets:WidgetLayoutPreset[];
+  cloudSyncEnabled:boolean;
   gamificationEnabled:boolean;
 };
 
@@ -141,7 +145,7 @@ export function defaultPlatformState(legacy=true):PlatformState{
     collectorCategories:[],
     collectorInterests:[],
     identity:{username:'',displayName:'',birthday:'',country:'United States',currency:'USD',language:'English'},
-    appearance:{density:'compact',textSize:'medium',motion:'full',glow:'subtle',sidebarWidth:'standard',numberFormat:'full'},
+    appearance:{theme:'dark',accentColor:'#FF0000',density:'compact',textSize:'medium',motion:'full',glow:'subtle',sidebarWidth:'standard',numberFormat:'full'},
     notifications:{
       push:true,email:false,taskReminders:true,radar:true,marketplace:true,financial:true,social:true,
       quietHours:{enabled:false,start:'23:00',end:'08:00',urgentCategories:['Grail Restock','Financial Security']},
@@ -155,6 +159,7 @@ export function defaultPlatformState(legacy=true):PlatformState{
     },
     dashboardLayouts:{},
     widgetPresets:[],
+    cloudSyncEnabled:true,
     gamificationEnabled:false
   };
 }
@@ -207,6 +212,8 @@ export function normalizePlatformState(value?:PlatformState,legacy=true):Platfor
       language:typeof identity.language==='string'?identity.language:'English'
     },
     appearance:{
+      theme:['dark','light'].includes(appearance.theme)?appearance.theme:'dark',
+      accentColor:typeof appearance.accentColor==='string'&&/^#[0-9a-f]{6}$/i.test(appearance.accentColor)?appearance.accentColor.toUpperCase():'#FF0000',
       density:['compact','standard','comfortable'].includes(appearance.density)?appearance.density:'compact',
       textSize:['small','medium','large'].includes(appearance.textSize)?appearance.textSize:'medium',
       motion:['full','reduced'].includes(appearance.motion)?appearance.motion:'full',
@@ -257,6 +264,7 @@ export function normalizePlatformState(value?:PlatformState,legacy=true):Platfor
     },
     dashboardLayouts:layouts,
     widgetPresets:Array.isArray(value.widgetPresets)?value.widgetPresets.filter(preset=>preset&&typeof preset.id==='string'&&typeof preset.name==='string'&&typeof preset.page==='string'&&Array.isArray(preset.widgets)&&preset.widgets.every(validWidget)&&typeof preset.createdAt==='string'&&typeof preset.updatedAt==='string'):[],
+    cloudSyncEnabled:typeof value.cloudSyncEnabled==='boolean'?value.cloudSyncEnabled:true,
     gamificationEnabled:typeof value.gamificationEnabled==='boolean'?value.gamificationEnabled:false
   };
 }

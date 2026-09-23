@@ -1,10 +1,9 @@
 'use client';
 
 import {useEffect,useMemo,useState} from 'react';
-import type {ReactNode} from 'react';
+import type {CSSProperties,ReactNode} from 'react';
 import {
-  Bell,Bot,CalendarCheck,ChevronDown,CircleDollarSign,HelpCircle,Home,Layers3,LifeBuoy,LogOut,Monitor,Palette,
-  LockKeyhole,MessageSquare,Plus,Radar as RadarIcon,Search,Settings,Share2,ShoppingBag,Star,UserRound,X
+  Bell,Bot,CalendarCheck,ChevronDown,CircleDollarSign,Home,Layers3,Monitor,Plus,Radar as RadarIcon,Search,Settings,Share2,ShoppingBag,Star
 } from 'lucide-react';
 import VexumHome from './VexumHome';
 import VexumLife from './VexumLife';
@@ -17,6 +16,7 @@ import VexumSetup from './VexumSetup';
 import VexumSell from './VexumSell';
 import VexumSocial from './VexumSocial';
 import VexumSettings from './VexumSettings';
+import VexumProfileModal from './VexumProfileModal';
 import {OtpInput,VexumDialog,VexumInteractionHost,VexumToastHost,pushVexumToast} from './VexumUi';
 import VexumOnboarding from './VexumOnboarding';
 import CloudPanel from './CloudPanel';
@@ -92,20 +92,6 @@ function Topbar({hero,displayName,unread,onCommand,onAsk,onQuick,onNotifications
 
 function PageFrame({hero,children,displayName,unread,onCommand,onAsk,onQuick,onNotifications,onProfile,onSettings}:{hero:string;children:ReactNode;displayName:string;unread:number;onCommand:()=>void;onAsk:()=>void;onQuick:()=>void;onNotifications:()=>void;onProfile:()=>void;onSettings:()=>void}){
   return <main id="vexum-main" tabIndex={-1} className={'vx-content page-'+hero}><Topbar hero={hero} displayName={displayName} unread={unread} onCommand={onCommand} onAsk={onAsk} onQuick={onQuick} onNotifications={onNotifications} onProfile={onProfile} onSettings={onSettings}/>{children}</main>;
-}
-
-function ProfileMenu({open,onClose,displayName,email,navigate,signOut,onAccount,onSettings}:{open:boolean;onClose:()=>void;displayName:string;email:string;navigate:(v:View)=>void;signOut:()=>Promise<void>;onAccount:()=>void;onSettings:(section?:'profile'|'appearance')=>void}){
-  if(!open)return null;
-  const go=(view:View)=>{onClose();navigate(view)};
-  return <div className="vxp-profile-menu" role="region" aria-label="Account menu">
-    <header><div className="avatar" aria-hidden="true">{displayName[0]?.toUpperCase()||'V'}</div><span><strong>{displayName}</strong><small>{email||'Local workspace'}</small></span><button aria-label="Close account menu" onClick={onClose}><X/></button></header>
-    <button onClick={()=>{onClose();onSettings('profile')}}><UserRound/><span>Profile</span><ChevronDown/></button>
-    <button onClick={()=>{onClose();onSettings()}}><Settings/><span>Settings</span><ChevronDown/></button>
-    <button onClick={()=>{onClose();onSettings('appearance')}}><Palette/><span>Appearance</span><ChevronDown/></button>
-    <button onClick={()=>{onClose();pushVexumToast({title:'Help Center is not connected yet.',message:'Support content will appear here once the Help Center is configured.',kind:'info'})}}><HelpCircle/><span>Help</span><ChevronDown/></button>
-    <button onClick={()=>{onClose();pushVexumToast({title:'Feedback delivery is not configured yet.',message:'Your message was not sent.',kind:'warning'})}}><MessageSquare/><span>Send Feedback</span><ChevronDown/></button>
-    {email?<button className="danger" onClick={()=>void signOut()}><LogOut/><span>Sign Out</span></button>:<button className="danger" onClick={()=>{onClose();onAccount()}}><UserRound/><span>Create or Sign In to Account</span></button>}
-  </div>;
 }
 
 function MfaSessionGate({config,session,onVerified,onSignOut}:{config:CloudConfig|null;session:Session|null;onVerified:()=>void;onSignOut:()=>Promise<void>}){
@@ -324,7 +310,7 @@ export default function VexumApp({
   const openCommand=()=>{setCommandOpen(true);setAskOpen(false);setProfileOpen(false);setNotificationsOpen(false)};
   const openAsk=()=>{setAskOpen(true);setCommandOpen(false);setQuickOpen(false);setProfileOpen(false);setNotificationsOpen(false)};
   const openNotifications=()=>{if(!workspace.session){openAuth('your notifications');return}setNotificationsOpen(v=>!v);setAskOpen(false);setProfileOpen(false);setCommandOpen(false)};
-  const openProfile=()=>{setNotificationsOpen(false);setCommandOpen(false);setAskOpen(false);if(!workspace.session){openAuth('your account');return}setProfileOpen(v=>!v)};
+  const openProfile=()=>{setNotificationsOpen(false);setCommandOpen(false);setAskOpen(false);if(!workspace.session){openAuth('your account');return}setProfileOpen(true)};
 
   const setModuleSection=(module:VexumModuleId,section:string)=>setModuleSections(current=>({...current,[module]:section}));
   const sidebarSections:Partial<Record<VexumModuleId,SidebarSection[]>>={
@@ -350,9 +336,10 @@ export default function VexumApp({
   else if(view==='social')content=frame('social',<VexumSocial section={moduleSections.social} onSectionChange={section=>setModuleSection('social',section)}/>);
 
 
-  const rootClass=['vx-app','vxp-platform','density-'+platform.appearance.density,'text-'+platform.appearance.textSize,'motion-'+platform.appearance.motion,'glow-'+platform.appearance.glow,'sidebar-'+platform.appearance.sidebarWidth].join(' ');
+  const rootClass=['vx-app','vxp-platform','theme-'+platform.appearance.theme,'density-'+platform.appearance.density,'text-'+platform.appearance.textSize,'motion-'+platform.appearance.motion,'glow-'+platform.appearance.glow,'sidebar-'+platform.appearance.sidebarWidth].join(' ');
+  const rootStyle={'--vx-red':platform.appearance.accentColor,'--vx-accent':platform.appearance.accentColor} as CSSProperties;
 
-  return <div className={rootClass}>
+  return <div className={rootClass} style={rootStyle}>
     <a className="vx-skip-link" href="#vexum-main">Skip to main content</a>
     <Sidebar view={view} navigate={navigate} enabled={enabled} order={platform.moduleOrder} displayName={displayName} sections={sidebarSections} activeSection={activeSection} onSection={setModuleSection} onProfile={openProfile}/>
     {content}
@@ -360,7 +347,7 @@ export default function VexumApp({
     <NotificationCenter open={notificationsOpen} onClose={()=>setNotificationsOpen(false)} workspace={workspace} navigate={navigate}/>
     <CommandCenter open={commandOpen} onClose={()=>setCommandOpen(false)} workspace={workspace} navigate={navigate} onQuickAdd={openQuick}/>
     <AskVexumPanel open={askOpen} onClose={()=>setAskOpen(false)}/>
-    <ProfileMenu open={profileOpen} onClose={()=>setProfileOpen(false)} displayName={displayName} email={workspace.session?.user.email||''} navigate={navigate} signOut={workspace.signOut} onAccount={()=>openAuth('your account')} onSettings={openSettings}/>
+    <VexumProfileModal open={profileOpen} onClose={()=>setProfileOpen(false)} onSettings={()=>{setProfileOpen(false);openSettings('profile')}} onOpenSocial={()=>{setProfileOpen(false);setModuleSection('social','Profile');navigate('social')}}/>
     {settingsOpen?<VexumSettings modal onClose={closeSettings} initialSection={settingsSection}/>:null}
     {accountOpen?<CloudPanel authOnly={!workspace.session} authReason={authReason} config={workspace.config} session={workspace.session} status={workspace.status} error={workspace.error} needsMigration={workspace.needsMigration} conflict={workspace.conflict} busy={workspace.busy} pending={workspace.pending} close={closeAuth} migrate={workspace.migrate} refresh={workspace.refresh} signOut={async()=>{await workspace.signOut();setAccountOpen(false)}} retry={workspace.retry} backup={()=>{const blob=new Blob([JSON.stringify(workspace.data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='vexum-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),500)}} recovery={()=>{const data=workspace.recovery();if(!data){pushVexumToast({title:'No recovery backup found.',message:'This device does not currently have a conflict recovery backup.',kind:'warning'});return}const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='vexum-recovery.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),500)}}/>:null}
     <MfaSessionGate config={workspace.config} session={workspace.session} onSignOut={workspace.signOut} onVerified={()=>workspace.update({...workspace.data,platform:{...platform,security:{...platform.security,mfaStatus:'verified',mfaMethod:'authenticator'}}})}/>

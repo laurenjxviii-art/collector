@@ -2,12 +2,12 @@
 
 import {useEffect,useMemo,useState} from 'react';
 import {
-  ArrowDown,ArrowUp,Bell,Check,ChevronRight,Download,Eye,Globe2,GripVertical,KeyRound,
-  LayoutDashboard,Link2,LockKeyhole,LogOut,Palette,RefreshCw,Shield,SlidersHorizontal,
+  ArrowDown,ArrowUp,Bell,Check,ChevronRight,Cloud,Copy,CreditCard,Download,Eye,Globe2,GripVertical,HelpCircle,KeyRound,
+  Languages,LayoutDashboard,Link2,LockKeyhole,LogOut,Palette,ReceiptText,RefreshCw,Shield,
   Trash2,UserRound,X
 } from 'lucide-react';
 import {useWorkspace} from '../lib/useWorkspace';
-import {challengeMfa,enrollTotp,mfaQrImageSource,mfaState,unenrollMfa,updatePassword,verifyMfa,type CloudConfig,type MfaEnrollment,type MfaState,type Session} from '../lib/cloud';
+import {challengeMfa,enrollTotp,mfaQrImageSource,mfaState,signInPassword,unenrollMfa,updatePassword,verifyMfa,type CloudConfig,type MfaEnrollment,type MfaState,type Session} from '../lib/cloud';
 import {
   ALL_LIFE_SECTIONS,ALL_MODULES,MODULE_GROUPS,MODULE_LABELS,normalizePlatformState,type LifeSectionId,type PlatformState,type VexumModuleId,type Visibility
 } from '../lib/platform';
@@ -15,13 +15,23 @@ import VexumOnboarding from './VexumOnboarding';
 import PlaidConnection from './PlaidConnection';
 import {OtpInput,VexumConfirmDialog,VexumDialog,VexumPageSkeleton,pushVexumToast} from './VexumUi';
 
-type Section='profile'|'security'|'appearance'|'modules'|'widgets'|'notifications'|'privacy'|'connections'|'data';
+type Section='account'|'profile'|'security'|'appearance'|'modules'|'notifications'|'privacy'|'connections'|'cloud'|'region'|'payments'|'subscription'|'data'|'help';
 
 const SECTIONS:Array<{id:Section;label:string;group:string;icon:React.ReactNode}>=[
-  {id:'profile',label:'Profile',group:'ACCOUNT',icon:<UserRound/>},{id:'security',label:'Account & Security',group:'ACCOUNT',icon:<LockKeyhole/>},
-  {id:'appearance',label:'Appearance',group:'PERSONALIZATION',icon:<Palette/>},{id:'modules',label:'Modules & Sidebar',group:'PERSONALIZATION',icon:<LayoutDashboard/>},{id:'widgets',label:'Widgets',group:'PERSONALIZATION',icon:<SlidersHorizontal/>},
-  {id:'notifications',label:'Notifications',group:'NOTIFICATIONS',icon:<Bell/>},{id:'privacy',label:'Privacy',group:'PRIVACY',icon:<Eye/>},
-  {id:'connections',label:'Connected Apps',group:'CONNECTIONS',icon:<Link2/>},{id:'data',label:'Data & Export',group:'DATA',icon:<Download/>}
+  {id:'account',label:'Account',group:'ACCOUNT',icon:<UserRound/>},
+  {id:'profile',label:'Profile',group:'ACCOUNT',icon:<UserRound/>},
+  {id:'security',label:'Security',group:'ACCOUNT',icon:<LockKeyhole/>},
+  {id:'appearance',label:'Appearance',group:'PERSONALIZATION',icon:<Palette/>},
+  {id:'modules',label:'Modules & Sidebar',group:'PERSONALIZATION',icon:<LayoutDashboard/>},
+  {id:'notifications',label:'Notifications',group:'PREFERENCES',icon:<Bell/>},
+  {id:'privacy',label:'Privacy',group:'PREFERENCES',icon:<Eye/>},
+  {id:'region',label:'Language & Region',group:'PREFERENCES',icon:<Languages/>},
+  {id:'connections',label:'Connections',group:'CONNECTED SERVICES',icon:<Link2/>},
+  {id:'cloud',label:'Cloud & Sync',group:'CONNECTED SERVICES',icon:<Cloud/>},
+  {id:'payments',label:'Payment Methods',group:'BILLING',icon:<CreditCard/>},
+  {id:'subscription',label:'Subscription',group:'BILLING',icon:<ReceiptText/>},
+  {id:'data',label:'Data & Export',group:'DATA',icon:<Download/>},
+  {id:'help',label:'Help',group:'SUPPORT',icon:<HelpCircle/>}
 ];
 
 export default function VexumSettings({modal=false,onClose,initialSection}:{modal?:boolean;onClose?:()=>void;initialSection?:Section}={}){
@@ -58,15 +68,20 @@ export default function VexumSettings({modal=false,onClose,initialSection}:{moda
   const settingsContent=<div className={'vxt-layout '+(modal?'modal':'')}>
     <aside className="vx-panel vxt-nav" aria-label="Settings sections">{grouped.map(group=><section key={group.group}><span>{group.group}</span>{group.items.map(item=><button key={item.id} aria-current={section===item.id?'page':undefined} className={section===item.id?'active':''} onClick={()=>setSection(item.id)}>{item.icon}<strong>{item.label}</strong><ChevronRight/></button>)}</section>)}</aside>
     <main className="vx-panel vxt-main">
+      {section==='account'?<AccountSettings workspace={workspace}/>:null}
       {section==='profile'?<ProfileSettings platform={platform} onSave={save} email={workspace.session?.user.email||''}/>:null}
       {section==='security'?<SecuritySettings platform={platform} config={workspace.config} session={workspace.session} onSave={save} onMessage={notify}/>:null}
       {section==='appearance'?<AppearanceSettings platform={platform} onSave={save}/>:null}
       {section==='modules'?<ModuleSettings platform={platform} onSave={save} onOnboarding={()=>setOnboarding(true)}/>:null}
-      {section==='widgets'?<WidgetSettings platform={platform} onSave={save}/>:null}
       {section==='notifications'?<NotificationSettings platform={platform} onSave={save}/>:null}
       {section==='privacy'?<PrivacySettings platform={platform} onSave={save}/>:null}
       {section==='connections'?<ConnectionSettings platform={platform} config={workspace.config} session={workspace.session} onSave={save} onMessage={notify}/>:null}
+      {section==='cloud'?<CloudSettings workspace={workspace} platform={platform} onSave={save}/>:null}
+      {section==='region'?<RegionSettings platform={platform} onSave={save}/>:null}
+      {section==='payments'?<PaymentSettings/>:null}
+      {section==='subscription'?<SubscriptionSettings/>:null}
       {section==='data'?<DataSettings workspace={workspace}/>:null}
+      {section==='help'?<HelpSettings/>:null}
     </main>
   </div>;
 
@@ -85,18 +100,29 @@ export default function VexumSettings({modal=false,onClose,initialSection}:{moda
 function SectionHead({title,subtitle}:{title:string;subtitle:string}){return <header className="vxt-section-head"><h2>{title}</h2><p>{subtitle}</p></header>}
 function SettingRow({label,description,children}:{label:string;description:string;children:React.ReactNode}){return <div className="vxt-row"><div><strong>{label}</strong><span>{description}</span></div><div>{children}</div></div>}
 
+function AccountSettings({workspace}:{workspace:ReturnType<typeof useWorkspace>}){
+  return <><SectionHead title="Account" subtitle="Your signed-in VEXUM account and current session."/>
+    <SettingRow label="Email" description="Primary cloud account identity."><span className="vxt-account-value">{workspace.session?.user.email||'Not signed in'}</span></SettingRow>
+    <SettingRow label="Account Status" description={workspace.session?'Authenticated VEXUM account.':'Local workspace only.'}><span className={'vxt-status '+(workspace.session?'good':'warn')}>{workspace.session?'SIGNED IN':'LOCAL'}</span></SettingRow>
+    <SettingRow label="Sign Out" description="End the VEXUM session on this device."><button onClick={()=>void workspace.signOut()}><LogOut/>Sign Out</button></SettingRow>
+  </>;
+}
+
 function ProfileSettings({platform,onSave,email}:{platform:PlatformState;onSave:(p:PlatformState)=>void;email:string}){
   const [draft,setDraft]=useState(platform.identity);
   const patch=(key:keyof typeof draft,value:string)=>setDraft(current=>({...current,[key]:value}));
-  return <><SectionHead title="Profile" subtitle="Identity and regional defaults. Birthday remains private unless you later choose otherwise."/>
+  return <><SectionHead title="Profile" subtitle="Public profile imagery, bio, username, links, and visibility are edited from your avatar menu. These are account identity defaults."/>
     <div className="vxt-profile-card"><div className="avatar">{draft.displayName?.[0]?.toUpperCase()||'V'}</div><div><strong>{draft.displayName||'VEXUM User'}</strong><span>{email||'No cloud email'}</span></div></div>
-    <div className="vxt-form grid"><label>Username<input value={draft.username} onChange={e=>patch('username',e.target.value.replace(/\s+/g,''))}/></label><label>Display Name<input value={draft.displayName} onChange={e=>patch('displayName',e.target.value)}/></label><label>Birthday<input type="date" value={draft.birthday} onChange={e=>patch('birthday',e.target.value)}/></label><label>Country / Region<select value={draft.country} onChange={e=>patch('country',e.target.value)}><option>United States</option><option>Canada</option><option>United Kingdom</option><option>Australia</option><option>Other</option></select></label><label>Currency<select value={draft.currency} onChange={e=>patch('currency',e.target.value)}><option>USD</option><option>CAD</option><option>GBP</option><option>EUR</option><option>AUD</option></select></label><label>Language<select value={draft.language} onChange={e=>patch('language',e.target.value)}><option>English</option><option>Spanish</option><option>French</option><option>German</option><option>Japanese</option></select></label></div>
-    <footer className="vxt-actions"><button className="primary" onClick={()=>onSave({...platform,identity:draft})}>Save Profile</button></footer>
+    <div className="vxt-form grid"><label>Display Name<input value={draft.displayName} onChange={e=>patch('displayName',e.target.value)}/></label><label>Birthday<input type="date" value={draft.birthday} onChange={e=>patch('birthday',e.target.value)}/></label></div>
+    <div className="vxt-inline-note"><UserRound/><span><strong>Full social profile</strong><small>Use the avatar in the app shell to edit your username, profile photo, banner, bio, links, region, and public modules.</small></span></div>
+    <footer className="vxt-actions"><button className="primary" onClick={()=>onSave({...platform,identity:draft})}>Save Profile Defaults</button></footer>
   </>;
 }
 
 function SecuritySettings({platform,config,session,onSave,onMessage}:{platform:PlatformState;config:any;session:any;onSave:(p:PlatformState)=>void;onMessage:(m:string)=>void}){
-  const [password,setPassword]=useState('');const [confirm,setConfirm]=useState('');const [busy,setBusy]=useState(false);
+  const [passwordOpen,setPasswordOpen]=useState(false);
+  const [passwordStep,setPasswordStep]=useState<'verify'|'new'|'success'>('verify');
+  const [currentPassword,setCurrentPassword]=useState('');const [password,setPassword]=useState('');const [confirm,setConfirm]=useState('');const [busy,setBusy]=useState(false);
   const [mfa,setMfa]=useState<MfaState|null>(null);const [mfaBusy,setMfaBusy]=useState(false);const [mfaError,setMfaError]=useState('');
   const [enrollment,setEnrollment]=useState<MfaEnrollment|null>(null);const [code,setCode]=useState('');
   const [factorToRemove,setFactorToRemove]=useState<{id:string;name:string}|null>(null);
@@ -115,14 +141,6 @@ function SecuritySettings({platform,config,session,onSave,onMessage}:{platform:P
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[Boolean(config),session?.user?.id]);
 
-  const changePassword=async()=>{
-    if(!config||!session){onMessage('Sign in to change the cloud account password.');return}
-    if(password.length<6||password!==confirm){onMessage('Passwords must match and be at least 6 characters.');return}
-    setBusy(true);
-    try{await updatePassword(config,password);setPassword('');setConfirm('');onMessage('Password updated.')}
-    catch(err){onMessage(err instanceof Error?err.message:'Password update failed.')}
-    finally{setBusy(false)}
-  };
   const beginTotp=async()=>{
     if(!config||!session)return;
     setMfaBusy(true);setMfaError('');
@@ -132,45 +150,70 @@ function SecuritySettings({platform,config,session,onSave,onMessage}:{platform:P
   };
   const beginSessionChallenge=async()=>{
     if(!config||!mfa?.verified[0])return;
-    const factor=mfa.verified[0];
-    setEnrollment({id:factor.id,type:factor.factor_type||'totp',friendly_name:factor.friendly_name});
-    setCode('');setMfaError('');
+    const factor=mfa.verified[0];setEnrollment({id:factor.id,type:factor.factor_type||'totp',friendly_name:factor.friendly_name});setCode('');setMfaError('');
   };
   const closeMfaDialog=()=>{if(mfaBusy)return;setEnrollment(null);setCode('');setMfaError('')};
   const verify=async()=>{
     if(!config||!enrollment||code.length<6)return;
     setMfaBusy(true);setMfaError('');
-    try{
-      const challenge=await challengeMfa(config,enrollment.id);
-      await verifyMfa(config,enrollment.id,challenge.id,code);
-      setEnrollment(null);setCode('');
-      await syncMfa();
-      onMessage(enrollment.totp?'Two-factor authentication enabled and verified.':'Multi-factor authentication verified for this session.');
-    }catch(err){setMfaError(err instanceof Error?err.message:'That code was not valid. Try again.')}
+    try{const challenge=await challengeMfa(config,enrollment.id);await verifyMfa(config,enrollment.id,challenge.id,code);setEnrollment(null);setCode('');await syncMfa();onMessage(enrollment.totp?'Two-factor authentication enabled and verified.':'Multi-factor authentication verified for this session.')}
+    catch(err){setMfaError(err instanceof Error?err.message:'That code was not valid. Try again.')}
     finally{setMfaBusy(false)}
   };
   const removeFactor=async()=>{
-    if(!config||!factorToRemove)return;
-    setMfaBusy(true);setMfaError('');
+    if(!config||!factorToRemove)return;setMfaBusy(true);setMfaError('');
     try{await unenrollMfa(config,factorToRemove.id);setFactorToRemove(null);await syncMfa();onMessage('MFA factor removed.')}
     catch(err){setMfaError(err instanceof Error?err.message:'Unable to remove MFA factor. Verify MFA on this session and try again.')}
     finally{setMfaBusy(false)}
   };
+  const openPassword=()=>{setPasswordStep('verify');setCurrentPassword('');setPassword('');setConfirm('');setCode('');setMfaError('');setPasswordOpen(true)};
+  const verifyPasswordIdentity=async()=>{
+    if(!config||!session)return;
+    setBusy(true);setMfaError('');
+    try{
+      if(mfa?.verified.length){
+        if(code.length<6)throw new Error('Enter the six-digit code from your authenticator.');
+        const factor=mfa.verified[0];const challenge=await challengeMfa(config,factor.id);await verifyMfa(config,factor.id,challenge.id,code);
+      }else{
+        if(!session.user.email||!currentPassword)throw new Error('Enter your current password to verify your identity.');
+        await signInPassword(config,session.user.email,currentPassword);
+      }
+      setPasswordStep('new');setCode('');setCurrentPassword('');
+    }catch(err){setMfaError(err instanceof Error?err.message:'Identity verification failed.')}
+    finally{setBusy(false)}
+  };
+  const finishPassword=async()=>{
+    if(!config||!session)return;
+    if(password.length<8){setMfaError('Use at least 8 characters for your new password.');return}
+    if(password!==confirm){setMfaError('The new passwords do not match.');return}
+    setBusy(true);setMfaError('');
+    try{await updatePassword(config,password);setPassword('');setConfirm('');setPasswordStep('success');onMessage('Password updated.')}
+    catch(err){setMfaError(err instanceof Error?err.message:'Password update failed.')}
+    finally{setBusy(false)}
+  };
 
-  return <><SectionHead title="Account & Security" subtitle="Password and MFA controls are backed by the signed-in Supabase Auth account. VEXUM never marks MFA complete without a verified factor/session."/>
+  return <><SectionHead title="Security" subtitle="Keep high-risk account changes behind explicit verification."/>
     <SettingRow label="Account" description={session?.user.email||'Local-only workspace'}><span className={'vxt-status '+(session?'good':'warn')}>{session?'SIGNED IN':'LOCAL'}</span></SettingRow>
-    <div className="vxt-security-block"><header><KeyRound/><div><strong>Change Password</strong><span>Update the password on your signed-in VEXUM account.</span></div></header><div className="two"><label><span className="sr-only">New password</span><input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="New password" autoComplete="new-password"/></label><label><span className="sr-only">Confirm password</span><input type="password" value={confirm} onChange={e=>setConfirm(e.target.value)} placeholder="Confirm password" autoComplete="new-password"/></label></div><button disabled={busy||!password} onClick={changePassword}>{busy?'Updating…':'Update Password'}</button></div>
+    <SettingRow label="Change Password" description="Verify your identity first, then choose a new password."><button onClick={openPassword} disabled={!session}><KeyRound/>Change Password</button></SettingRow>
     <div className="vxt-security-block vxt-mfa"><header><LockKeyhole/><div><strong>Two-Factor Authentication</strong><span>Authenticator-app MFA is backed by Supabase Auth and gates external Financial connections.</span></div></header>
       {!session?<div className="vxt-provider-state"><span className="warn">SIGN IN REQUIRED</span><p>Sign in to configure MFA for your VEXUM account.</p></div>:<>
         <div className="vxt-mfa-summary"><span className={'vxt-status '+(mfa?.currentLevel==='aal2'?'good':mfa?.verified.length?'warn':'')}>{mfaBusy&&!enrollment?'CHECKING…':mfa?.currentLevel==='aal2'?'AAL2 VERIFIED':mfa?.verified.length?'VERIFICATION REQUIRED':'NOT CONFIGURED'}</span><p>{mfa?.verified.length?mfa.verified.length+' verified factor'+(mfa.verified.length===1?'':'s')+' on this account.':'No verified MFA factors are currently attached to this account.'}</p><button onClick={()=>void syncMfa()} disabled={mfaBusy}><RefreshCw/>Refresh</button></div>
         {mfa?.factors.map(factor=><div className="vxt-factor" key={factor.id}><span><strong>{factor.friendly_name||'MFA factor'}</strong><small>{factor.factor_type||'factor'} · {factor.status||'unknown'}</small></span><button onClick={()=>setFactorToRemove({id:factor.id,name:factor.friendly_name||'this MFA factor'})} disabled={mfaBusy}><Trash2/>Remove</button></div>)}
         <div className="vxt-mfa-actions">{!mfa?.verified.length?<button onClick={()=>void beginTotp()} disabled={mfaBusy}><LockKeyhole/>Set Up Authenticator App</button>:mfa.currentLevel!=='aal2'?<button onClick={()=>void beginSessionChallenge()} disabled={mfaBusy}><Shield/>Verify This Session</button>:<span className="vxt-status good"><Check/>SESSION PROTECTED</span>}</div>
-        {mfaError&&!enrollment?<p className="vxt-mfa-error" role="alert">{mfaError}</p>:null}
-        <p className="vxt-security-note">Supabase Auth currently supports authenticator-app and phone MFA. It does not issue recovery codes; a second verified factor is the supported recovery strategy.</p>
+        {mfaError&&!enrollment&&!passwordOpen?<p className="vxt-mfa-error" role="alert">{mfaError}</p>:null}
+        <p className="vxt-security-note">Authenticator MFA is available now. Phone MFA depends on your Supabase phone-MFA configuration; VEXUM does not show unsupported methods as enabled.</p>
       </>}
     </div>
-    <SettingRow label="Financial Security Gate" description="Block external financial-account connections until the current account/session has verified MFA."><Toggle checked={platform.security.requireMfaForExternalFinancial} onChange={checked=>onSave({...platform,security:{...platform.security,requireMfaForExternalFinancial:checked}})}/></SettingRow>
-    <SettingRow label="Sessions" description="This client can see the current session only; a server-backed all-sessions manager is not configured."><span className="vxt-status">CURRENT DEVICE</span></SettingRow>
+    <SettingRow label="Financial Security Gate" description="Require verified MFA before external financial-account connections."><Toggle checked={platform.security.requireMfaForExternalFinancial} onChange={checked=>onSave({...platform,security:{...platform.security,requireMfaForExternalFinancial:checked}})}/></SettingRow>
+    <SettingRow label="Sessions" description="This client can see the current session only; all-session revocation is not configured."><span className="vxt-status">CURRENT DEVICE</span></SettingRow>
+
+    <VexumDialog open={passwordOpen} onClose={()=>!busy&&setPasswordOpen(false)} title="Change Password" eyebrow={passwordStep==='verify'?'VERIFY IDENTITY':passwordStep==='new'?'NEW PASSWORD':'COMPLETE'} description={passwordStep==='verify'?'Confirm your current security method before changing the password.':passwordStep==='new'?'Choose a new password for this VEXUM account.':'Your password was updated.'} size="sm" closeOnBackdrop={!busy}
+      footer={passwordStep==='success'?<button className="vxui-button primary" onClick={()=>setPasswordOpen(false)}>Done</button>:<><button className="vxui-button secondary" disabled={busy} onClick={()=>setPasswordOpen(false)}>Cancel</button><button className="vxui-button primary" disabled={busy} onClick={()=>void(passwordStep==='verify'?verifyPasswordIdentity():finishPassword())}>{busy?'Working…':passwordStep==='verify'?'Verify Identity':'Update Password'}</button></>}>
+      {passwordStep==='verify'?<div className="vxt-password-flow">{mfa?.verified.length?<label>Authenticator code<OtpInput value={code} onChange={setCode} disabled={busy}/></label>:<label>Current password<input type="password" autoComplete="current-password" value={currentPassword} onChange={e=>setCurrentPassword(e.target.value)} placeholder="Current password"/></label>}<small>{mfa?.verified.length?'Use the authenticator factor already attached to this account.':'VEXUM verifies the current password against your signed-in account; it is never logged or stored.'}</small></div>:null}
+      {passwordStep==='new'?<div className="vxt-password-flow"><label>New password<input type="password" autoComplete="new-password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="At least 8 characters"/></label><label>Confirm new password<input type="password" autoComplete="new-password" value={confirm} onChange={e=>setConfirm(e.target.value)} placeholder="Repeat new password"/></label></div>:null}
+      {passwordStep==='success'?<div className="vxt-password-success"><Check/><strong>Password updated</strong><span>Your current VEXUM account now uses the new password.</span></div>:null}
+      {mfaError&&passwordOpen?<p className="vxt-mfa-error" role="alert">{mfaError}</p>:null}
+    </VexumDialog>
 
     <VexumDialog open={Boolean(enrollment)} onClose={closeMfaDialog} title={enrollment?.totp?'Set up an Authenticator App':'Verify your session'} eyebrow="SECURE YOUR ACCOUNT" description={enrollment?.totp?'Scan the QR code, then enter the six-digit code generated by your authenticator app.':'Enter the current six-digit code from your authenticator app.'} size="md" className="vxt-mfa-dialog" closeOnBackdrop={!mfaBusy}
       footer={<><button className="vxui-button secondary" disabled={mfaBusy} onClick={closeMfaDialog}>Cancel</button><button className="vxui-button primary" disabled={mfaBusy||code.length<6} onClick={()=>void verify()}>{mfaBusy?'Verifying…':'Verify'}</button></>}>
@@ -178,20 +221,23 @@ function SecuritySettings({platform,config,session,onSave,onMessage}:{platform:P
       <label className="vxt-otp-label">6-digit verification code<OtpInput value={code} onChange={setCode} disabled={mfaBusy}/></label>
       {mfaError?<p className="vxt-mfa-error" role="alert">{mfaError}</p>:null}
     </VexumDialog>
-
     <VexumConfirmDialog open={Boolean(factorToRemove)} onClose={()=>setFactorToRemove(null)} onConfirm={removeFactor} title="Remove two-factor method?" description={'Remove '+(factorToRemove?.name||'this MFA factor')+' from your VEXUM account? You may lose access if it is your only working verification method.'} confirmLabel="Remove Method" danger busy={mfaBusy}/>
   </>;
 }
 
 function AppearanceSettings({platform,onSave}:{platform:PlatformState;onSave:(p:PlatformState)=>void}){
   const a=platform.appearance;const patch=(key:keyof typeof a,value:any)=>onSave({...platform,appearance:{...a,[key]:value}});
-  return <><SectionHead title="Appearance" subtitle="VEXUM should support dense power-user layouts without making everyone use them."/>
-    <SettingRow label="Interface Density" description="Controls global spacing."><Segment value={a.density} values={['compact','standard','comfortable']} onChange={value=>patch('density',value)}/></SettingRow>
+  const accents=['#FF0000','#E11D48','#FF5A00','#7C3AED','#0070F3','#00A67E'];
+  return <><SectionHead title="Appearance" subtitle="Changes apply immediately across the shared VEXUM interface."/>
+    <SettingRow label="Theme" description="A designed dark or light VEXUM interface."><Segment value={a.theme} values={['dark','light']} onChange={value=>patch('theme',value)}/></SettingRow>
+    <SettingRow label="Accent Color" description="Controls shared highlights, active navigation, focus rings, and glow."><div className="vxt-accent-picker">{accents.map(color=><button key={color} aria-label={'Use accent '+color} aria-pressed={a.accentColor===color} className={a.accentColor===color?'active':''} style={{background:color}} onClick={()=>patch('accentColor',color)}/>)}<label title="Custom accent"><input type="color" value={a.accentColor} onChange={e=>patch('accentColor',e.target.value.toUpperCase())}/><span>{a.accentColor}</span></label></div></SettingRow>
+    <SettingRow label="Interface Density" description="Controls global spacing and information density."><Segment value={a.density} values={['compact','standard','comfortable']} onChange={value=>patch('density',value)}/></SettingRow>
     <SettingRow label="Text Size" description="Global text scaling for VEXUM surfaces."><Segment value={a.textSize} values={['small','medium','large']} onChange={value=>patch('textSize',value)}/></SettingRow>
-    <SettingRow label="Motion" description="Reduce non-essential animation."><Segment value={a.motion} values={['full','reduced']} onChange={value=>patch('motion',value)}/></SettingRow>
-    <SettingRow label="Glow Intensity" description="Red LED/glow effects."><Segment value={a.glow} values={['off','subtle','standard']} onChange={value=>patch('glow',value)}/></SettingRow>
-    <SettingRow label="Sidebar Width" description="Compact or standard navigation."><Segment value={a.sidebarWidth} values={['compact','standard']} onChange={value=>patch('sidebarWidth',value)}/></SettingRow>
+    <SettingRow label="Reduced Motion" description="Reduce non-essential interface animation."><Toggle checked={a.motion==='reduced'} onChange={value=>patch('motion',value?'reduced':'full')}/></SettingRow>
+    <SettingRow label="Glow Intensity" description="Accent glow strength without changing surface colors."><Segment value={a.glow} values={['off','subtle','standard']} onChange={value=>patch('glow',value)}/></SettingRow>
+    <SettingRow label="Sidebar Width" description="Compact or standard navigation width."><Segment value={a.sidebarWidth} values={['compact','standard']} onChange={value=>patch('sidebarWidth',value)}/></SettingRow>
     <SettingRow label="Number Formatting" description="$12,481.32 or $12.5K."><Segment value={a.numberFormat} values={['full','compact']} onChange={value=>patch('numberFormat',value)}/></SettingRow>
+    <footer className="vxt-actions"><button onClick={()=>onSave({...platform,appearance:{theme:'dark',accentColor:'#FF0000',density:'compact',textSize:'medium',motion:'full',glow:'subtle',sidebarWidth:'standard',numberFormat:'full'}})}><RefreshCw/>Reset Appearance</button></footer>
   </>;
 }
 
@@ -256,6 +302,46 @@ function ConnectionSettings({platform,config,session,onSave,onMessage}:{platform
     <div className="vxt-connection"><div><span className="icon"><Link2/></span><span><strong>Marketplaces</strong><small>Sell owns marketplace connection state.</small></span></div><aside><button onClick={()=>location.assign('/sell')}>Open Sell</button></aside></div>
   </>;
 }
+function CloudSettings({workspace,platform,onSave}:{workspace:ReturnType<typeof useWorkspace>;platform:PlatformState;onSave:(p:PlatformState)=>void}){
+  const enabled=platform.cloudSyncEnabled;
+  const status=!enabled?'OFF':workspace.pending?'SYNCING':workspace.error?'ISSUE':workspace.status.toLowerCase().includes('sync')?'SYNCED':'READY';
+  const tone=!enabled?'':workspace.error?'warn':'good';
+  return <><SectionHead title="Cloud & Sync" subtitle="Keep VEXUM data synchronized across your signed-in devices. Cloud Sync is on by default."/>
+    <SettingRow label="Cloud Sync" description={enabled?'Changes are eligible to sync to your VEXUM cloud workspace.':'Changes stay on this device until you turn Cloud Sync back on.'}><Toggle checked={enabled} onChange={checked=>onSave({...platform,cloudSyncEnabled:checked})}/></SettingRow>
+    <SettingRow label="Status" description={enabled?(workspace.error?'VEXUM kept your local edits. Retry when the connection is healthy.':workspace.status):'Cloud data is not being read or written while this setting is off.'}><span className={'vxt-status '+tone}>{status}</span></SettingRow>
+    {enabled&&workspace.error?<SettingRow label="Retry Sync" description="Retry the existing cloud connection without deleting local changes."><button onClick={workspace.retry}><RefreshCw/>Retry</button></SettingRow>:null}
+    <div className="vxt-inline-note"><Cloud/><span><strong>Local safety remains active</strong><small>Turning sync off does not delete cloud or local data. Revision/conflict protection resumes when sync is re-enabled.</small></span></div>
+  </>;
+}
+
+function RegionSettings({platform,onSave}:{platform:PlatformState;onSave:(p:PlatformState)=>void}){
+  const [draft,setDraft]=useState(platform.identity);
+  const patch=(key:keyof typeof draft,value:string)=>setDraft(current=>({...current,[key]:value}));
+  return <><SectionHead title="Language & Region" subtitle="Formatting defaults used throughout VEXUM."/>
+    <div className="vxt-form grid"><label>Language<select value={draft.language} onChange={e=>patch('language',e.target.value)}><option>English</option><option>Spanish</option><option>French</option><option>German</option><option>Japanese</option></select></label><label>Country / Region<select value={draft.country} onChange={e=>patch('country',e.target.value)}><option>United States</option><option>Canada</option><option>United Kingdom</option><option>Australia</option><option>Other</option></select></label><label>Currency<select value={draft.currency} onChange={e=>patch('currency',e.target.value)}><option>USD</option><option>CAD</option><option>GBP</option><option>EUR</option><option>AUD</option></select></label></div>
+    <footer className="vxt-actions"><button className="primary" onClick={()=>onSave({...platform,identity:draft})}>Save Region Settings</button></footer>
+  </>;
+}
+
+function PaymentSettings(){
+  return <><SectionHead title="Payment Methods" subtitle="Payment methods will be used for VEXUM subscription and marketplace flows only after a payment processor is connected."/>
+    <div className="vxt-empty-service"><CreditCard/><strong>No payment processor configured</strong><p>VEXUM does not store raw card numbers. Payment methods will appear here only after a supported processor is integrated.</p><button disabled>Add Payment Method</button></div>
+  </>;
+}
+function SubscriptionSettings(){
+  return <><SectionHead title="Subscription" subtitle="Plan and billing controls will reflect the real VEXUM billing provider when one is connected."/>
+    <div className="vxt-empty-service"><ReceiptText/><strong>Billing is not connected yet</strong><p>No plan, renewal date, invoice, upgrade, downgrade, or cancellation state is fabricated in this interface.</p><span className="vxt-status">NOT CONFIGURED</span></div>
+  </>;
+}
+function HelpSettings(){
+  const copy=()=>{navigator.clipboard?.writeText('https://www.vexum.app');pushVexumToast({title:'VEXUM URL copied.',kind:'success'})};
+  return <><SectionHead title="Help" subtitle="Support and product information without exposing internal implementation details."/>
+    <SettingRow label="VEXUM Website" description="Copy the current VEXUM web address."><button onClick={copy}><Copy/>Copy URL</button></SettingRow>
+    <SettingRow label="Help Center" description="A dedicated support knowledge base is not connected yet."><span className="vxt-status">COMING LATER</span></SettingRow>
+    <SettingRow label="App Version" description="Current production generation."><span className="vxt-status">WEB</span></SettingRow>
+  </>;
+}
+
 function DataSettings({workspace}:{workspace:ReturnType<typeof useWorkspace>}){
   const exportWorkspace=()=>{const blob=new Blob([JSON.stringify(workspace.data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='vexum-workspace-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(url)};
   return <><SectionHead title="Data & Export" subtitle="Your data should be portable. Destructive cloud-account deletion is not exposed without a verified backend endpoint."/>
