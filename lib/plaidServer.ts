@@ -334,7 +334,10 @@ async function refreshItemMetadata(userId:string,itemId:string,accessToken:strin
 }
 
 async function syncAccounts(userId:string,itemId:string,accessToken:string){
-  const response=await plaidRequest<any>('/accounts/balance/get',{access_token:accessToken});
+  // Use /accounts/get for normal VEXUM sync. It returns account balances without
+  // requiring Plaid's separately authorized real-time Balance product.
+  // Transactions-enabled Items still receive regularly refreshed cached balances.
+  const response=await plaidRequest<any>('/accounts/get',{access_token:accessToken});
   const accounts=list(response.accounts);
   const rows=accounts.map((account:any)=>({
     account_id:String(account.account_id||''),
