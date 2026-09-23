@@ -58,44 +58,44 @@ function viewFromPath(path:string):View{
   return 'home';
 }
 
-function Logo(){return <button className="vx-logo vx-logo-button" onClick={()=>location.assign('/')}><span className="vx-vmark">V</span><strong>VEXUM</strong></button>}
+function Logo(){return <button className="vx-logo vx-logo-button" aria-label="Go to VEXUM home" onClick={()=>location.assign('/')}><span className="vx-vmark" aria-hidden="true">V</span><strong>VEXUM</strong></button>}
 
 function Sidebar({view,navigate,enabled,order,displayName,onQuick}:{view:View;navigate:(view:View)=>void;enabled:VexumModuleId[];order:VexumModuleId[];displayName:string;onQuick:(type?:QuickAddType)=>void}){
   const ordered=order.filter(module=>enabled.includes(module));
-  return <aside className="vx-sidebar vx-platform-sidebar">
+  return <aside className="vx-sidebar vx-platform-sidebar" aria-label="Primary navigation">
     <Logo/>
     <div className="vxp-sidebar-scroll">
       {MODULE_GROUPS.map(group=>{
         const modules=ordered.filter(module=>group.modules.includes(module));
         if(!modules.length)return null;
-        return <section className="vxp-nav-group" key={group.label}><span>{group.label}</span><nav className="vx-nav">{modules.map(module=><button key={module} className={view===module?'active':''} onClick={()=>navigate(module)}>{iconFor(module)}<span>{MODULE_LABELS[module]}</span></button>)}</nav></section>;
+        return <section className="vxp-nav-group" key={group.label}><span>{group.label}</span><nav className="vx-nav" aria-label={group.label}>{modules.map(module=><button key={module} className={view===module?'active':''} aria-current={view===module?'page':undefined} onClick={()=>navigate(module)}>{iconFor(module)}<span>{MODULE_LABELS[module]}</span></button>)}</nav></section>;
       })}
       <section className="vx-quick vxp-quick"><span>QUICK ADD</span><button className="primary" onClick={()=>onQuick()}><Plus/><span>Add Anything</span></button>{enabled.includes('life')?<button onClick={()=>onQuick('task')}><CalendarCheck/><span>Task</span></button>:null}{enabled.includes('search')?<button onClick={()=>onQuick('collectible')}><Search/><span>Collectible</span></button>:null}{enabled.includes('financial')?<button onClick={()=>onQuick('expense')}><CircleDollarSign/><span>Expense</span></button>:null}</section>
     </div>
-    <button className="vx-user vxp-sidebar-user" onClick={()=>navigate('settings')}><div className="vx-avatar">{displayName[0]?.toUpperCase()||'V'}</div><div><strong>{displayName}</strong><span>VEXUM workspace</span></div><ChevronDown/></button>
+    <button className="vx-user vxp-sidebar-user" aria-label="Open account settings" onClick={()=>navigate('settings')}><div className="vx-avatar">{displayName[0]?.toUpperCase()||'V'}</div><div><strong>{displayName}</strong><span>VEXUM workspace</span></div><ChevronDown/></button>
   </aside>;
 }
 
 function Topbar({hero,displayName,unread,onCommand,onQuick,onNotifications,onProfile}:{hero:string;displayName:string;unread:number;onCommand:()=>void;onQuick:()=>void;onNotifications:()=>void;onProfile:()=>void}){
-  return <div className={'vx-topbar hero-'+hero}>
-    <button className="vx-searchbox" onClick={onCommand}><Search/><span>Search VEXUM or run a command...</span><kbd>⌘ K</kbd></button>
+  return <header className={'vx-topbar hero-'+hero}>
+    <button className="vx-searchbox" aria-label="Search VEXUM or run a command" onClick={onCommand}><Search/><span>Search VEXUM or run a command...</span><kbd aria-hidden="true">⌘ K</kbd></button>
     <div className="vx-topicons vxp-topicons">
-      <button className="vxp-add" onClick={onQuick} title="Quick Add"><Plus/></button>
-      <button className="vxp-bell" onClick={onNotifications} title="Notifications"><Bell/>{unread?<b>{unread>9?'9+':unread}</b>:null}</button>
-      <button className="vx-top-avatar" onClick={onProfile} title={displayName}>{displayName[0]?.toUpperCase()||'V'}</button>
+      <button className="vxp-add" aria-label="Quick Add" onClick={onQuick} title="Quick Add"><Plus/></button>
+      <button className="vxp-bell" aria-label={unread?'Notifications with unread items':'Notifications'} onClick={onNotifications} title="Notifications"><Bell/>{unread?<b aria-hidden="true">{unread>9?'9+':unread}</b>:null}</button>
+      <button className="vx-top-avatar" aria-label="Open account menu" onClick={onProfile} title={displayName}>{displayName[0]?.toUpperCase()||'V'}</button>
     </div>
-  </div>;
+  </header>;
 }
 
 function PageFrame({hero,children,displayName,unread,onCommand,onQuick,onNotifications,onProfile}:{hero:string;children:ReactNode;displayName:string;unread:number;onCommand:()=>void;onQuick:()=>void;onNotifications:()=>void;onProfile:()=>void}){
-  return <main className={'vx-content page-'+hero}><Topbar hero={hero} displayName={displayName} unread={unread} onCommand={onCommand} onQuick={onQuick} onNotifications={onNotifications} onProfile={onProfile}/>{children}</main>;
+  return <main id="vexum-main" tabIndex={-1} className={'vx-content page-'+hero}><Topbar hero={hero} displayName={displayName} unread={unread} onCommand={onCommand} onQuick={onQuick} onNotifications={onNotifications} onProfile={onProfile}/>{children}</main>;
 }
 
 function ProfileMenu({open,onClose,displayName,email,navigate,signOut,onAccount}:{open:boolean;onClose:()=>void;displayName:string;email:string;navigate:(v:View)=>void;signOut:()=>Promise<void>;onAccount:()=>void}){
   if(!open)return null;
   const go=(view:View)=>{onClose();navigate(view)};
-  return <div className="vxp-profile-menu">
-    <header><div className="avatar">{displayName[0]?.toUpperCase()||'V'}</div><span><strong>{displayName}</strong><small>{email||'Local workspace'}</small></span><button onClick={onClose}><X/></button></header>
+  return <div className="vxp-profile-menu" role="region" aria-label="Account menu">
+    <header><div className="avatar" aria-hidden="true">{displayName[0]?.toUpperCase()||'V'}</div><span><strong>{displayName}</strong><small>{email||'Local workspace'}</small></span><button aria-label="Close account menu" onClick={onClose}><X/></button></header>
     <button onClick={()=>go('settings')}><UserRound/><span>Profile</span><ChevronDown/></button>
     <button onClick={()=>go('settings')}><Settings/><span>Settings</span><ChevronDown/></button>
     <button onClick={()=>window.alert('The VEXUM Help Center is not connected yet.')}><HelpCircle/><span>Help</span><ChevronDown/></button>
@@ -183,9 +183,9 @@ function MfaSessionGate({config,session,onVerified,onSignOut}:{config:CloudConfi
   };
 
   const qrSrc=mfaQrImageSource(enrollment?.totp?.qr_code);
-  return <div className="vxp-mfa-gate"><section className={mode==='enroll'?'vxp-mfa-enroll-card':''}>
+  return <div className="vxp-mfa-gate"><section role="dialog" aria-modal="true" aria-labelledby="vexum-mfa-title" className={mode==='enroll'?'vxp-mfa-enroll-card':''}>
     <LockKeyhole/><span>{mode==='enroll'?'REQUIRED ACCOUNT SECURITY':'SECURITY CHECK'}</span>
-    <h2>{mode==='enroll'?'Set up 2FA to finish signup':'Verify your VEXUM account'}</h2>
+    <h2 id="vexum-mfa-title">{mode==='enroll'?'Set up 2FA to finish signup':'Verify your VEXUM account'}</h2>
     {mode==='enroll'?<>
       <p>VEXUM requires authenticator two-factor authentication for new accounts. Scan the QR code in Google Authenticator, Microsoft Authenticator, Authy, 1Password, or another TOTP app, then enter the 6-digit code.</p>
       <div className="vxp-mfa-enrollment">
@@ -199,7 +199,7 @@ function MfaSessionGate({config,session,onVerified,onSignOut}:{config:CloudConfi
       <p>This account has multi-factor authentication enabled. Enter the code from your authenticator app before continuing.</p>
       <label>Authenticator code<input autoFocus inputMode="numeric" autoComplete="one-time-code" value={code} onChange={e=>setCode(e.target.value.replace(/\D/g,'').slice(0,6))} onKeyDown={e=>{if(e.key==='Enter')void verify()}} placeholder="000000"/></label>
     </>}
-    {error?<div className="error">{error}</div>:null}
+    {error?<div className="error" role="alert">{error}</div>:null}
     <div><button onClick={()=>void onSignOut()}>Sign Out</button><button className="primary" disabled={busy||code.length<6} onClick={()=>void verify()}>{busy?'Verifying…':mode==='enroll'?'Enable 2FA & Continue':'Verify & Continue'}</button></div>
   </section></div>;
 }
@@ -317,6 +317,7 @@ export default function VexumApp({
   const rootClass=['vx-app','vxp-platform','density-'+platform.appearance.density,'text-'+platform.appearance.textSize,'motion-'+platform.appearance.motion,'glow-'+platform.appearance.glow,'sidebar-'+platform.appearance.sidebarWidth].join(' ');
 
   return <div className={rootClass}>
+    <a className="vx-skip-link" href="#vexum-main">Skip to main content</a>
     <Sidebar view={view} navigate={navigate} enabled={enabled} order={platform.moduleOrder} displayName={displayName} onQuick={openQuick}/>
     {content}
     <QuickAddPanel key={quickType||'all'} open={quickOpen} initialType={quickType} onClose={closeQuick} workspace={workspace} navigate={navigate}/>

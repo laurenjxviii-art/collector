@@ -198,5 +198,5 @@ function DataSettings({workspace}:{workspace:ReturnType<typeof useWorkspace>}){
   </>;
 }
 
-function Toggle({checked,onChange,disabled=false}:{checked:boolean;onChange:(v:boolean)=>void;disabled?:boolean}){return <button className={'vxt-toggle '+(checked?'on':'')} disabled={disabled} onClick={()=>onChange(!checked)}><i/></button>}
-function Segment({value,values,onChange}:{value:string;values:string[];onChange:(v:string)=>void}){return <div className="vxt-segment">{values.map(v=><button className={value===v?'active':''} key={v} onClick={()=>onChange(v)}>{v[0].toUpperCase()+v.slice(1)}</button>)}</div>}
+function Toggle({checked,onChange,disabled=false}:{checked:boolean;onChange:(v:boolean)=>void;disabled?:boolean}){return <button type="button" role="switch" aria-checked={checked} className={'vxt-toggle '+(checked?'on':'')} disabled={disabled} onClick={()=>onChange(!checked)}><i aria-hidden="true"/></button>}
+function Segment({value,values,onChange}:{value:string;values:string[];onChange:(v:string)=>void}){return <div className="vxt-segment" role="group">{values.map(v=><button type="button" aria-pressed={value===v} className={value===v?'active':''} key={v} onClick={()=>onChange(v)}>{v[0].toUpperCase()+v.slice(1)}</button>)}</div>}
