@@ -1010,3 +1010,21 @@ button:disabled,[aria-disabled="true"]{cursor:not-allowed}
     min-height:44px;
   }
 }
+
+.vx-skip-link{
+  position:fixed;
+  top:10px;
+  left:12px;
+  z-index:400;
+  transform:translateY(-180%);
+  border:1px solid #7d202b;
+  border-radius:7px;
+  background:#0b0c0e;
+  color:#fff;
+  padding:10px 14px;
+  font-size:14px;
+  font-weight:700;
+  text-decoration:none;
+  transition:transform .16s ease-out;
+}
+.vx-skip-link:focus{transform:translateY(0)}
