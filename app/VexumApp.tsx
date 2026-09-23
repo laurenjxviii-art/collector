@@ -59,7 +59,7 @@ function viewFromPath(path:string):View{
   return 'home';
 }
 
-function Logo(){return <button className="vx-logo vx-logo-button" aria-label="Go to VEXUM home" onClick={()=>location.assign('/')}><span className="vx-vmark" aria-hidden="true">V</span><strong>VEXUM</strong></button>}
+function Logo(){return <button className="vx-logo vx-logo-button" aria-label="Go to VEXUM home" onClick={()=>location.assign('/')}><img className="vx-brand-mark" src="/vexum-mark.png" alt="" aria-hidden="true"/></button>}
 
 function Sidebar({view,navigate,enabled,order,displayName,onQuick}:{view:View;navigate:(view:View)=>void;enabled:VexumModuleId[];order:VexumModuleId[];displayName:string;onQuick:(type?:QuickAddType)=>void}){
   const ordered=order.filter(module=>enabled.includes(module));
