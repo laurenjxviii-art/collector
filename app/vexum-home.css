@@ -52,3 +52,16 @@
 .vxh-wordmark{display:block;width:clamp(135px,13vw,180px);height:auto;max-height:58px;object-fit:contain;flex:none}
 @media(max-width:760px){.vxh-greeting-row{gap:10px}.vxh-wordmark{width:120px;max-height:48px}}
 @media(max-width:520px){.vxh-wordmark{width:106px;max-height:44px}}
+
+/* Direct Home widget editing */
+.vxh-grid{transition:height 180ms ease}
+.vxh-widget{transition:opacity 150ms ease,border-color 150ms ease,box-shadow 150ms ease,transform 180ms ease}
+.vxh-widget.editing{cursor:grab;user-select:none;outline:1px dashed color-mix(in srgb,var(--vx-red) 52%,transparent);outline-offset:-5px}
+.vxh-widget.editing:active{cursor:grabbing}
+.vxh-widget.dragging{opacity:.38;transform:scale(.985);cursor:grabbing}
+.vxh-widget.drag-over{border-color:color-mix(in srgb,var(--vx-red) 72%,#27292e)!important;box-shadow:0 0 0 2px color-mix(in srgb,var(--vx-red) 18%,transparent),0 0 24px color-mix(in srgb,var(--vx-red) 12%,transparent)}
+.vxh-edit-controls button{width:34px;height:34px}
+.vxh-resize-handle{position:absolute;right:-5px;bottom:-5px;z-index:12;width:40px;height:40px;border:1px solid color-mix(in srgb,var(--vx-red) 58%,#303239);border-radius:10px 0 8px 0;background:#130d0f;color:#ff7a86;display:grid;place-items:center;cursor:nwse-resize;box-shadow:0 7px 18px rgba(0,0,0,.28)}
+.vxh-resize-handle svg{width:17px;height:17px}
+.vxh-resize-handle:hover{background:color-mix(in srgb,var(--vx-red) 16%,#130d0f);color:#fff}
+@media(pointer:coarse){.vxh-resize-handle{width:48px;height:48px;right:-3px;bottom:-3px}.vxh-edit-controls button{width:44px;height:44px}}
