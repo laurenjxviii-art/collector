@@ -20,7 +20,7 @@ import {
   type SocialProfile,type SocialStockReport,type SocialVisibility
 } from '../lib/socialCloud';
 
-type Tab='For You'|'Following'|'Communities'|'Drops'|'Local'|'Messages'|'Profile';
+type Tab='For You'|'Following'|'Communities'|'Discover'|'Messages'|'Profile';
 type ComposerTag={
   product_id:string|null;
   portfolio_item_id:string|null;
@@ -72,9 +72,11 @@ function SocialEmpty({icon,title,body,action}:{icon:ReactNode;title:string;body:
   return <div className="vxsoc-empty">{icon}<strong>{title}</strong><p>{body}</p>{action}</div>;
 }
 
-export default function VexumSocial(){
+export default function VexumSocial({section,onSectionChange}:{section?:string;onSectionChange?:(section:string)=>void}={}){
   const workspace=useWorkspace();
-  const [tab,setTab]=useState<Tab>('For You');
+  const [internalTab,setInternalTab]=useState<Tab>('For You');
+  const tab=((section as Tab|undefined)||internalTab);
+  const setTab=(next:Tab)=>{setInternalTab(next);onSectionChange?.(next)};
   const [profile,setProfile]=useState<SocialProfile|null>(null);
   const [profiles,setProfiles]=useState<SocialProfile[]>([]);
   const [followingIds,setFollowingIds]=useState<string[]>([]);
@@ -253,15 +255,8 @@ export default function VexumSocial(){
   if(!workspace.ready||loading)return <div className="vxsoc-page"><VexumPageSkeleton label="Loading collector network…"/></div>;
 
   return <div className="vxsoc-page">
-    <section className="vxsoc-title">
-      <div><span>SOCIAL</span><h1>Collector Network</h1><p>Products, collections, setups, marketplace records, and conversations stay connected to the same VEXUM object graph.</p></div>
-      <aside><strong>{session?'Signed-in network':'Local mode'}</strong><small>{session?'Privacy is enforced by Supabase RLS.':'Sign in to create posts, follow collectors, join communities, or message.'}</small></aside>
-    </section>
-
-    <div className="vxsoc-nav">
-      <nav>{(['For You','Following','Communities','Drops','Local','Messages','Profile'] as Tab[]).map(name=><button key={name} className={tab===name?'active':''} onClick={()=>setTab(name)}>{name}</button>)}</nav>
-      <div>{session&&['For You','Following','Communities'].includes(tab)?<button className="red" onClick={()=>setComposerOpen(true)}><Plus/>Create Post</button>:null}</div>
-    </div>
+    <section className="vxsoc-title vxp-simple-title"><div><span>SOCIAL</span><h1>{tab}</h1></div></section>
+    {session&&['For You','Following','Communities'].includes(tab)?<div className="vxp-page-actions"><button className="red" onClick={()=>setComposerOpen(true)}><Plus/>Create Post</button></div>:null}
 
     {error?<div className="vxsoc-error"><AlertTriangle/><span>{error}</span><button onClick={()=>setError('')}><X/></button></div>:null}
 
@@ -283,8 +278,7 @@ export default function VexumSocial(){
       <ContextRail profile={profile||undefined} profiles={profiles} followingIds={followingIds} communities={communities} memberships={membershipSet} drops={drops} onFollow={handleFollow} onCommunity={id=>{setActiveCommunity(id);setTab('Communities')}}/>
     </div>:null}
 
-    {session&&tab==='Drops'?<DropsView drops={drops}/>:null}
-    {session&&tab==='Local'?<LocalView reports={stockReports}/>:null}
+    {session&&tab==='Discover'?<div className="vxsoc-discover-stack"><DropsView drops={drops}/><LocalView reports={stockReports}/></div>:null}
     {session&&tab==='Messages'?<MessagesView/>:null}
     {session&&tab==='Profile'&&profile?<ProfileView profile={profile} workspace={workspace.data} onEdit={()=>setProfileEditing(true)} communities={communities.filter(c=>membershipSet.has(c.id))}/>:null}
 

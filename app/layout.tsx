@@ -6,6 +6,7 @@ import './vexum-settings.css';
 import './cloud.css';
 import './vexum-life.css';
 import './vexum-home.css';
+import './vexum-radar.css';
 import './vexum-portfolio.css';
 import './vexum-wishlist.css';
 import './vexum-financial.css';

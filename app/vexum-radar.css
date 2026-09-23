@@ -1,0 +1,9 @@
+/* ===== VEXUM Radar ===== */
+.vxr-page{padding-bottom:42px;color:var(--vx-text)}
+.vxr-title{display:flex;align-items:center;justify-content:space-between}
+.vxr-title>div:first-child>span{font-size:11px;letter-spacing:.16em;color:var(--vx-red);font-weight:800}.vxr-title h1{margin:5px 0 0;font-size:30px;letter-spacing:-.035em}
+.vxr-actions{display:flex;gap:7px}.vxr-actions button{height:34px;border:1px solid var(--vx-line);border-radius:6px;background:var(--vx-card);color:#bbbfc5;padding:0 10px;display:flex;align-items:center;gap:6px}.vxr-actions svg{width:14px}
+.vxr-context{min-height:66px;display:grid;grid-template-columns:32px 1fr;align-items:center;gap:10px;padding:11px 13px;margin-bottom:10px}.vxr-context>svg{width:20px;color:var(--vx-red)}.vxr-context div{display:flex;flex-direction:column;min-width:0}.vxr-context strong{font-size:14px}.vxr-context span{font-size:13px;color:var(--vx-muted);margin-top:3px}
+.vxr-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.vxr-card{min-width:0;padding:12px}.vxr-card header{display:flex;justify-content:space-between;gap:8px}.vxr-card>div{display:flex;flex-direction:column;min-width:0;margin-top:18px}.vxr-card>div strong{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.vxr-card>div span{font-size:13px;color:var(--vx-muted);margin-top:4px}.vxr-card>b{display:block;font-size:21px;margin-top:14px}
+.vxr-empty{min-height:88px;margin-top:10px;padding:14px;display:grid;grid-template-columns:28px 1fr;align-items:center;gap:10px}.vxr-empty>svg{width:18px;color:#7d8189}.vxr-empty div{display:flex;flex-direction:column}.vxr-empty strong{font-size:14px}.vxr-empty span{font-size:13px;line-height:1.45;color:var(--vx-muted);margin-top:3px}
+@media(max-width:900px){.vxr-grid{grid-template-columns:1fr}.vxr-title{align-items:flex-start;gap:12px;flex-wrap:wrap}}

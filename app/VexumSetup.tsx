@@ -13,7 +13,7 @@ import {
   type SetupCapacityType,type SetupData,type SetupMode,type SetupObject,type SetupPlacement,type SetupSpace,type SetupUnit
 } from '../lib/setup';
 
-type Tab='Overview'|'Spaces'|'Planner'|'Storage'|'Items'|'Labels';
+type Tab='Overview'|'Spaces'|'Planner'|'Storage'|'Items'|'Labels'|'Dream Setups';
 type PlannerView='top'|'front';
 type Composer='space'|'object'|null;
 
@@ -40,10 +40,12 @@ function Metric({label,value,sub}:{label:string;value:string;sub:string}){
   return <section className="vxsup-metric"><span>{label}</span><strong>{value}</strong><small>{sub}</small></section>;
 }
 
-export default function VexumSetup(){
+export default function VexumSetup({section,onSectionChange}:{section?:string;onSectionChange?:(section:string)=>void}={}){
   const workspace=useWorkspace();
   const setup=normalizeSetupData(workspace.data.setup||EMPTY_SETUP);
-  const [tab,setTab]=useState<Tab>('Overview');
+  const [internalTab,setInternalTab]=useState<Tab>('Overview');
+  const tab=((section as Tab|undefined)||internalTab);
+  const setTab=(next:Tab)=>{setInternalTab(next);onSectionChange?.(next)};
   const [view,setView]=useState<PlannerView>('top');
   const [composer,setComposer]=useState<Composer>(null);
   const [selectedSpaceId,setSelectedSpaceId]=useState(setup.activeSetupId||setup.spaces[0]?.id||'');
@@ -211,13 +213,9 @@ export default function VexumSetup(){
   if(!workspace.ready)return <div className="vxsup-page"><VexumPageSkeleton label="Loading Setup workspace…"/></div>;
 
   return <div className="vxsup-page">
-    <section className="vxsup-title">
-      <div><span>SETUP</span><h1>Physical Collection System</h1><p>Portfolio knows what you own. Setup knows where each owned copy physically exists.</p></div>
-      <aside><strong>{workspace.status}</strong><small>2D only · autosaved through the shared VEXUM workspace</small></aside>
-    </section>
+    <section className="vxsup-title vxp-simple-title"><div><span>SETUP</span><h1>{tab}</h1></div></section>
 
-    <div className="vxsup-toolbar">
-      <nav>{(['Overview','Spaces','Planner','Storage','Items','Labels'] as Tab[]).map(name=><button key={name} className={tab===name?'active':''} onClick={()=>setTab(name)}>{name}</button>)}</nav>
+    <div className="vxsup-toolbar vxsup-toolbar-actions">
       <div>{setup.spaces.length?<select value={activeSpaceId} onChange={e=>chooseSpace(e.target.value)}>{setup.spaces.map(space=><option value={space.id} key={space.id}>{space.name} · {space.mode}</option>)}</select>:null}<button onClick={undoChange} disabled={!undo.length}><Undo2/>Undo</button><button onClick={redoChange} disabled={!redo.length}><Redo2/>Redo</button></div>
     </div>
 
@@ -314,6 +312,11 @@ export default function VexumSetup(){
         return <div key={record.productId}><StarIcon/><span><strong>{record.snapshot?.name||record.productId}</strong><small>{money(record.currentMarket??record.targetPrice??record.maximumPrice??0)}</small></span><button disabled={placed} onClick={()=>assignWishlist(record.productId,selectedObjectId||undefined)}>{placed?'Placed':'Place in Dream'}</button></div>;
       })}</div>:null}
     </section>}
+
+    {tab==='Dream Setups'?<section className="vxsup-panel vxsup-full">
+      <header><div><h3>Dream Setups</h3><p>Future spaces stay separate from your current physical placement map.</p></div><button onClick={()=>{setTab('Spaces');setComposer('space')}}><Plus/>New Space</button></header>
+      <div className="vxsup-space-list">{setup.spaces.filter(space=>space.mode==='dream').map(space=><button key={space.id} onClick={()=>{chooseSpace(space.id);setTab('Planner')}}><span className="mode dream">dream</span><div><strong>{space.name}</strong><small>{space.type} · {space.width}{unitLabel(space.unit)} × {space.length}{unitLabel(space.unit)}</small></div><ChevronRight/></button>)}{!setup.spaces.some(space=>space.mode==='dream')?<div className="vxsup-empty compact"><StarIcon/><strong>No dream setups yet.</strong><p>Create a space and choose Dream as its mode.</p></div>:null}</div>
+    </section>:null}
 
     {tab==='Labels'&&<section className="vxsup-panel vxsup-full">
       <header><div><h3>Location Labels</h3><p>Safe labels point to a VEXUM location identifier. They do not encode private collection contents directly.</p></div></header>

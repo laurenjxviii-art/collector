@@ -30,13 +30,16 @@ function Metric({label,value,sub,tone='muted'}:{label:string;value:string;sub:st
 
 function priorityClass(priority:TaskPriority){return priority==='Urgent'?'urgent':priority==='High'?'high':priority==='Medium'?'medium':'low'}
 
-export default function VexumLife(){
+export default function VexumLife({section,onSectionChange}:{section?:string;onSectionChange?:(section:string)=>void}={}){
   const workspace=useWorkspace();
   const life=normalizeLifeData(workspace.data.life||emptyLifeData());
   const platform=normalizePlatformState(workspace.data.platform,true);
   const lifeSections:LifeTab[]=platform.lifeSections.length?[...platform.lifeSections]:['Today'];
   const fitnessEnabled=lifeSections.includes('Fitness');
-  const [tab,setTab]=useState<LifeTab>('Today');
+  const [internalTab,setInternalTab]=useState<LifeTab>('Today');
+  const externalTab=section as LifeTab|undefined;
+  const tab=externalTab&&lifeSections.includes(externalTab)?externalTab:internalTab;
+  const setTab=(next:LifeTab)=>{setInternalTab(next);onSectionChange?.(next)};
   const [taskComposer,setTaskComposer]=useState(false);
   const [eventComposer,setEventComposer]=useState(false);
   const [habitComposer,setHabitComposer]=useState(false);
@@ -122,9 +125,9 @@ export default function VexumLife(){
   if(!workspace.ready)return <div className="vxl-page"><VexumPageSkeleton label="Loading Life workspace…"/></div>;
 
   return <div className="vxl-page">
-    <section className="vxl-title">
-      <div><span>LIFE</span><h1>Your day, without the noise.</h1><p>Capture first. Organize later. Tasks, time, habits, goals, focus, and fitness stay connected without forcing one productivity method.</p></div>
-      <aside><strong>{workspace.status}</strong><span>{todayTasks.length} tasks today · {habitMomentumAvg}% momentum</span></aside>
+    <section className="vxl-title vxp-simple-title">
+      <div><span>LIFE</span><h1>{tab}</h1></div>
+      <aside><strong>{todayTasks.length} today</strong><span>{habitMomentumAvg}% momentum</span></aside>
     </section>
 
     <div className="vxl-quick-capture vx-panel">
@@ -133,9 +136,7 @@ export default function VexumLife(){
       <span>Inbox first. Organize when ready.</span>
     </div>
 
-    <nav className="vxl-tabs">{lifeSections.map(name=><button className={tab===name?'active':''} key={name} onClick={()=>setTab(name)}>{tabIcon(name)}{name}</button>)}
-      <div><button onClick={()=>setTaskComposer(true)}><Plus/>Task</button><button onClick={()=>setEventComposer(true)}><CalendarDays/>Event</button></div>
-    </nav>
+    <div className="vxp-page-actions"><button onClick={()=>setTaskComposer(true)}><Plus/>Task</button><button onClick={()=>setEventComposer(true)}><CalendarDays/>Event</button></div>
 
     {tab==='Today'?<TodayView life={life} tasks={todayTasks} events={todaysEvents} habits={todaysHabits} workouts={todaysWorkoutPlans} bills={billsDue} preorders={preorders} overdue={overdue} sellOrders={ordersNeedingShipping} fitnessEnabled={fitnessEnabled} onCompleteTask={completeTask} onToggleHabit={toggleHabit} onOpenTasks={()=>setTab('Tasks')} onOpenCalendar={()=>setTab('Calendar')} onOpenFitness={()=>setTab('Fitness')} onOpenFinancial={()=>location.assign('/financial')} onOpenWishlist={()=>location.assign('/wishlist')}/>:null}
 

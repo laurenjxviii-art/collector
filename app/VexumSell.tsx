@@ -53,9 +53,11 @@ function Metric({label,value,sub,tone='muted'}:{label:string;value:string;sub:st
   return <section className="vxsel-metric"><span>{label}</span><strong>{value}</strong><small className={'tone-'+tone}>{sub}</small></section>;
 }
 
-export default function VexumSell(){
+export default function VexumSell({section,onSectionChange}:{section?:string;onSectionChange?:(section:string)=>void}={}){
   const workspace=useWorkspace();
-  const [tab,setTab]=useState<Tab>('Overview');
+  const [internalTab,setInternalTab]=useState<Tab>('Overview');
+  const tab=((section as Tab|undefined)||internalTab);
+  const setTab=(next:Tab)=>{setInternalTab(next);onSectionChange?.(next)};
   const [data,setData]=useState<SellWorkspace>(EMPTY_SELL);
   const [marketplace,setMarketplace]=useState<MarketplaceListing[]>([]);
   const [loading,setLoading]=useState(true);
@@ -203,8 +205,7 @@ export default function VexumSell(){
   if(!workspace.ready||loading)return <div className="vxsel-page"><VexumPageSkeleton label="Loading seller workspace…"/></div>;
 
   return <div className="vxsel-page">
-    <section className="vxsel-title"><div><span>SELL</span><h1>Commerce Control</h1><p>One owned copy, one inventory identity, and a full path from listing through order, shipment, Financial result, and Sold Archive.</p></div><aside><strong>{session?'Normalized commerce data':'Local mode'}</strong><small>{session?'Seller economics remain private under RLS.':'Sign in to create listings and orders.'}</small></aside></section>
-    <nav className="vxsel-tabs">{(['Overview','Listings','Crosslist','Marketplace','Offers','Orders','Sold','Analytics'] as Tab[]).map(name=><button className={tab===name?'active':''} key={name} onClick={()=>setTab(name)}>{name}</button>)}</nav>
+    <section className="vxsel-title vxp-simple-title"><div><span>SELL</span><h1>{tab}</h1></div></section>
     {error?<div className="vxsel-error"><AlertTriangle/><span>{error}</span><button onClick={()=>setError('')}><X/></button></div>:null}
 
     {!session?<section className="vxsel-panel"><div className="vxsel-empty"><ShoppingBag/><strong>Sell requires a signed-in VEXUM workspace</strong><p>Commerce records are server-protected and must reference the authenticated collector. Local Portfolio data is unchanged.</p></div></section>:null}
