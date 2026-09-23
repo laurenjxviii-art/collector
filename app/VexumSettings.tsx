@@ -7,7 +7,7 @@ import {
   Trash2,UserRound,X
 } from 'lucide-react';
 import {useWorkspace} from '../lib/useWorkspace';
-import {challengeMfa,enrollTotp,mfaQrImageSource,mfaState,unenrollMfa,updatePassword,verifyMfa,type CloudConfig,type MfaEnrollment,type MfaState,type Session} from '../lib/cloud';
+import {challengeMfa,enrollTotp,mfaQrImageSource,mfaState,signInPassword,unenrollMfa,updatePassword,verifyMfa,type CloudConfig,type MfaEnrollment,type MfaState,type Session} from '../lib/cloud';
 import {
   ALL_LIFE_SECTIONS,ALL_MODULES,MODULE_GROUPS,MODULE_LABELS,normalizePlatformState,type LifeSectionId,type PlatformState,type VexumModuleId,type Visibility
 } from '../lib/platform';
@@ -96,7 +96,8 @@ function ProfileSettings({platform,onSave,email}:{platform:PlatformState;onSave:
 }
 
 function SecuritySettings({platform,config,session,onSave,onMessage}:{platform:PlatformState;config:any;session:any;onSave:(p:PlatformState)=>void;onMessage:(m:string)=>void}){
-  const [password,setPassword]=useState('');const [confirm,setConfirm]=useState('');const [busy,setBusy]=useState(false);
+  const [passwordOpen,setPasswordOpen]=useState(false);const [passwordStage,setPasswordStage]=useState<'verify'|'new'>('verify');
+  const [currentPassword,setCurrentPassword]=useState('');const [password,setPassword]=useState('');const [confirm,setConfirm]=useState('');const [passwordError,setPasswordError]=useState('');const [busy,setBusy]=useState(false);
   const [mfa,setMfa]=useState<MfaState|null>(null);const [mfaBusy,setMfaBusy]=useState(false);const [mfaError,setMfaError]=useState('');
   const [enrollment,setEnrollment]=useState<MfaEnrollment|null>(null);const [code,setCode]=useState('');
   const [factorToRemove,setFactorToRemove]=useState<{id:string;name:string}|null>(null);
@@ -115,12 +116,22 @@ function SecuritySettings({platform,config,session,onSave,onMessage}:{platform:P
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[Boolean(config),session?.user?.id]);
 
+  const closePassword=()=>{setPasswordOpen(false);setPasswordStage('verify');setCurrentPassword('');setPassword('');setConfirm('');setPasswordError('')};
+  const verifyPasswordIdentity=async()=>{
+    if(!config||!session?.user?.email){setPasswordError('Sign in with an email and password before changing your password.');return}
+    if(!currentPassword){setPasswordError('Enter your current password.');return}
+    setBusy(true);setPasswordError('');
+    try{await signInPassword(config,session.user.email,currentPassword);setPasswordStage('new')}
+    catch(err){setPasswordError(err instanceof Error?err.message:'Identity verification failed.')}
+    finally{setBusy(false)}
+  };
   const changePassword=async()=>{
-    if(!config||!session){onMessage('Sign in to change the cloud account password.');return}
-    if(password.length<6||password!==confirm){onMessage('Passwords must match and be at least 6 characters.');return}
-    setBusy(true);
-    try{await updatePassword(config,password);setPassword('');setConfirm('');onMessage('Password updated.')}
-    catch(err){onMessage(err instanceof Error?err.message:'Password update failed.')}
+    if(!config||!session){setPasswordError('Sign in to change the cloud account password.');return}
+    if(password.length<8){setPasswordError('Use at least 8 characters for your new password.');return}
+    if(password!==confirm){setPasswordError('The new passwords do not match.');return}
+    setBusy(true);setPasswordError('');
+    try{await updatePassword(config,password);setBusy(false);closePassword();onMessage('Password updated successfully.');return}
+    catch(err){setPasswordError(err instanceof Error?err.message:'Password update failed.')}
     finally{setBusy(false)}
   };
   const beginTotp=async()=>{
@@ -157,10 +168,10 @@ function SecuritySettings({platform,config,session,onSave,onMessage}:{platform:P
     finally{setMfaBusy(false)}
   };
 
-  return <><SectionHead title="Account & Security" subtitle="Password and MFA controls are backed by the signed-in Supabase Auth account. VEXUM never marks MFA complete without a verified factor/session."/>
+  return <><SectionHead title="Account & Security" subtitle="Manage your password, verification methods, and sensitive-account protections."/>
     <SettingRow label="Account" description={session?.user.email||'Local-only workspace'}><span className={'vxt-status '+(session?'good':'warn')}>{session?'SIGNED IN':'LOCAL'}</span></SettingRow>
-    <div className="vxt-security-block"><header><KeyRound/><div><strong>Change Password</strong><span>Update the password on your signed-in VEXUM account.</span></div></header><div className="two"><label><span className="sr-only">New password</span><input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="New password" autoComplete="new-password"/></label><label><span className="sr-only">Confirm password</span><input type="password" value={confirm} onChange={e=>setConfirm(e.target.value)} placeholder="Confirm password" autoComplete="new-password"/></label></div><button disabled={busy||!password} onClick={changePassword}>{busy?'Updating…':'Update Password'}</button></div>
-    <div className="vxt-security-block vxt-mfa"><header><LockKeyhole/><div><strong>Two-Factor Authentication</strong><span>Authenticator-app MFA is backed by Supabase Auth and gates external Financial connections.</span></div></header>
+    <SettingRow label="Change Password" description="Verify your identity first, then choose a new password."><button onClick={()=>{setPasswordOpen(true);setPasswordStage('verify');setPasswordError('')}} disabled={!session}><KeyRound/>Change Password</button></SettingRow>
+    <div className="vxt-security-block vxt-mfa"><header><LockKeyhole/><div><strong>Two-Factor Authentication</strong><span>Add an authenticator or supported verification method for stronger account protection.</span></div></header>
       {!session?<div className="vxt-provider-state"><span className="warn">SIGN IN REQUIRED</span><p>Sign in to configure MFA for your VEXUM account.</p></div>:<>
         <div className="vxt-mfa-summary"><span className={'vxt-status '+(mfa?.currentLevel==='aal2'?'good':mfa?.verified.length?'warn':'')}>{mfaBusy&&!enrollment?'CHECKING…':mfa?.currentLevel==='aal2'?'AAL2 VERIFIED':mfa?.verified.length?'VERIFICATION REQUIRED':'NOT CONFIGURED'}</span><p>{mfa?.verified.length?mfa.verified.length+' verified factor'+(mfa.verified.length===1?'':'s')+' on this account.':'No verified MFA factors are currently attached to this account.'}</p><button onClick={()=>void syncMfa()} disabled={mfaBusy}><RefreshCw/>Refresh</button></div>
         {mfa?.factors.map(factor=><div className="vxt-factor" key={factor.id}><span><strong>{factor.friendly_name||'MFA factor'}</strong><small>{factor.factor_type||'factor'} · {factor.status||'unknown'}</small></span><button onClick={()=>setFactorToRemove({id:factor.id,name:factor.friendly_name||'this MFA factor'})} disabled={mfaBusy}><Trash2/>Remove</button></div>)}
@@ -171,6 +182,12 @@ function SecuritySettings({platform,config,session,onSave,onMessage}:{platform:P
     </div>
     <SettingRow label="Financial Security Gate" description="Block external financial-account connections until the current account/session has verified MFA."><Toggle checked={platform.security.requireMfaForExternalFinancial} onChange={checked=>onSave({...platform,security:{...platform.security,requireMfaForExternalFinancial:checked}})}/></SettingRow>
     <SettingRow label="Sessions" description="This client can see the current session only; a server-backed all-sessions manager is not configured."><span className="vxt-status">CURRENT DEVICE</span></SettingRow>
+
+    <VexumDialog open={passwordOpen} onClose={closePassword} title={passwordStage==='verify'?'Verify your identity':'Choose a new password'} eyebrow="ACCOUNT SECURITY" description={passwordStage==='verify'?'Enter your current password before VEXUM allows a password change.':'Your identity is verified. Choose a new password for this account.'} size="sm" closeOnBackdrop={!busy} escapeCloses={!busy}
+      footer={<><button className="vxui-button secondary" disabled={busy} onClick={closePassword}>Cancel</button><button className="vxui-button primary" disabled={busy||(passwordStage==='verify'?!currentPassword:!password||!confirm)} onClick={()=>void (passwordStage==='verify'?verifyPasswordIdentity():changePassword())}>{busy?'Working…':passwordStage==='verify'?'Verify Identity':'Save Password'}</button></>}>
+      {passwordStage==='verify'?<label className="vxt-password-field">Current password<input autoFocus type="password" autoComplete="current-password" value={currentPassword} onChange={e=>setCurrentPassword(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')void verifyPasswordIdentity()}}/></label>:<div className="vxt-password-stack"><label>New password<input autoFocus type="password" autoComplete="new-password" value={password} onChange={e=>setPassword(e.target.value)}/></label><label>Confirm new password<input type="password" autoComplete="new-password" value={confirm} onChange={e=>setConfirm(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')void changePassword()}}/></label></div>}
+      {passwordError?<p className="vxt-mfa-error" role="alert">{passwordError}</p>:null}
+    </VexumDialog>
 
     <VexumDialog open={Boolean(enrollment)} onClose={closeMfaDialog} title={enrollment?.totp?'Set up an Authenticator App':'Verify your session'} eyebrow="SECURE YOUR ACCOUNT" description={enrollment?.totp?'Scan the QR code, then enter the six-digit code generated by your authenticator app.':'Enter the current six-digit code from your authenticator app.'} size="md" className="vxt-mfa-dialog" closeOnBackdrop={!mfaBusy}
       footer={<><button className="vxui-button secondary" disabled={mfaBusy} onClick={closeMfaDialog}>Cancel</button><button className="vxui-button primary" disabled={mfaBusy||code.length<6} onClick={()=>void verify()}>{mfaBusy?'Verifying…':'Verify'}</button></>}>
@@ -184,12 +201,22 @@ function SecuritySettings({platform,config,session,onSave,onMessage}:{platform:P
 }
 
 function AppearanceSettings({platform,onSave}:{platform:PlatformState;onSave:(p:PlatformState)=>void}){
-  const a=platform.appearance;const patch=(key:keyof typeof a,value:any)=>onSave({...platform,appearance:{...a,[key]:value}});
-  return <><SectionHead title="Appearance" subtitle="VEXUM should support dense power-user layouts without making everyone use them."/>
+  const a=platform.appearance;
+  const [accentDraft,setAccentDraft]=useState(a.accentColor);
+  useEffect(()=>setAccentDraft(a.accentColor),[a.accentColor]);
+  const patch=(key:keyof typeof a,value:any)=>onSave({...platform,appearance:{...a,[key]:value}});
+  const commitAccent=()=>{
+    const value=accentDraft.trim().toUpperCase();
+    if(/^#[0-9A-F]{6}$/.test(value))patch('accentColor',value);
+    else setAccentDraft(a.accentColor);
+  };
+  return <><SectionHead title="Appearance" subtitle="Make VEXUM comfortable without changing what the product can do."/>
+    <SettingRow label="Theme" description="Choose VEXUM Dark or the purpose-built Light theme."><Segment value={a.theme} values={['dark','light']} onChange={value=>patch('theme',value)}/></SettingRow>
+    <SettingRow label="Accent Color" description="Shared actions, focus states, active navigation, and glow use this color."><div className="vxt-accent-control"><input aria-label="Accent color" type="color" value={a.accentColor} onChange={e=>{const value=e.target.value.toUpperCase();setAccentDraft(value);patch('accentColor',value)}}/><input aria-label="Accent color hex" value={accentDraft} maxLength={7} onChange={e=>setAccentDraft(e.target.value)} onBlur={commitAccent} onKeyDown={e=>{if(e.key==='Enter'){e.currentTarget.blur()}}}/></div></SettingRow>
     <SettingRow label="Interface Density" description="Controls global spacing."><Segment value={a.density} values={['compact','standard','comfortable']} onChange={value=>patch('density',value)}/></SettingRow>
     <SettingRow label="Text Size" description="Global text scaling for VEXUM surfaces."><Segment value={a.textSize} values={['small','medium','large']} onChange={value=>patch('textSize',value)}/></SettingRow>
-    <SettingRow label="Motion" description="Reduce non-essential animation."><Segment value={a.motion} values={['full','reduced']} onChange={value=>patch('motion',value)}/></SettingRow>
-    <SettingRow label="Glow Intensity" description="Red LED/glow effects."><Segment value={a.glow} values={['off','subtle','standard']} onChange={value=>patch('glow',value)}/></SettingRow>
+    <SettingRow label="Reduced Motion" description="Reduce non-essential movement and transitions."><Segment value={a.motion} values={['full','reduced']} onChange={value=>patch('motion',value)}/></SettingRow>
+    <SettingRow label="Glow Intensity" description="Accent glow around active and priority surfaces."><Segment value={a.glow} values={['off','subtle','standard']} onChange={value=>patch('glow',value)}/></SettingRow>
     <SettingRow label="Sidebar Width" description="Compact or standard navigation."><Segment value={a.sidebarWidth} values={['compact','standard']} onChange={value=>patch('sidebarWidth',value)}/></SettingRow>
     <SettingRow label="Number Formatting" description="$12,481.32 or $12.5K."><Segment value={a.numberFormat} values={['full','compact']} onChange={value=>patch('numberFormat',value)}/></SettingRow>
   </>;

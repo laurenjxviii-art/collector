@@ -18,6 +18,8 @@ export type PlatformIdentity={
 };
 
 export type PlatformAppearance={
+  theme:'dark'|'light';
+  accentColor:string;
   density:AppearanceDensity;
   textSize:TextSize;
   motion:MotionLevel;
@@ -141,7 +143,7 @@ export function defaultPlatformState(legacy=true):PlatformState{
     collectorCategories:[],
     collectorInterests:[],
     identity:{username:'',displayName:'',birthday:'',country:'United States',currency:'USD',language:'English'},
-    appearance:{density:'compact',textSize:'medium',motion:'full',glow:'subtle',sidebarWidth:'standard',numberFormat:'full'},
+    appearance:{theme:'dark',accentColor:'#FF0000',density:'compact',textSize:'medium',motion:'full',glow:'subtle',sidebarWidth:'standard',numberFormat:'full'},
     notifications:{
       push:true,email:false,taskReminders:true,radar:true,marketplace:true,financial:true,social:true,
       quietHours:{enabled:false,start:'23:00',end:'08:00',urgentCategories:['Grail Restock','Financial Security']},
@@ -165,6 +167,7 @@ function uniqueModules(value:unknown):VexumModuleId[]{
 }
 function validTime(value:unknown){return typeof value==='string'&&/^([01]\d|2[0-3]):[0-5]\d$/.test(value)}
 function validVisibility(value:unknown):value is Visibility{return ['Private','Friends','Community','Public'].includes(String(value))}
+function validAccent(value:unknown){return typeof value==='string'&&/^#[0-9a-fA-F]{6}$/.test(value)}
 function validWidget(widget:unknown):widget is WidgetPlacement{
   if(!widget||typeof widget!=='object'||Array.isArray(widget))return false;
   const w=widget as WidgetPlacement;
@@ -207,6 +210,8 @@ export function normalizePlatformState(value?:PlatformState,legacy=true):Platfor
       language:typeof identity.language==='string'?identity.language:'English'
     },
     appearance:{
+      theme:['dark','light'].includes(appearance.theme)?appearance.theme:'dark',
+      accentColor:validAccent(appearance.accentColor)?appearance.accentColor.toUpperCase():'#FF0000',
       density:['compact','standard','comfortable'].includes(appearance.density)?appearance.density:'compact',
       textSize:['small','medium','large'].includes(appearance.textSize)?appearance.textSize:'medium',
       motion:['full','reduced'].includes(appearance.motion)?appearance.motion:'full',

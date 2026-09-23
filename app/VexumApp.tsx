@@ -231,6 +231,14 @@ export default function VexumApp({
     if(!workspace.ready)return;
     try{setOnboardingPending(localStorage.getItem('vexum.onboarding.pending')==='1'||platform.onboardingComplete===false)}catch{setOnboardingPending(platform.onboardingComplete===false)}
   },[workspace.ready,platform.onboardingComplete]);
+
+  useEffect(()=>{
+    const root=document.documentElement;
+    root.dataset.vxTheme=platform.appearance.theme;
+    root.style.setProperty('--vx-red',platform.appearance.accentColor);
+    root.style.setProperty('--vx-focus',platform.appearance.accentColor);
+    return()=>{delete root.dataset.vxTheme;root.style.removeProperty('--vx-red');root.style.removeProperty('--vx-focus')};
+  },[platform.appearance.theme,platform.appearance.accentColor]);
   useEffect(()=>{
     if(!platform.notifications.marketplace||!workspace.config?.configured||!workspace.session){setSellNotifications([]);return}
     let alive=true;
@@ -362,7 +370,7 @@ export default function VexumApp({
   else if(view==='social')content=frame('social',<VexumSocial section={moduleSections.social} onSectionChange={section=>setModuleSection('social',section)}/>);
 
 
-  const rootClass=['vx-app','vxp-platform','density-'+platform.appearance.density,'text-'+platform.appearance.textSize,'motion-'+platform.appearance.motion,'glow-'+platform.appearance.glow,'sidebar-'+platform.appearance.sidebarWidth].join(' ');
+  const rootClass=['vx-app','vxp-platform','theme-'+platform.appearance.theme,'density-'+platform.appearance.density,'text-'+platform.appearance.textSize,'motion-'+platform.appearance.motion,'glow-'+platform.appearance.glow,'sidebar-'+platform.appearance.sidebarWidth].join(' ');
 
   return <div className={rootClass}>
     <a className="vx-skip-link" href="#vexum-main">Skip to main content</a>
