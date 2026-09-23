@@ -151,7 +151,7 @@ export async function listStoredPlaidItems(userId:string){
 }
 
 
-function plaidRedirectUri(){
+export function plaidRedirectUri(){
   const configured=(process.env.PLAID_REDIRECT_URI||'https://vexum.app/plaid/oauth').trim();
   let parsed:URL;
   try{parsed=new URL(configured)}catch{throw new PlaidRouteError(503,'PLAID_REDIRECT_INVALID','PLAID_REDIRECT_URI must be a valid absolute URL.')}
