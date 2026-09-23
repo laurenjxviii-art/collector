@@ -154,8 +154,10 @@ export async function listStoredPlaidItems(userId:string){
 export function plaidRedirectUri(){
   const envValue=(process.env.PLAID_REDIRECT_URI||'').trim();
   // Migrate the pre-OAuth VEXUM Settings callback automatically if it is still present in Vercel.
-  const configured=!envValue||/^https:\/\/vexum\.app\/settings\/?$/.test(envValue)
-    ? 'https://vexum.app/plaid/oauth'
+  const legacyRedirect=/^https:\/\/(?:www\.)?vexum\.app\/settings\/?$/.test(envValue);
+  const apexOauth=/^https:\/\/vexum\.app\/plaid\/oauth\/?$/.test(envValue);
+  const configured=!envValue||legacyRedirect||apexOauth
+    ? 'https://www.vexum.app/plaid/oauth'
     : envValue;
   let parsed:URL;
   try{parsed=new URL(configured)}catch{throw new PlaidRouteError(503,'PLAID_REDIRECT_INVALID','PLAID_REDIRECT_URI must be a valid absolute URL.')}
@@ -249,7 +251,9 @@ function publicBaseUrl(req?:Request){
   return 'https://vexum.app';
 }
 export async function createPlaidLinkToken(req:Request,userId:string,itemId?:string){
-  const webhook=(process.env.PLAID_WEBHOOK_URL||'https://vexum.app/api/plaid/webhook').replace(/\/$/,'');
+  const webhook=(process.env.PLAID_WEBHOOK_URL||'https://www.vexum.app/api/plaid/webhook')
+    .replace(/^https:\/\/vexum\.app\//,'https://www.vexum.app/')
+    .replace(/\/$/,'');
   const redirect=plaidRedirectUri();
   const base:any={
     user:{client_user_id:userId},
