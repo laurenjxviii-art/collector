@@ -129,10 +129,6 @@ export default function VexumHome(){
   const lifeOpenTasks=life.tasks.filter(task=>!['completed','cancelled'].includes(task.status));
   const lifeTodayTasks=lifeOpenTasks.filter(task=>task.dueDate===today||task.scheduledStart?.startsWith(today));
   const lifeTodayEvents=life.events.filter(event=>event.start.startsWith(today));
-  const lifeTodayWorkouts=life.workoutPlans.filter(plan=>plan.active&&plan.days.includes(new Date().getDay()));
-  const lifeMomentum=life.habits.filter(habit=>habit.active).length
-    ?Math.round(life.habits.filter(habit=>habit.active).reduce((sum,habit)=>sum+habitMomentum(habit),0)/life.habits.filter(habit=>habit.active).length)
-    :0;
   const lifeCalendarRows=useMemo(()=>{
     const rows:Array<{date:string;title:string;kind:string;sort:string}>=[];
     for(const task of lifeOpenTasks.filter(task=>task.dueDate)){
@@ -198,14 +194,17 @@ export default function VexumHome(){
     return Number.isFinite(delta)&&delta>=0&&delta<=14*86400000;
   });
   const portfolioSnapshots=(workspace.data.history||[]).slice(-2).map(snapshot=>Object.values(snapshot.values).reduce((sum,value)=>sum+value,0));
-  const portfolioDeltaPct=portfolioSnapshots.length===2&&portfolioSnapshots[0]>0?(portfolioSnapshots[1]-portfolioSnapshots[0])/portfolioSnapshots[0]*100:null;
+  const previousPortfolioValue=portfolioSnapshots.at(-2);
+  const latestPortfolioValue=portfolioSnapshots.at(-1);
+  const portfolioDeltaPct=typeof previousPortfolioValue==='number'&&previousPortfolioValue>0&&typeof latestPortfolioValue==='number'
+    ?(latestPortfolioValue-previousPortfolioValue)/previousPortfolioValue*100:null;
   const leadingProgress=progressRows[0];
   const briefLines:BriefLine[]=[
     portfolioDeltaPct!==null?{
       before:'Your Portfolio ',value:(portfolioDeltaPct>=0?'increased +':'decreased ')+portfolioDeltaPct.toFixed(1)+'%',after:' since the previous snapshot.',tone:portfolioDeltaPct>=0?'green':'red'
     }:hasPortfolio?{before:'Your Portfolio is currently ',value:money(currentValue),after:'.'}:{before:'Your Portfolio is ready for your first owned item.'},
     liveWishlist.length?{before:'',value:String(liveWishlist.length)+' Wishlist item'+(liveWishlist.length===1?'':'s'),after:' '+(liveWishlist.length===1?'is':'are')+' at or below your target price.',tone:'green'}:{before:'No Wishlist items are currently below your target price.'},
-    ...todayBills.slice(0,2).map<BriefLine>(bill=>({before:bill.name+' of ',value:money(bill.amount),after:' is due today.',tone:'red'})),
+    ...todayBills.slice(0,2).map(bill=>({before:bill.name+' of ',value:money(bill.amount),after:' is due today.',tone:'red' as Tone})),
     preorderSoon.length?{before:'',value:String(preorderSoon.length)+' preorder'+(preorderSoon.length===1?'':'s'),after:' '+(preorderSoon.length===1?'releases':'release')+' or may charge within 14 days.',tone:'orange'}:{before:'No preorder charges are scheduled within the next 14 days.'},
     leadingProgress?{before:'Your '+leadingProgress.name+' collection is now ',value:Math.min(100,Math.round(leadingProgress.count/Math.max(1,leadingProgress.total)*100))+'% complete',after:'.',tone:'green'}:{before:'Add a measurable collection to track completion here.'},
     lifeTodayTasks.length||lifeTodayEvents.length?{before:'Today you have ',value:lifeTodayTasks.length+' task'+(lifeTodayTasks.length===1?'':'s')+' and '+lifeTodayEvents.length+' event'+(lifeTodayEvents.length===1?'':'s'),after:'.'}:{before:'Your Life schedule is clear today.'},
