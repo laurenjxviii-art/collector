@@ -1,15 +1,15 @@
 'use client';
 
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useState} from 'react';
 import {Link2,LockKeyhole,RefreshCw,Unplug} from 'lucide-react';
 import type {CloudConfig,Session} from '../lib/cloud';
 import type {PlatformState} from '../lib/platform';
 import {
-  createPlaidLinkToken,disconnectPlaid,exchangePlaidPublicToken,loadPlaidSnapshot,openPlaidLink,plaidBlockedProducts,syncPlaid,
+  completePlaidLinkSession,createPlaidLinkToken,disconnectPlaid,exchangePlaidPublicToken,loadPlaidSnapshot,openPlaidLink,plaidBlockedProducts,syncPlaid,
   type PlaidSnapshot
 } from '../lib/plaidClient';
 
-const TOKEN_KEY='vexum.plaid.linkToken',MODE_KEY='vexum.plaid.linkMode',ITEM_KEY='vexum.plaid.linkItem';
+const SESSION_KEY='vexum.plaid.sessionId';
 
 export default function PlaidConnection({config,session,platform,onSave,onMessage}:{
   config:CloudConfig|null;session:Session|null;platform:PlatformState;onSave:(p:PlatformState)=>void;onMessage:(message:string)=>void;
@@ -19,7 +19,6 @@ export default function PlaidConnection({config,session,platform,onSave,onMessag
   const [environment,setEnvironment]=useState('');
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
-  const resumed=useRef(false);
   const [mfaTick,setMfaTick]=useState(0);
   const mfaReady=platform.security.mfaStatus==='verified';
   const connected=Boolean(snapshot?.items?.length);
@@ -54,30 +53,31 @@ export default function PlaidConnection({config,session,platform,onSave,onMessag
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[connected,hasError,snapshot?.lastSync]);
 
-  async function complete(mode:'connect'|'update',itemId:string|null,publicToken:string|null,metadata:any){
+  async function complete(mode:'connect'|'update',itemId:string|null,publicToken:string|null,metadata:any,linkSessionRecordId:string){
     if(!config)return;
     if(mode==='connect'){
       if(!publicToken)throw new Error('Plaid completed without returning a public token.');
       const result=await exchangePlaidPublicToken(config,publicToken,{
         institutionId:String(metadata?.institution?.institution_id||''),
         institutionName:String(metadata?.institution?.name||''),
-        linkSessionId:String(metadata?.link_session_id||'')
+        linkSessionId:String(metadata?.link_session_id||''),
+        linkSessionRecordId
       });
       setSnapshot(result.snapshot);
     }else{
+      await completePlaidLinkSession(config,linkSessionRecordId,'update',String(metadata?.link_session_id||''));
       setSnapshot(await syncPlaid(config,itemId||undefined));
     }
-    sessionStorage.removeItem(TOKEN_KEY);sessionStorage.removeItem(MODE_KEY);sessionStorage.removeItem(ITEM_KEY);
-    if(location.search.includes('oauth_state_id='))history.replaceState(null,'',location.pathname);
+    sessionStorage.removeItem(SESSION_KEY);
     onMessage(mode==='connect'?'Financial institution connected and synchronized.':'Institution access updated and synchronized.');
   }
 
-  async function open(token:string,mode:'connect'|'update',itemId:string|null,receivedRedirectUri?:string){
+  async function open(token:string,mode:'connect'|'update',itemId:string|null,linkSessionRecordId:string,receivedRedirectUri?:string){
     await openPlaidLink({
       token,receivedRedirectUri,
       onSuccess:async(publicToken,metadata)=>{
         setBusy(true);setError('');
-        try{await complete(mode,itemId,publicToken,metadata)}
+        try{await complete(mode,itemId,publicToken,metadata,linkSessionRecordId)}
         catch(err){setError(err instanceof Error?err.message:'Plaid connection could not be completed.')}
         finally{setBusy(false)}
       },
@@ -88,15 +88,6 @@ export default function PlaidConnection({config,session,platform,onSave,onMessag
     });
   }
 
-  useEffect(()=>{
-    if(resumed.current||!config?.configured||!session||!mfaReady||!location.search.includes('oauth_state_id='))return;
-    const token=sessionStorage.getItem(TOKEN_KEY),mode=sessionStorage.getItem(MODE_KEY) as 'connect'|'update'|null,itemId=sessionStorage.getItem(ITEM_KEY);
-    if(!token||!mode)return;
-    resumed.current=true;setBusy(true);
-    void open(token,mode,itemId||null,location.href).catch(err=>{setBusy(false);setError(err instanceof Error?err.message:'Unable to resume Plaid Link.')});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[config?.configured,session?.user.id,mfaReady]);
-
   async function begin(itemId?:string){
     if(!config?.configured||!session)return;
     if(!mfaReady){onMessage('Verify MFA before connecting external financial accounts.');return}
@@ -105,9 +96,8 @@ export default function PlaidConnection({config,session,platform,onSave,onMessag
       const result=await createPlaidLinkToken(config,itemId);
       const mode=result.mode,item=result.itemId;
       if(result.warnings?.length)onMessage('Plaid connected with limited product permissions: '+result.warnings.join(', ')+'. VEXUM will show exact product status after sync.');
-      sessionStorage.setItem(TOKEN_KEY,result.linkToken);sessionStorage.setItem(MODE_KEY,mode);
-      if(item)sessionStorage.setItem(ITEM_KEY,item);else sessionStorage.removeItem(ITEM_KEY);
-      await open(result.linkToken,mode,item);
+      sessionStorage.setItem(SESSION_KEY,result.sessionId);
+      await open(result.linkToken,mode,item,result.sessionId);
     }catch(err){setBusy(false);setError(err instanceof Error?err.message:'Unable to start Plaid Link.')}
   }
   async function manualSync(itemId?:string){
