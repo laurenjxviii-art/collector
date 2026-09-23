@@ -260,7 +260,7 @@ export default function VexumSocial({section,onSectionChange}:{section?:string;o
 
     {error?<div className="vxsoc-error"><AlertTriangle/><span>{error}</span><button onClick={()=>setError('')}><X/></button></div>:null}
 
-    {!session?<section className="vxsoc-panel vxsoc-signin"><SocialEmpty icon={<Shield/>} title="Social requires a signed-in VEXUM profile" body="Your local collection stays available, but network writes require authenticated RLS so private collection, Setup, and Financial data cannot leak through a client-only social layer."/></section>:null}
+    {!session?<section className="vxsoc-panel vxsoc-signin"><SocialEmpty icon={<Shield/>} title="Social requires a signed-in VEXUM profile" body="Sign in to post, follow collectors, join communities, and use network features. Your private VEXUM data stays private unless you choose to share it."/></section>:null}
 
     {session&&['For You','Following','Communities'].includes(tab)?<div className="vxsoc-layout">
       <main>
