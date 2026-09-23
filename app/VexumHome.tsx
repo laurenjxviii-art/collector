@@ -320,7 +320,7 @@ export default function VexumHome({onQuickAdd}:{onQuickAdd?:()=>void}={}){
 
   return <div className="vxh-page">
     <section className="vxh-title">
-      <div><span>HOME</span><h1>{greeting()}{profileName?', '+profileName:''}.</h1><p>{dateLabel} · Your VEXUM command center.</p></div>
+      <div><span>HOME</span><div className="vxh-greeting-row"><h1>{greeting()}{profileName?', '+profileName:''}.</h1><img className="vxh-wordmark" src="/vexum-wordmark.png" alt="VEXUM"/></div><p>{dateLabel} · Your VEXUM command center.</p></div>
       <div className="vxh-title-actions"><button onClick={()=>onQuickAdd?onQuickAdd():location.assign('/search')}><Plus/>Quick Add</button><button className={editing?'active':''} onClick={()=>setEditing(value=>!value)}><SlidersHorizontal/>{editing?'Done Editing':'Edit Widgets'}</button></div>
     </section>
     <div className="vxh-editbar">

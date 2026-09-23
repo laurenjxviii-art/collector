@@ -21,6 +21,7 @@ export const metadata:Metadata={
   title:'VEXUM',
   description:'VEXUM — modular personal operating system for life, ownership, money, space, commerce, community, and fitness.',
   manifest:'/manifest.webmanifest',
+  icons:{icon:'/vexum-mark.png',shortcut:'/vexum-mark.png',apple:'/vexum-mark.png'},
   appleWebApp:{capable:true,title:'VEXUM',statusBarStyle:'black-translucent'}
 };
 
