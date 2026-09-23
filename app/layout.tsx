@@ -12,6 +12,9 @@ import './vexum-setup.css';
 import './vexum-social.css';
 import './vexum-sell.css';
 import type {Metadata} from 'next';
+import {Manrope} from 'next/font/google';
+
+const vexumFont=Manrope({subsets:['latin'],display:'swap',variable:'--font-vexum'});
 
 export const metadata:Metadata={
   title:'VEXUM',
@@ -29,5 +32,5 @@ export const viewport={
 };
 
 export default function Layout({children}:{children:React.ReactNode}){
-  return <html lang="en"><body>{children}</body></html>;
+  return <html lang="en"><body className={vexumFont.variable}>{children}</body></html>;
 }
