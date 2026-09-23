@@ -10,6 +10,7 @@ import {DEMO_PRODUCTS,DEMO_RECENT_IDS,DEMO_RELATIONSHIPS} from '../../lib/search
 import {resolveSearch} from '../../lib/search/providers';
 import type {NormalizedProduct,UserProductRelationship} from '../../lib/search/types';
 import {useWorkspace} from '../../lib/useWorkspace';
+import {VexumDialog} from '../VexumUi';
 import {alertDefaults,conditionOptions,newWishlistRecord,snapshotFromProduct,wishlistEvent,type WishlistPriority,type WishlistRecord} from '../../lib/wishlist';
 import type {Item} from '../../lib/model';
 import {newPortfolioId,normalizePortfolioPreferences} from '../../lib/portfolio';
@@ -300,8 +301,7 @@ function AddPortfolioModal({product,relation,collections,templates,onClose,onSav
   const [notes,setNotes]=useState('');
   const selectedCollection=collections.find(collection=>collection.id===collectionId);
   const selectedTemplate=templates.find(template=>template.id===selectedCollection?.customFieldTemplateId);
-  return <div className="vxs-modal-backdrop" role="dialog" aria-modal="true"><div className="vxs-quick-modal">
-    <header><div><span>ADD TO PORTFOLIO</span><h2>{product.canonicalName}</h2><p>Catalog metadata is already known. This creates your specific physical copy in the synced Portfolio.</p></div><button onClick={onClose}><X/></button></header>
+  return <VexumDialog open onClose={onClose} title={product.canonicalName} eyebrow="ADD TO PORTFOLIO" description="Catalog metadata is already known. This creates your specific physical copy in the synced Portfolio." size="lg" className="vxs-shared-dialog">
     <div className="vxs-known-metadata"><span><b>Manufacturer</b>{product.manufacturer}</span><span><b>Line</b>{product.line||'—'}</span><span><b>Year</b>{product.releaseYear}</span><span><b>UPC</b>{product.upc||'—'}</span><span><b>SKU</b>{product.sku||'—'}</span><span><b>MSRP</b>{money(product.msrp)}</span></div>
     {relation.ownedQuantity>0?<div className="vxs-owned-warning"><Star/><span>You already own {relation.ownedQuantity} cop{relation.ownedQuantity===1?'y':'ies'}. Adding here creates another owned quantity intentionally.</span></div>:null}
     <div className="vxs-owner-fields">
@@ -318,7 +318,7 @@ function AddPortfolioModal({product,relation,collections,templates,onClose,onSav
     </div>
     <div className="vxs-owned-warning"><LayersIcon/><span>Physical location is assigned in Setup, not duplicated here.{selectedTemplate?' Collection template "'+selectedTemplate.name+'" will apply default ownership fields.':''}</span></div>
     <footer><button onClick={onClose}>Cancel</button><button className="primary" onClick={()=>onSave(relation,{price:Number(price)||0,date,condition,quantity,collectionId,retailer,box,accessories,receipt,notes})}><Plus/>Add Owned Copy</button></footer>
-  </div></div>;
+  </VexumDialog>;
 }
 
 function LayersIcon(){return <span style={{fontWeight:800}}>◇</span>}
@@ -351,8 +351,7 @@ function WishlistModal({product,relation,record,onClose,onSave}:{product:Normali
     onSave({...relation,wishlisted:true,grail:priority==='Grail',targetPrice,maxPrice,conditionRequirement:condition,tracked:Object.values(alerts).some(rule=>rule.enabled)},nextRecord);
   };
 
-  return <div className="vxs-modal-backdrop" role="dialog" aria-modal="true"><div className="vxs-quick-modal">
-    <header><div><span>ADD TO WISHLIST</span><h2>{product.canonicalName}</h2><p>Configure how VEXUM should treat this acquisition. Product identity stays canonical.</p></div><button onClick={onClose}><X/></button></header>
+  return <VexumDialog open onClose={onClose} title={product.canonicalName} eyebrow="ADD TO WISHLIST" description="Configure how VEXUM should treat this acquisition. Product identity stays canonical." size="lg" className="vxs-shared-dialog">
     {relation.ownedQuantity>0?<div className="vxs-owned-warning"><Star/><span>You already own {relation.ownedQuantity} cop{relation.ownedQuantity===1?'y':'ies'}. You can still wishlist another intentionally.</span></div>:null}
     <div className="vxs-owner-fields">
       <label>Priority<select value={priority} onChange={e=>setPriority(e.target.value as WishlistPriority)}><option>Low</option><option>Medium</option><option>High</option><option>Grail</option></select></label>
@@ -363,7 +362,7 @@ function WishlistModal({product,relation,record,onClose,onSave}:{product:Normali
     </div>
     <div className="vxs-alert-options"><label><input type="checkbox" checked={msrpAlert} onChange={e=>setMsrpAlert(e.target.checked)}/>At / below MSRP</label><label><input type="checkbox" checked={localAlert} onChange={e=>setLocalAlert(e.target.checked)}/>Local stock</label><label><input type="checkbox" checked={marketAlert} onChange={e=>setMarketAlert(e.target.checked)}/>Marketplace listings</label></div>
     <footer><button onClick={onClose}>Cancel</button><button className="primary" onClick={save}><Star/>Save Wishlist</button></footer>
-  </div></div>;
+  </VexumDialog>;
 }
 function SearchSkeleton(){
   return <div className="vxs-skeleton">

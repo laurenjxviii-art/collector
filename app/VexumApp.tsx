@@ -3,7 +3,7 @@
 import {useEffect,useMemo,useState} from 'react';
 import type {ReactNode} from 'react';
 import {
-  Bell,CalendarCheck,ChevronDown,CircleDollarSign,HelpCircle,Home,Layers3,LifeBuoy,LogOut,
+  Bell,CalendarCheck,ChevronDown,CircleDollarSign,HelpCircle,Home,Layers3,LifeBuoy,LogOut,Palette,
   LockKeyhole,MessageSquare,Plus,Search,Settings,Share2,ShoppingBag,SlidersHorizontal,Star,UserRound,X
 } from 'lucide-react';
 import VexumHome from './VexumHome';
@@ -16,6 +16,7 @@ import VexumSetup from './VexumSetup';
 import VexumSell from './VexumSell';
 import VexumSocial from './VexumSocial';
 import VexumSettings from './VexumSettings';
+import {OtpInput,VexumDialog,VexumInteractionHost,VexumToastHost,pushVexumToast} from './VexumUi';
 import VexumOnboarding from './VexumOnboarding';
 import CloudPanel from './CloudPanel';
 import {useWorkspace} from '../lib/useWorkspace';
@@ -91,15 +92,16 @@ function PageFrame({hero,children,displayName,unread,onCommand,onQuick,onNotific
   return <main id="vexum-main" tabIndex={-1} className={'vx-content page-'+hero}><Topbar hero={hero} displayName={displayName} unread={unread} onCommand={onCommand} onQuick={onQuick} onNotifications={onNotifications} onProfile={onProfile}/>{children}</main>;
 }
 
-function ProfileMenu({open,onClose,displayName,email,navigate,signOut,onAccount}:{open:boolean;onClose:()=>void;displayName:string;email:string;navigate:(v:View)=>void;signOut:()=>Promise<void>;onAccount:()=>void}){
+function ProfileMenu({open,onClose,displayName,email,navigate,signOut,onAccount,onSettings}:{open:boolean;onClose:()=>void;displayName:string;email:string;navigate:(v:View)=>void;signOut:()=>Promise<void>;onAccount:()=>void;onSettings:(section?:'profile'|'appearance')=>void}){
   if(!open)return null;
   const go=(view:View)=>{onClose();navigate(view)};
   return <div className="vxp-profile-menu" role="region" aria-label="Account menu">
     <header><div className="avatar" aria-hidden="true">{displayName[0]?.toUpperCase()||'V'}</div><span><strong>{displayName}</strong><small>{email||'Local workspace'}</small></span><button aria-label="Close account menu" onClick={onClose}><X/></button></header>
-    <button onClick={()=>go('settings')}><UserRound/><span>Profile</span><ChevronDown/></button>
-    <button onClick={()=>go('settings')}><Settings/><span>Settings</span><ChevronDown/></button>
-    <button onClick={()=>window.alert('The VEXUM Help Center is not connected yet.')}><HelpCircle/><span>Help</span><ChevronDown/></button>
-    <button onClick={()=>window.alert('Feedback delivery is not configured yet.')}><MessageSquare/><span>Send Feedback</span><ChevronDown/></button>
+    <button onClick={()=>{onClose();onSettings('profile')}}><UserRound/><span>Profile</span><ChevronDown/></button>
+    <button onClick={()=>{onClose();onSettings()}}><Settings/><span>Settings</span><ChevronDown/></button>
+    <button onClick={()=>{onClose();onSettings('appearance')}}><Palette/><span>Appearance</span><ChevronDown/></button>
+    <button onClick={()=>{onClose();pushVexumToast({title:'Help Center is not connected yet.',message:'Support content will appear here once the Help Center is configured.',kind:'info'})}}><HelpCircle/><span>Help</span><ChevronDown/></button>
+    <button onClick={()=>{onClose();pushVexumToast({title:'Feedback delivery is not configured yet.',message:'Your message was not sent.',kind:'warning'})}}><MessageSquare/><span>Send Feedback</span><ChevronDown/></button>
     {email?<button className="danger" onClick={()=>void signOut()}><LogOut/><span>Sign Out</span></button>:<button className="danger" onClick={()=>{onClose();onAccount()}}><UserRound/><span>Create or Sign In to Account</span></button>}
   </div>;
 }
@@ -177,31 +179,23 @@ function MfaSessionGate({config,session,onVerified,onSignOut}:{config:CloudConfi
       }
       setRequired(false);
       onVerified();
+      pushVexumToast({title:mode==='enroll'?'Two-factor authentication enabled.':'Security check complete.',kind:'success'});
     }catch(err){
       setError(err instanceof Error?err.message:'Unable to verify MFA.');
     }finally{setBusy(false)}
   };
 
   const qrSrc=mfaQrImageSource(enrollment?.totp?.qr_code);
-  return <div className="vxp-mfa-gate"><section role="dialog" aria-modal="true" aria-labelledby="vexum-mfa-title" className={mode==='enroll'?'vxp-mfa-enroll-card':''}>
-    <LockKeyhole/><span>{mode==='enroll'?'REQUIRED ACCOUNT SECURITY':'SECURITY CHECK'}</span>
-    <h2 id="vexum-mfa-title">{mode==='enroll'?'Set up 2FA to finish signup':'Verify your VEXUM account'}</h2>
-    {mode==='enroll'?<>
-      <p>VEXUM requires authenticator two-factor authentication for new accounts. Scan the QR code in Google Authenticator, Microsoft Authenticator, Authy, 1Password, or another TOTP app, then enter the 6-digit code.</p>
-      <div className="vxp-mfa-enrollment">
-        {qrSrc?<div className="vxp-mfa-qr"><img src={qrSrc} alt="VEXUM authenticator setup QR code"/></div>:null}
-        <div className="vxp-mfa-enrollment-copy">
-          {enrollment?.totp?.secret?<><small>Can't scan it? Enter this setup key manually:</small><code>{enrollment.totp.secret}</code></>:null}
-          <label>6-digit authenticator code<input autoFocus inputMode="numeric" autoComplete="one-time-code" value={code} onChange={e=>setCode(e.target.value.replace(/\D/g,'').slice(0,6))} onKeyDown={e=>{if(e.key==='Enter')void verify()}} placeholder="000000"/></label>
-        </div>
-      </div>
-    </>:<>
-      <p>This account has multi-factor authentication enabled. Enter the code from your authenticator app before continuing.</p>
-      <label>Authenticator code<input autoFocus inputMode="numeric" autoComplete="one-time-code" value={code} onChange={e=>setCode(e.target.value.replace(/\D/g,'').slice(0,6))} onKeyDown={e=>{if(e.key==='Enter')void verify()}} placeholder="000000"/></label>
-    </>}
-    {error?<div className="error" role="alert">{error}</div>:null}
-    <div><button onClick={()=>void onSignOut()}>Sign Out</button><button className="primary" disabled={busy||code.length<6} onClick={()=>void verify()}>{busy?'Verifying…':mode==='enroll'?'Enable 2FA & Continue':'Verify & Continue'}</button></div>
-  </section></div>;
+  return <VexumDialog open onClose={()=>{}} title={mode==='enroll'?'Set up 2FA to finish signup':'Verify your VEXUM account'} eyebrow={mode==='enroll'?'REQUIRED ACCOUNT SECURITY':'SECURITY CHECK'} description={mode==='enroll'?'VEXUM requires authenticator two-factor authentication for new accounts. Scan the QR code, then enter the six-digit code.':'Enter the six-digit code from your authenticator app before continuing.'} size="md" className="vxp-required-mfa-dialog" closeOnBackdrop={false} showClose={false} escapeCloses={false}
+    footer={<><button className="vxui-button secondary" disabled={busy} onClick={()=>void onSignOut()}>Sign Out</button><button className="vxui-button primary" disabled={busy||code.length<6} onClick={()=>void verify()}>{busy?'Verifying…':mode==='enroll'?'Enable 2FA & Continue':'Verify & Continue'}</button></>}>
+    {mode==='enroll'?<div className="vxp-mfa-flow">
+      <ol><li>Open Google Authenticator, Microsoft Authenticator, Authy, 1Password, or another TOTP app.</li><li>Scan the QR code.</li><li>Enter the generated six-digit code.</li></ol>
+      {qrSrc?<div className="vxp-mfa-qr"><img src={qrSrc} alt="VEXUM authenticator setup QR code"/></div>:null}
+      {enrollment?.totp?.secret?<div className="vxp-mfa-manual"><small>Can't scan it? Enter this setup key manually:</small><code>{enrollment.totp.secret}</code></div>:null}
+    </div>:null}
+    <label className="vxp-otp-label">6-digit authenticator code<OtpInput value={code} onChange={setCode} disabled={busy}/></label>
+    {error?<div className="vxp-mfa-inline-error" role="alert">{error}</div>:null}
+  </VexumDialog>;
 }
 export default function VexumApp({
   initialView='home',initialSearchQuery='',initialProductId=''
@@ -209,7 +203,9 @@ export default function VexumApp({
   initialView?:View;initialSearchQuery?:string;initialProductId?:string;
 }){
   const workspace=useWorkspace();
-  const [view,setView]=useState<View>(initialView);
+  const [view,setView]=useState<View>(initialView==='settings'?'home':initialView);
+  const [settingsOpen,setSettingsOpen]=useState(initialView==='settings');
+  const [settingsSection,setSettingsSection]=useState<'profile'|'appearance'|undefined>(undefined);
   const [quickOpen,setQuickOpen]=useState(false);
   const [quickType,setQuickType]=useState<QuickAddType|undefined>();
   const [notificationsOpen,setNotificationsOpen]=useState(false);
@@ -259,14 +255,24 @@ export default function VexumApp({
       if(!destination)return;
       sessionStorage.removeItem('vexum.auth.pendingDestination');
       const next=viewFromPath(destination);
-      setView(next);
+      if(next==='settings'){
+        setSettingsSection(undefined);
+        setSettingsOpen(true);
+      }else{
+        setSettingsOpen(false);
+        setView(next);
+      }
       if(window.location.pathname!==destination)window.history.replaceState({},'',destination);
       setAccountOpen(false);setAuthReason('');
     }catch{}
   },[workspace.ready,workspace.session?.user.id]);
 
   useEffect(()=>{
-    const onPop=()=>setView(viewFromPath(window.location.pathname));
+    const onPop=()=>{
+      const next=viewFromPath(window.location.pathname);
+      if(next==='settings'){setSettingsOpen(true);return}
+      setSettingsOpen(false);setSettingsSection(undefined);setView(next);
+    };
     window.addEventListener('popstate',onPop);return()=>window.removeEventListener('popstate',onPop);
   },[]);
 
@@ -283,13 +289,27 @@ export default function VexumApp({
     try{sessionStorage.removeItem('vexum.auth.pendingDestination')}catch{}
     setAccountOpen(false);setAuthReason('');
   };
+  const openSettings=(section?:'profile'|'appearance')=>{
+    setProfileOpen(false);setNotificationsOpen(false);setCommandOpen(false);
+    if(!workspace.session){openAuth('Settings','/settings');return}
+    setSettingsSection(section);setSettingsOpen(true);
+    if(typeof window!=='undefined'&&window.location.pathname!=='/settings')window.history.pushState({},'','/settings'+(section?'?section='+section:''));
+  };
+  const closeSettings=()=>{
+    setSettingsOpen(false);setSettingsSection(undefined);
+    if(typeof window!=='undefined'){
+      const path=ROUTES[view];
+      if(window.location.pathname!==path)window.history.pushState({},'',path);
+    }
+  };
   const navigate=(next:View)=>{
     setProfileOpen(false);setNotificationsOpen(false);
+    if(next==='settings'){openSettings();return}
     if(!workspace.session&&ACCOUNT_REQUIRED_VIEWS.has(next)){
       openAuth(MODULE_LABELS[next as VexumModuleId]||'this section',ROUTES[next]);
       return
     }
-    setView(next);
+    setSettingsOpen(false);setSettingsSection(undefined);setView(next);
     if(typeof window==='undefined')return;
     if(next==='search'&&window.location.pathname.startsWith('/search'))return;
     const path=ROUTES[next];
@@ -312,7 +332,7 @@ export default function VexumApp({
   else if(view==='setup')content=frame('setup',<VexumSetup/>);
   else if(view==='financial')content=frame('financial',<VexumFinancial/>);
   else if(view==='social')content=frame('social',<VexumSocial/>);
-  else if(view==='settings')content=frame('plain',<VexumSettings/>);
+
 
   const rootClass=['vx-app','vxp-platform','density-'+platform.appearance.density,'text-'+platform.appearance.textSize,'motion-'+platform.appearance.motion,'glow-'+platform.appearance.glow,'sidebar-'+platform.appearance.sidebarWidth].join(' ');
 
@@ -323,9 +343,12 @@ export default function VexumApp({
     <QuickAddPanel key={quickType||'all'} open={quickOpen} initialType={quickType} onClose={closeQuick} workspace={workspace} navigate={navigate}/>
     <NotificationCenter open={notificationsOpen} onClose={()=>setNotificationsOpen(false)} workspace={workspace} navigate={navigate}/>
     <CommandCenter open={commandOpen} onClose={()=>setCommandOpen(false)} workspace={workspace} navigate={navigate} onQuickAdd={openQuick}/>
-    <ProfileMenu open={profileOpen} onClose={()=>setProfileOpen(false)} displayName={displayName} email={workspace.session?.user.email||''} navigate={navigate} signOut={workspace.signOut} onAccount={()=>openAuth('your account')}/>
-    {accountOpen?<CloudPanel authOnly={!workspace.session} authReason={authReason} config={workspace.config} session={workspace.session} status={workspace.status} error={workspace.error} needsMigration={workspace.needsMigration} conflict={workspace.conflict} busy={workspace.busy} pending={workspace.pending} close={closeAuth} migrate={workspace.migrate} refresh={workspace.refresh} signOut={async()=>{await workspace.signOut();setAccountOpen(false)}} retry={workspace.retry} backup={()=>{const blob=new Blob([JSON.stringify(workspace.data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='vexum-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),500)}} recovery={()=>{const data=workspace.recovery();if(!data){window.alert('No conflict recovery backup is available on this device.');return}const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='vexum-recovery.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),500)}}/>:null}
+    <ProfileMenu open={profileOpen} onClose={()=>setProfileOpen(false)} displayName={displayName} email={workspace.session?.user.email||''} navigate={navigate} signOut={workspace.signOut} onAccount={()=>openAuth('your account')} onSettings={openSettings}/>
+    {settingsOpen?<VexumSettings modal onClose={closeSettings} initialSection={settingsSection}/>:null}
+    {accountOpen?<CloudPanel authOnly={!workspace.session} authReason={authReason} config={workspace.config} session={workspace.session} status={workspace.status} error={workspace.error} needsMigration={workspace.needsMigration} conflict={workspace.conflict} busy={workspace.busy} pending={workspace.pending} close={closeAuth} migrate={workspace.migrate} refresh={workspace.refresh} signOut={async()=>{await workspace.signOut();setAccountOpen(false)}} retry={workspace.retry} backup={()=>{const blob=new Blob([JSON.stringify(workspace.data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='vexum-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),500)}} recovery={()=>{const data=workspace.recovery();if(!data){pushVexumToast({title:'No recovery backup found.',message:'This device does not currently have a conflict recovery backup.',kind:'warning'});return}const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='vexum-recovery.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),500)}}/>:null}
     <MfaSessionGate config={workspace.config} session={workspace.session} onSignOut={workspace.signOut} onVerified={()=>workspace.update({...workspace.data,platform:{...platform,security:{...platform.security,mfaStatus:'verified',mfaMethod:'authenticator'}}})}/>
     {workspace.ready&&onboardingPending?<VexumOnboarding onComplete={()=>setOnboardingPending(false)}/>:null}
+    <VexumInteractionHost/>
+    <VexumToastHost/>
   </div>;
 }

@@ -1,4 +1,5 @@
 import './vexum-reset.css';
+import './vexum-ui.css';
 import './vexum-platform.css';
 import './vexum-onboarding.css';
 import './vexum-settings.css';
