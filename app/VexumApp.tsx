@@ -3,14 +3,15 @@
 import {useEffect,useMemo,useState} from 'react';
 import type {ReactNode} from 'react';
 import {
-  Bell,CalendarCheck,ChevronDown,CircleDollarSign,HelpCircle,Home,Layers3,LifeBuoy,LogOut,Palette,
-  LockKeyhole,MessageSquare,Plus,Search,Settings,Share2,ShoppingBag,SlidersHorizontal,Star,UserRound,X
+  Bell,Bot,CalendarCheck,ChevronDown,CircleDollarSign,HelpCircle,Home,Layers3,LifeBuoy,LogOut,Monitor,Palette,
+  LockKeyhole,MessageSquare,Plus,Radar as RadarIcon,Search,Settings,Share2,ShoppingBag,Star,UserRound,X
 } from 'lucide-react';
 import VexumHome from './VexumHome';
 import VexumLife from './VexumLife';
 import VexumPortfolio from './VexumPortfolio';
 import VexumSearch from './search/VexumSearch';
 import VexumWishlist from './VexumWishlist';
+import VexumRadar from './VexumRadar';
 import VexumFinancial from './VexumFinancial';
 import VexumSetup from './VexumSetup';
 import VexumSell from './VexumSell';
@@ -27,7 +28,7 @@ import {
 import {buildSellNotifications,buildVexumNotifications,type VexumNotification} from '../lib/platformNotifications';
 import {loadSellWorkspace} from '../lib/sellCloud';
 import {
-  CommandCenter,NotificationCenter,QuickAddPanel,type QuickAddType
+  AskVexumPanel,CommandCenter,NotificationCenter,QuickAddPanel,type QuickAddType
 } from './platform/VexumPlatformPanels';
 
 type View=VexumModuleId|'settings';
@@ -36,7 +37,7 @@ type View=VexumModuleId|'settings';
 const ACCOUNT_REQUIRED_VIEWS=new Set<View>(['life','portfolio','wishlist','sell','setup','financial','social','settings']);
 
 const ROUTES:Record<View,string>={
-  home:'/',life:'/life',portfolio:'/portfolio',search:'/search',wishlist:'/wishlist',sell:'/sell',
+  home:'/',life:'/life',portfolio:'/portfolio',search:'/search',wishlist:'/wishlist',radar:'/radar',sell:'/sell',
   setup:'/setup',financial:'/financial',social:'/social',settings:'/settings'
 };
 
@@ -46,8 +47,9 @@ function iconFor(module:VexumModuleId){
   if(module==='portfolio')return <Layers3/>;
   if(module==='search')return <Search/>;
   if(module==='wishlist')return <Star/>;
+  if(module==='radar')return <RadarIcon/>;
   if(module==='sell')return <ShoppingBag/>;
-  if(module==='setup')return <SlidersHorizontal/>;
+  if(module==='setup')return <Monitor/>;
   if(module==='financial')return <CircleDollarSign/>;
   return <Share2/>;
 }
@@ -55,13 +57,15 @@ function iconFor(module:VexumModuleId){
 function viewFromPath(path:string):View{
   if(path.startsWith('/search'))return 'search';
   const first=path.split('/').filter(Boolean)[0];
-  if(first&&['life','portfolio','wishlist','sell','setup','financial','social','settings'].includes(first))return first as View;
+  if(first&&['life','portfolio','wishlist','radar','sell','setup','financial','social','settings'].includes(first))return first as View;
   return 'home';
 }
 
 function Logo(){return <button className="vx-logo vx-logo-button" aria-label="Go to VEXUM home" onClick={()=>location.assign('/')}><img className="vx-brand-mark" src="/vexum-mark.png" alt="" aria-hidden="true"/></button>}
 
-function Sidebar({view,navigate,enabled,order,displayName,onQuick}:{view:View;navigate:(view:View)=>void;enabled:VexumModuleId[];order:VexumModuleId[];displayName:string;onQuick:(type?:QuickAddType)=>void}){
+type SidebarSection={id:string;label:string};
+
+function Sidebar({view,navigate,enabled,order,displayName,sections,activeSection,onSection,onProfile}:{view:View;navigate:(view:View)=>void;enabled:VexumModuleId[];order:VexumModuleId[];displayName:string;sections:Partial<Record<VexumModuleId,SidebarSection[]>>;activeSection:string;onSection:(module:VexumModuleId,section:string)=>void;onProfile:()=>void}){
   const ordered=order.filter(module=>enabled.includes(module));
   return <aside className="vx-sidebar vx-platform-sidebar" aria-label="Primary navigation">
     <Logo/>
@@ -69,27 +73,25 @@ function Sidebar({view,navigate,enabled,order,displayName,onQuick}:{view:View;na
       {MODULE_GROUPS.map(group=>{
         const modules=ordered.filter(module=>group.modules.includes(module));
         if(!modules.length)return null;
-        return <section className="vxp-nav-group" key={group.label}><span>{group.label}</span><nav className="vx-nav" aria-label={group.label}>{modules.map(module=><button key={module} className={view===module?'active':''} aria-current={view===module?'page':undefined} onClick={()=>navigate(module)}>{iconFor(module)}<span>{MODULE_LABELS[module]}</span></button>)}</nav></section>;
+        return <section className="vxp-nav-group" key={group.label}><span>{group.label}</span><nav className="vx-nav" aria-label={group.label}>{modules.map(module=>{
+          const open=view===module;const children=sections[module]||[];
+          return <div className={'vxp-nav-entry '+(open?'open':'')} key={module}><button className={open?'active':''} aria-current={open?'page':undefined} onClick={()=>navigate(module)}>{iconFor(module)}<span>{MODULE_LABELS[module]}</span>{children.length?<ChevronDown className="vxp-nav-chevron"/>:null}</button>{open&&children.length?<div className="vxp-subnav">{children.map(item=><button key={item.id} className={activeSection===item.id?'active':''} onClick={()=>onSection(module,item.id)}>{item.label}</button>)}</div>:null}</div>;
+        })}</nav></section>;
       })}
-      <section className="vx-quick vxp-quick"><span>QUICK ADD</span><button className="primary" onClick={()=>onQuick()}><Plus/><span>Add Anything</span></button>{enabled.includes('life')?<button onClick={()=>onQuick('task')}><CalendarCheck/><span>Task</span></button>:null}{enabled.includes('search')?<button onClick={()=>onQuick('collectible')}><Search/><span>Collectible</span></button>:null}{enabled.includes('financial')?<button onClick={()=>onQuick('expense')}><CircleDollarSign/><span>Expense</span></button>:null}</section>
     </div>
-    <button className="vx-user vxp-sidebar-user" aria-label="Open account settings" onClick={()=>navigate('settings')}><div className="vx-avatar">{displayName[0]?.toUpperCase()||'V'}</div><div><strong>{displayName}</strong><span>VEXUM workspace</span></div><ChevronDown/></button>
+    <button className="vx-user vxp-sidebar-user" aria-label="Open profile" onClick={onProfile}><div className="vx-avatar">{displayName[0]?.toUpperCase()||'V'}</div><div><strong>{displayName}</strong><span>View profile</span></div><ChevronDown/></button>
   </aside>;
 }
 
-function Topbar({hero,displayName,unread,onCommand,onQuick,onNotifications,onProfile}:{hero:string;displayName:string;unread:number;onCommand:()=>void;onQuick:()=>void;onNotifications:()=>void;onProfile:()=>void}){
+function Topbar({hero,displayName,unread,onCommand,onAsk,onQuick,onNotifications,onProfile,onSettings}:{hero:string;displayName:string;unread:number;onCommand:()=>void;onAsk:()=>void;onQuick:()=>void;onNotifications:()=>void;onProfile:()=>void;onSettings:()=>void}){
   return <header className={'vx-topbar hero-'+hero}>
     <button className="vx-searchbox" aria-label="Search VEXUM or run a command" onClick={onCommand}><Search/><span>Search VEXUM or run a command...</span><kbd aria-hidden="true">⌘ K</kbd></button>
-    <div className="vx-topicons vxp-topicons">
-      <button className="vxp-add" aria-label="Quick Add" onClick={onQuick} title="Quick Add"><Plus/></button>
-      <button className="vxp-bell" aria-label={unread?'Notifications with unread items':'Notifications'} onClick={onNotifications} title="Notifications"><Bell/>{unread?<b aria-hidden="true">{unread>9?'9+':unread}</b>:null}</button>
-      <button className="vx-top-avatar" aria-label="Open account menu" onClick={onProfile} title={displayName}>{displayName[0]?.toUpperCase()||'V'}</button>
-    </div>
+    <div className="vx-topicons vxp-topicons"><button className="vxp-ask" aria-label="Ask VEXUM" onClick={onAsk} title="Ask VEXUM"><Bot/><span>Ask VEXUM</span></button><button className="vxp-add" aria-label="Quick Add" onClick={onQuick} title="Quick Add"><Plus/></button><button className="vxp-bell" aria-label={unread?'Notifications with unread items':'Notifications'} onClick={onNotifications} title="Notifications"><Bell/>{unread?<b aria-hidden="true">{unread>9?'9+':unread}</b>:null}</button><button className="vxp-settings" aria-label="Settings" onClick={onSettings} title="Settings"><Settings/></button><button className="vx-top-avatar" aria-label="Open profile" onClick={onProfile} title={displayName}>{displayName[0]?.toUpperCase()||'V'}</button></div>
   </header>;
 }
 
-function PageFrame({hero,children,displayName,unread,onCommand,onQuick,onNotifications,onProfile}:{hero:string;children:ReactNode;displayName:string;unread:number;onCommand:()=>void;onQuick:()=>void;onNotifications:()=>void;onProfile:()=>void}){
-  return <main id="vexum-main" tabIndex={-1} className={'vx-content page-'+hero}><Topbar hero={hero} displayName={displayName} unread={unread} onCommand={onCommand} onQuick={onQuick} onNotifications={onNotifications} onProfile={onProfile}/>{children}</main>;
+function PageFrame({hero,children,displayName,unread,onCommand,onAsk,onQuick,onNotifications,onProfile,onSettings}:{hero:string;children:ReactNode;displayName:string;unread:number;onCommand:()=>void;onAsk:()=>void;onQuick:()=>void;onNotifications:()=>void;onProfile:()=>void;onSettings:()=>void}){
+  return <main id="vexum-main" tabIndex={-1} className={'vx-content page-'+hero}><Topbar hero={hero} displayName={displayName} unread={unread} onCommand={onCommand} onAsk={onAsk} onQuick={onQuick} onNotifications={onNotifications} onProfile={onProfile} onSettings={onSettings}/>{children}</main>;
 }
 
 function ProfileMenu({open,onClose,displayName,email,navigate,signOut,onAccount,onSettings}:{open:boolean;onClose:()=>void;displayName:string;email:string;navigate:(v:View)=>void;signOut:()=>Promise<void>;onAccount:()=>void;onSettings:(section?:'profile'|'appearance')=>void}){
@@ -210,6 +212,8 @@ export default function VexumApp({
   const [quickType,setQuickType]=useState<QuickAddType|undefined>();
   const [notificationsOpen,setNotificationsOpen]=useState(false);
   const [commandOpen,setCommandOpen]=useState(false);
+  const [askOpen,setAskOpen]=useState(false);
+  const [moduleSections,setModuleSections]=useState<Record<string,string>>({life:'Today',portfolio:'overview',financial:'Overview',setup:'Overview',sell:'Overview',social:'For You'});
   const [profileOpen,setProfileOpen]=useState(false);
   const [accountOpen,setAccountOpen]=useState(false);
   const [authReason,setAuthReason]=useState('');
@@ -237,7 +241,7 @@ export default function VexumApp({
   useEffect(()=>{
     const onKey=(event:KeyboardEvent)=>{
       if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==='k'){event.preventDefault();setCommandOpen(true);setNotificationsOpen(false);setProfileOpen(false)}
-      if(event.key==='Escape'){setCommandOpen(false);setQuickOpen(false);setNotificationsOpen(false);setProfileOpen(false);setAccountOpen(false)}
+      if(event.key==='Escape'){setCommandOpen(false);setAskOpen(false);setQuickOpen(false);setNotificationsOpen(false);setProfileOpen(false);setAccountOpen(false)}
     };
     window.addEventListener('keydown',onKey);return()=>window.removeEventListener('keydown',onKey);
   },[]);
@@ -315,34 +319,47 @@ export default function VexumApp({
     const path=ROUTES[next];
     if(window.location.pathname!==path)window.history.pushState({},'',path);
   };
-  const openQuick=(type?:QuickAddType)=>{setQuickType(type);setQuickOpen(true);setProfileOpen(false);setNotificationsOpen(false);setCommandOpen(false)};
+  const openQuick=(type?:QuickAddType)=>{setQuickType(type);setQuickOpen(true);setProfileOpen(false);setNotificationsOpen(false);setCommandOpen(false);setAskOpen(false)};
   const closeQuick=()=>{setQuickOpen(false);setQuickType(undefined)};
-  const openCommand=()=>{setCommandOpen(true);setProfileOpen(false);setNotificationsOpen(false)};
-  const openNotifications=()=>{if(!workspace.session){openAuth('your notifications');return}setNotificationsOpen(v=>!v);setProfileOpen(false);setCommandOpen(false)};
-  const openProfile=()=>{setNotificationsOpen(false);setCommandOpen(false);if(!workspace.session){openAuth('your account');return}setProfileOpen(v=>!v)};
+  const openCommand=()=>{setCommandOpen(true);setAskOpen(false);setProfileOpen(false);setNotificationsOpen(false)};
+  const openAsk=()=>{setAskOpen(true);setCommandOpen(false);setQuickOpen(false);setProfileOpen(false);setNotificationsOpen(false)};
+  const openNotifications=()=>{if(!workspace.session){openAuth('your notifications');return}setNotificationsOpen(v=>!v);setAskOpen(false);setProfileOpen(false);setCommandOpen(false)};
+  const openProfile=()=>{setNotificationsOpen(false);setCommandOpen(false);setAskOpen(false);if(!workspace.session){openAuth('your account');return}setProfileOpen(v=>!v)};
 
-  const frame=(hero:string,children:ReactNode)=><PageFrame hero={hero} displayName={displayName} unread={unread} onCommand={openCommand} onQuick={()=>openQuick()} onNotifications={openNotifications} onProfile={openProfile}>{children}</PageFrame>;
+  const setModuleSection=(module:VexumModuleId,section:string)=>setModuleSections(current=>({...current,[module]:section}));
+  const sidebarSections:Partial<Record<VexumModuleId,SidebarSection[]>>={
+    life:platform.lifeSections.map(section=>({id:section,label:section})),
+    portfolio:[{id:'overview',label:'Overview'},{id:'collections',label:'Collections'},{id:'items',label:'All Items'},{id:'analytics',label:'Analytics'},{id:'audit',label:'Audit'}],
+    financial:['Overview','Accounts','Spending','Budget','Debt','Bills','Goals','Collection','Reports'].map(id=>({id,label:id})),
+    setup:['Overview','Spaces','Planner','Storage','Items','Labels','Dream Setups'].map(id=>({id,label:id})),
+    sell:['Overview','Listings','Crosslist','Marketplace','Offers','Orders','Sold','Analytics'].map(id=>({id,label:id})),
+    social:['For You','Following','Communities','Discover','Messages','Profile'].map(id=>({id,label:id}))
+  };
+  const activeSection=moduleSections[view]||'';
+  const frame=(hero:string,children:ReactNode)=><PageFrame hero={hero} displayName={displayName} unread={unread} onCommand={openCommand} onAsk={openAsk} onQuick={()=>openQuick()} onNotifications={openNotifications} onProfile={openProfile} onSettings={()=>openSettings()}>{children}</PageFrame>;
 
-  let content:ReactNode=frame('home',<VexumHome onQuickAdd={()=>openQuick()}/>);
-  if(view==='life')content=frame('life',<VexumLife/>);
-  else if(view==='portfolio')content=frame('plain',<VexumPortfolio/>);
+  let content:ReactNode=frame('home',<VexumHome/>);
+  if(view==='life')content=frame('life',<VexumLife section={moduleSections.life} onSectionChange={section=>setModuleSection('life',section)}/>);
+  else if(view==='portfolio')content=frame('plain',<VexumPortfolio section={moduleSections.portfolio} onSectionChange={section=>setModuleSection('portfolio',section)}/>);
   else if(view==='search')content=frame('search',<VexumSearch initialQuery={initialSearchQuery} initialProductId={initialProductId}/>);
   else if(view==='wishlist')content=frame('wishlist',<VexumWishlist/>);
-  else if(view==='sell')content=frame('sell',<VexumSell/>);
-  else if(view==='setup')content=frame('setup',<VexumSetup/>);
-  else if(view==='financial')content=frame('financial',<VexumFinancial/>);
-  else if(view==='social')content=frame('social',<VexumSocial/>);
+  else if(view==='radar')content=frame('radar',<VexumRadar/>);
+  else if(view==='sell')content=frame('sell',<VexumSell section={moduleSections.sell} onSectionChange={section=>setModuleSection('sell',section)}/>);
+  else if(view==='setup')content=frame('setup',<VexumSetup section={moduleSections.setup} onSectionChange={section=>setModuleSection('setup',section)}/>);
+  else if(view==='financial')content=frame('financial',<VexumFinancial section={moduleSections.financial} onSectionChange={section=>setModuleSection('financial',section)}/>);
+  else if(view==='social')content=frame('social',<VexumSocial section={moduleSections.social} onSectionChange={section=>setModuleSection('social',section)}/>);
 
 
   const rootClass=['vx-app','vxp-platform','density-'+platform.appearance.density,'text-'+platform.appearance.textSize,'motion-'+platform.appearance.motion,'glow-'+platform.appearance.glow,'sidebar-'+platform.appearance.sidebarWidth].join(' ');
 
   return <div className={rootClass}>
     <a className="vx-skip-link" href="#vexum-main">Skip to main content</a>
-    <Sidebar view={view} navigate={navigate} enabled={enabled} order={platform.moduleOrder} displayName={displayName} onQuick={openQuick}/>
+    <Sidebar view={view} navigate={navigate} enabled={enabled} order={platform.moduleOrder} displayName={displayName} sections={sidebarSections} activeSection={activeSection} onSection={setModuleSection} onProfile={openProfile}/>
     {content}
     <QuickAddPanel key={quickType||'all'} open={quickOpen} initialType={quickType} onClose={closeQuick} workspace={workspace} navigate={navigate}/>
     <NotificationCenter open={notificationsOpen} onClose={()=>setNotificationsOpen(false)} workspace={workspace} navigate={navigate}/>
     <CommandCenter open={commandOpen} onClose={()=>setCommandOpen(false)} workspace={workspace} navigate={navigate} onQuickAdd={openQuick}/>
+    <AskVexumPanel open={askOpen} onClose={()=>setAskOpen(false)}/>
     <ProfileMenu open={profileOpen} onClose={()=>setProfileOpen(false)} displayName={displayName} email={workspace.session?.user.email||''} navigate={navigate} signOut={workspace.signOut} onAccount={()=>openAuth('your account')} onSettings={openSettings}/>
     {settingsOpen?<VexumSettings modal onClose={closeSettings} initialSection={settingsSection}/>:null}
     {accountOpen?<CloudPanel authOnly={!workspace.session} authReason={authReason} config={workspace.config} session={workspace.session} status={workspace.status} error={workspace.error} needsMigration={workspace.needsMigration} conflict={workspace.conflict} busy={workspace.busy} pending={workspace.pending} close={closeAuth} migrate={workspace.migrate} refresh={workspace.refresh} signOut={async()=>{await workspace.signOut();setAccountOpen(false)}} retry={workspace.retry} backup={()=>{const blob=new Blob([JSON.stringify(workspace.data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='vexum-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),500)}} recovery={()=>{const data=workspace.recovery();if(!data){pushVexumToast({title:'No recovery backup found.',message:'This device does not currently have a conflict recovery backup.',kind:'warning'});return}const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='vexum-recovery.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),500)}}/>:null}

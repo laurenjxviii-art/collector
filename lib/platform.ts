@@ -1,4 +1,4 @@
-export type VexumModuleId='home'|'life'|'portfolio'|'search'|'wishlist'|'sell'|'setup'|'financial'|'social';
+export type VexumModuleId='home'|'life'|'portfolio'|'search'|'wishlist'|'radar'|'sell'|'setup'|'financial'|'social';
 export type AppearanceDensity='compact'|'standard'|'comfortable';
 export type TextSize='small'|'medium'|'large';
 export type MotionLevel='full'|'reduced';
@@ -101,23 +101,23 @@ export type PlatformState={
   gamificationEnabled:boolean;
 };
 
-export const ALL_MODULES:VexumModuleId[]=['home','life','portfolio','search','wishlist','sell','setup','financial','social'];
+export const ALL_MODULES:VexumModuleId[]=['home','life','portfolio','search','wishlist','radar','sell','setup','financial','social'];
 export const ALL_LIFE_SECTIONS:LifeSectionId[]=['Today','Tasks','Calendar','Habits','Goals','Focus','Fitness'];
 
 export const MODULE_LABELS:Record<VexumModuleId,string>={
-  home:'Home',life:'Life',portfolio:'Portfolio',search:'Search',wishlist:'Wishlist',sell:'Sell',setup:'Setup',financial:'Financial',social:'Social'
+  home:'Home',life:'Life',portfolio:'Portfolio',search:'Search',wishlist:'Wishlist',radar:'Radar',sell:'Sell',setup:'Setup',financial:'Financial',social:'Social'
 };
 
 export const MODULE_GROUPS:Array<{label:string;modules:VexumModuleId[]}>= [
   {label:'PERSONAL',modules:['home','life']},
-  {label:'COLLECT',modules:['portfolio','search','wishlist','sell','setup']},
+  {label:'COLLECT',modules:['portfolio','search','wishlist','radar','sell','setup']},
   {label:'MONEY',modules:['financial']},
   {label:'COMMUNITY',modules:['social']}
 ];
 
 export const ONBOARDING_CHOICES:Array<{id:string;label:string;modules:VexumModuleId[]}>= [
   {id:'life',label:'Organize My Life',modules:['life']},
-  {id:'collect',label:'Track My Collections',modules:['portfolio','search','wishlist']},
+  {id:'collect',label:'Track My Collections',modules:['portfolio','search','wishlist','radar']},
   {id:'sell',label:'Sell / Resell',modules:['sell']},
   {id:'space',label:'Organize My Space',modules:['setup']},
   {id:'money',label:'Manage My Money',modules:['financial']},
@@ -178,6 +178,7 @@ export function normalizePlatformState(value?:PlatformState,legacy=true):Platfor
   const order=uniqueModules(value.moduleOrder);
   for(const module of ALL_MODULES)if(!order.includes(module))order.push(module);
   if(!enabled.includes('home'))enabled.unshift('home');
+  if(legacy&&!enabled.includes('radar')&&['portfolio','search','wishlist'].some(module=>enabled.includes(module as VexumModuleId)))enabled.push('radar');
   const identity=value.identity&&typeof value.identity==='object'?value.identity:fallback.identity;
   const appearance=value.appearance&&typeof value.appearance==='object'?value.appearance:fallback.appearance;
   const notifications=value.notifications&&typeof value.notifications==='object'?value.notifications:fallback.notifications;

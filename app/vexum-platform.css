@@ -44,3 +44,94 @@
 .vxp-command-shared .vxp-command-body{max-height:calc(78dvh - 58px)}
 .vxp-quick-shared .vxp-quick-grid{padding:10px}
 .vxp-quick-shared .vxp-quick-entry{padding:16px}
+
+
+/* ===== UX SIMPLIFICATION: hierarchical shell ===== */
+.vxp-platform{--vx-red:#ff0000;--vx-red2:#b40000}
+.vxp-sidebar-scroll{padding-top:6px}
+.vxp-nav-group{margin-bottom:7px}
+.vxp-nav-group>span{padding:5px 14px 3px;font-size:10px;letter-spacing:.12em}
+.vxp-nav-entry{display:block}
+.vxp-nav-entry>button,.vx-nav>.vxp-nav-entry>button{width:100%;height:34px;min-height:34px;padding:0 12px;gap:9px}
+.vxp-nav-entry>button>svg{width:15px;height:15px}
+.vxp-nav-entry>button .vxp-nav-chevron{margin-left:auto;width:12px;height:12px;transition:transform 150ms ease}
+.vxp-nav-entry.open>button .vxp-nav-chevron{transform:rotate(180deg)}
+.vxp-subnav{display:grid;gap:1px;margin:1px 0 5px 33px;padding-left:10px;border-left:1px solid #25272c}
+.vxp-subnav button{height:28px;min-height:28px;border:0;border-radius:5px;background:transparent;color:#7d8189;text-align:left;padding:0 8px;font-size:12px;font-weight:500}
+.vxp-subnav button:hover{background:#101114;color:#d9dbe0}
+.vxp-subnav button.active{background:#170b0d;color:#fff;box-shadow:inset 2px 0 var(--vx-red)}
+.vxp-page-actions{display:flex;justify-content:flex-end;gap:7px;margin:0 0 10px}
+.vxp-page-actions button{height:34px;border:1px solid #303239;border-radius:6px;background:#0d0e10;color:#b7bac0;padding:0 10px;display:flex;align-items:center;gap:6px;font-size:13px}
+.vxp-page-actions button.red{border-color:#7a1018;background:#1b090b;color:#fff}
+.vxp-page-actions svg{width:14px}
+.vxp-simple-title{min-height:82px!important;padding-top:7px!important}
+.vxp-simple-title p{display:none}
+.vxp-simple-title h1{font-size:30px!important;letter-spacing:-.035em!important;margin:5px 0 0!important}
+.vxp-simple-title aside{padding-top:4px!important}
+.vxp-topicons{gap:6px}
+.vxp-topicons .vxp-ask{width:auto!important;min-width:112px;padding:0 10px!important;gap:6px}
+.vxp-topicons .vxp-ask span{font-size:12px;font-weight:600}
+.vxp-topicons .vxp-ask svg,.vxp-topicons .vxp-settings svg{width:15px}
+.vxp-ask-dialog .vxui-dialog-body{padding:0}
+.vxp-ask-shell{display:flex;flex-direction:column;min-height:430px}
+.vxp-ask-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:34px}
+.vxp-ask-empty>svg{width:28px;color:var(--vx-red);margin-bottom:12px}
+.vxp-ask-empty strong{font-size:18px}
+.vxp-ask-empty p{max-width:520px;color:#8f939a;font-size:14px;line-height:1.55;margin:8px 0 0}
+.vxp-ask-suggestions{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 12px}
+.vxp-ask-suggestions button{height:30px;border:1px solid #303239;border-radius:15px;background:#0d0e10;color:#aeb1b7;padding:0 10px;font-size:12px}
+.vxp-ask-composer{border-top:1px solid #25272c;padding:12px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:8px}
+.vxp-ask-composer textarea{resize:none;min-height:70px;border:1px solid #303239;border-radius:7px;background:#0d0e10;color:#fff;padding:9px 10px;font:inherit}
+.vxp-command-close{width:32px;height:32px;border:0;border-radius:6px;background:transparent;color:#8f939a;display:grid;place-items:center}
+.vxp-command-close:hover{background:#17191d;color:#fff}
+.vxp-command-close svg{width:14px}
+@media(max-width:640px){
+  .vxp-topicons .vxp-ask{min-width:44px;width:44px!important;padding:0!important}
+  .vxp-topicons .vxp-ask span{display:none}
+  .vxp-subnav{display:none}
+  .vxp-simple-title{min-height:70px!important}
+}
+
+/* Mobile subsection access after page tabs move into the app shell. */
+@media(max-width:640px){
+  .vxp-sidebar-scroll .vxp-nav-entry{display:contents}
+  .vxp-sidebar-scroll .vxp-subnav{
+    position:fixed;
+    left:0;
+    right:0;
+    bottom:74px;
+    z-index:2;
+    height:44px;
+    display:flex!important;
+    align-items:center;
+    gap:4px;
+    margin:0;
+    padding:5px 8px;
+    overflow-x:auto;
+    overflow-y:hidden;
+    border:0;
+    border-top:1px solid #24262b;
+    background:rgba(8,9,10,.98);
+    backdrop-filter:blur(12px);
+    scrollbar-width:none;
+  }
+  .vxp-sidebar-scroll .vxp-subnav::-webkit-scrollbar{display:none}
+  .vxp-sidebar-scroll .vxp-subnav button{
+    flex:0 0 auto;
+    width:auto;
+    height:32px;
+    min-height:32px;
+    border:0;
+    border-radius:6px;
+    padding:0 10px;
+    display:block;
+    color:#8f939a;
+    background:transparent;
+    font-size:12px!important;
+    line-height:32px;
+    white-space:nowrap;
+  }
+  .vxp-sidebar-scroll .vxp-subnav button.active{background:#1b0a0d;color:#fff;box-shadow:inset 0 -2px var(--vx-red)}
+  .vx-app:has(.vxp-subnav) .vx-content{padding-bottom:136px}
+  .vx-searchbox span{display:none}
+}

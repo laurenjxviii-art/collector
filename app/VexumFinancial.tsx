@@ -52,9 +52,11 @@ function Head({title,action}:{title:string;action?:React.ReactNode}){
   return <header className="vxf-panel-head"><div><h3>{title}</h3></div>{action}</header>;
 }
 
-export default function VexumFinancial(){
+export default function VexumFinancial({section,onSectionChange}:{section?:string;onSectionChange?:(section:string)=>void}={}){
   const workspace=useWorkspace();
-  const [tab,setTab]=useState<Tab>('Overview');
+  const [internalTab,setInternalTab]=useState<Tab>('Overview');
+  const tab=((section as Tab|undefined)||internalTab);
+  const setTab=(next:Tab)=>{setInternalTab(next);setComposer(null);onSectionChange?.(next)};
   const [composer,setComposer]=useState<Composer>(null);
   const [budgetDraft,setBudgetDraft]=useState('');
   const [debtExtra,setDebtExtra]=useState('100');
@@ -149,18 +151,13 @@ export default function VexumFinancial(){
   if(!workspace.ready)return <div className="vxf-page"><VexumPageSkeleton label="Loading Financial workspace…"/></div>;
 
   return <div className="vxf-page">
-    <section className="vxf-title">
-      <div><span>FINANCIAL</span><h1>Collector Finance</h1><p>Money, obligations, hobby spending, collection economics, and future commitments—without pretending collectibles are cash.</p></div>
-      <aside><strong>Private by default</strong><small>Financial records never feed Social automatically.</small></aside>
-    </section>
+    <section className="vxf-title vxp-simple-title"><div><span>FINANCIAL</span><h1>{tab}</h1></div></section>
 
-    <section className={'vxf-security-gate '+(externalFinanceConnected?'connected':'')}>
-      <div className="icon">{externalFinanceConnected&&!externalFinanceNeedsUpdate?<ShieldCheck/>:externalFinanceLocked?<LockKeyhole/>:<Link2/>}</div>
-      <div><strong>{externalFinanceConnected?(externalFinanceNeedsUpdate?'External financial account needs attention':'External financial accounts connected'):externalFinanceLocked?'External accounts locked until MFA is verified':'External financial connection not configured'}</strong><p>{externalFinanceConnected?(plaidSnapshot?.lastSync?'Plaid balances and activity last synchronized '+new Date(plaidSnapshot.lastSync).toLocaleString()+'.':'Plaid connection is active; the first sync may still be processing.'):'Your manual Financial ledger remains fully usable. Live bank data is only loaded after a real Plaid connection'+(externalFinanceLocked?' and verified MFA.':'.')}</p></div>
-      <button onClick={()=>location.assign('/settings')}>Security & Connections</button>
-    </section>
-
-    <nav className="vxf-tabs">{(['Overview','Accounts','Spending','Budget','Debt','Bills','Goals','Collection','Reports'] as Tab[]).map(name=><button key={name} className={tab===name?'active':''} onClick={()=>{setTab(name);setComposer(null)}}>{name}</button>)}</nav>
+    {externalFinanceNeedsUpdate||externalFinanceLocked?<section className="vxf-security-gate">
+      <div className="icon">{externalFinanceNeedsUpdate?<Link2/>:<LockKeyhole/>}</div>
+      <div><strong>{externalFinanceNeedsUpdate?'Financial connection needs attention':'Verify MFA to connect financial accounts'}</strong><p>{externalFinanceNeedsUpdate?'Reconnect the affected institution to resume syncing.':'External bank connections stay locked until this session is verified.'}</p></div>
+      <button onClick={()=>location.assign('/settings')}>Manage</button>
+    </section>:null}
 
     {tab==='Overview'&&<>
       <div className="vxf-metrics">

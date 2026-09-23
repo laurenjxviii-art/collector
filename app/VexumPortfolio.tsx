@@ -88,9 +88,11 @@ function PortfolioMetric({label,value,sub,tone='muted'}:{label:string;value:stri
   return <section className="vx-panel vxp2-metric"><span>{label}</span><strong>{value}</strong><small className={'tone-'+tone}>{sub}</small></section>;
 }
 
-export default function VexumPortfolio(){
+export default function VexumPortfolio({section:controlledSection,onSectionChange}:{section?:string;onSectionChange?:(section:string)=>void}={}){
   const workspace=useWorkspace();
-  const [section,setSection]=useState<Section>('overview');
+  const [internalSection,setInternalSection]=useState<Section>('overview');
+  const section=((controlledSection as Section|undefined)||internalSection);
+  const setSection=(next:Section)=>{setInternalSection(next);onSectionChange?.(next)};
   const [selectedItemId,setSelectedItemId]=useState('');
   const [activeCollectionId,setActiveCollectionId]=useState('');
   const [query,setQuery]=useState('');
@@ -240,12 +242,8 @@ export default function VexumPortfolio(){
   const completionCollections=activeCollections.filter(collection=>collection.measurable&&collection.targetItemCount);
 
   return <div className="vxp2-page">
-    <section className="vxp2-title"><div><span>PORTFOLIO</span><h1>Everything You Own</h1><p>Canonical ownership. Flexible organization. Setup, Search, Financial, Sell, and Social remain separate sources of truth.</p></div><aside><strong>{workspace.status}</strong><span>{analytics.count} owned units · {activeCollections.length} collections</span></aside></section>
-    <nav className="vxp2-tabs">{([
-      ['overview','Overview'],['collections','Collections'],['items','All Items'],['analytics','Analytics'],['audit','Audit']
-    ] as Array<[Section,string]>).map(([id,label])=><button key={id} className={section===id?'active':''} onClick={()=>setSection(id)}>{label}</button>)}
-      <div className="vxp2-top-actions"><button onClick={()=>location.assign('/search')}><Search/>Search & Add</button><button onClick={()=>setManualOpen(true)}><Plus/>Add Manually</button><button onClick={()=>setTemplatesOpen(true)}><Settings2/>Templates</button><button onClick={()=>exportItems(owned,'csv')}><Download/>Export</button></div>
-    </nav>
+    <section className="vxp2-title vxp-simple-title"><div><span>PORTFOLIO</span><h1>{section==='items'?'All Items':section[0].toUpperCase()+section.slice(1)}</h1></div><aside><strong>{analytics.count} owned units</strong><span>{activeCollections.length} collections</span></aside></section>
+    <div className="vxp2-top-actions vxp-page-actions"><button onClick={()=>location.assign('/search')}><Search/>Search & Add</button><button onClick={()=>setManualOpen(true)}><Plus/>Add Manually</button><button onClick={()=>setTemplatesOpen(true)}><Settings2/>Templates</button><button onClick={()=>exportItems(owned,'csv')}><Download/>Export</button></div>
 
     {section==='overview'?<PortfolioOverview store={store} analytics={analytics} issues={issues} health={health} onOpenItems={()=>setSection('items')} onOpenAudit={()=>setSection('audit')} onCollection={id=>{setActiveCollectionId(id);setSection('items')}}/>:null}
     {section==='collections'?<CollectionsView store={store} collections={activeCollections} activeId={activeCollectionId} onActive={setActiveCollectionId} onCreate={parentId=>setCollectionEditor({mode:'create',parentId})} onEdit={collection=>setCollectionEditor({mode:'edit',collection})} onArchive={archiveCollection} onOpenItems={id=>{setActiveCollectionId(id);setSection('items')}}/>:null}

@@ -35,3 +35,5 @@
 @media(max-width:1250px){.vxsoc-layout{grid-template-columns:1fr}.vxsoc-rail{display:grid;grid-template-columns:repeat(3,1fr)}.vxsoc-profile-mini{display:none}.vxsoc-compose-add{grid-template-columns:1fr 1fr}.vxsoc-profile-grid{grid-template-columns:1fr}}
 
 .vxsoc-shared-dialog .vxui-dialog-body{padding:0}.vxsoc-shared-dialog .vxsoc-form,.vxsoc-shared-dialog .vxsoc-compose-controls{min-width:0}.vxsoc-shared-dialog footer{margin:0}
+
+.vxsoc-discover-stack{display:grid;gap:9px}.vxsoc-title.vxp-simple-title{margin-bottom:8px}

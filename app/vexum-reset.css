@@ -10,9 +10,9 @@
   --vx-text:#f3f4f6;
   --vx-muted:#9ca0a8;
   --vx-muted2:#7d8189;
-  --vx-focus:#ff5968;
-  --vx-red:#ff2338;
-  --vx-red2:#b41222;
+  --vx-focus:#ff4d4d;
+  --vx-red:#ff0000;
+  --vx-red2:#b40000;
   --vx-green:#25e2a0;
   --vx-orange:#ff9d35;
 }
@@ -21,14 +21,14 @@ html,body{margin:0;min-height:100%;background:var(--vx-bg);color:var(--vx-text);
 button,input,select{font:inherit}
 button{cursor:pointer}
 svg{stroke-width:1.8}
-.vx-app{min-height:100vh;background:radial-gradient(circle at 70% -10%,rgba(255,35,56,.05),transparent 25%),var(--vx-bg)}
+.vx-app{min-height:100vh;background:radial-gradient(circle at 70% -10%,rgba(255,0,0,.06),transparent 25%),var(--vx-bg)}
 .vx-sidebar{position:fixed;inset:0 auto 0 0;width:250px;border-right:1px solid #191b1e;background:#040405;display:flex;flex-direction:column;z-index:50}
 .vx-logo{height:72px;padding:0;display:flex;align-items:center;justify-content:center;border-bottom:1px solid #15171a}
 .vx-brand-mark{display:block;width:60px;height:60px;object-fit:contain}
 .vx-nav{padding:8px 17px 0;display:grid;gap:3px}
 .vx-nav button{height:50px;border:1px solid transparent;border-radius:7px;background:transparent;color:#b8bbc3;display:flex;align-items:center;gap:17px;padding:0 17px;font-size:15px;text-align:left}
 .vx-nav button svg{width:23px;height:23px}
-.vx-nav button.active{color:#fff;border-color:#9f1c29;background:linear-gradient(90deg,rgba(255,35,56,.20),rgba(109,15,27,.28));box-shadow:inset 2px 0 var(--vx-red),0 0 25px rgba(255,35,56,.05)}
+.vx-nav button.active{color:#fff;border-color:#9f1c29;background:linear-gradient(90deg,rgba(255,35,56,.20),rgba(109,15,27,.28));box-shadow:inset 2px 0 var(--vx-red),0 0 25px rgba(255,0,0,.06)}
 .vx-quick{border-top:1px solid #191b1e;margin-top:13px;padding:25px 27px;display:grid;gap:9px}
 .vx-quick>span{font-size:14px;color:#a8abb2;margin-bottom:3px}
 .vx-quick button{height:39px;border:1px solid #25272b;border-radius:20px;background:#0b0c0e;color:#c3c5ca;display:flex;align-items:center;gap:12px;padding:0 17px;font-size:14px}
@@ -62,7 +62,7 @@ svg{stroke-width:1.8}
 .vx-hero-meta q{font-size:16px;line-height:1.35;color:#d7d8db;quotes:none;display:block;max-width:290px}
 .vx-tabs{height:52px;display:flex;align-items:center;gap:15px}
 .vx-tabs button{height:40px;border:1px solid transparent;border-radius:7px;background:transparent;color:#aeb1b8;font-size:14px;padding:0 29px}
-.vx-tabs button.active{border-color:var(--vx-red);color:#fff;background:linear-gradient(180deg,rgba(255,35,56,.15),rgba(255,35,56,.05));box-shadow:0 0 18px rgba(255,35,56,.06)}
+.vx-tabs button.active{border-color:var(--vx-red);color:#fff;background:linear-gradient(180deg,rgba(255,35,56,.15),rgba(255,0,0,.06));box-shadow:0 0 18px rgba(255,35,56,.06)}
 .vx-home-stats,.vx-wish-stats,.vx-fin-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:15px;margin:0 0 15px}
 .vx-stat{min-height:130px;border:1px solid var(--vx-line);border-radius:9px;background:linear-gradient(180deg,#0a0b0d,#08090b);padding:18px 20px;position:relative;overflow:hidden}
 .vx-stat-label{display:flex;align-items:center;gap:7px;color:#aeb1b8;font-size:14px;white-space:nowrap}.vx-stat-label>svg{width:20px;height:20px;color:var(--vx-red)}.vx-stat-label>.vx-miniline{position:absolute;right:13px;bottom:28px;width:90px;height:35px}
@@ -123,7 +123,7 @@ svg{stroke-width:1.8}
 .vx-home-custom-actions{margin-left:auto;display:flex;align-items:center;gap:8px;position:relative}
 .vx-home-custom-actions>button{height:34px;border:1px solid #303239;border-radius:7px;background:#0b0c0e;color:#b8bbc2;padding:0 12px;display:flex;align-items:center;gap:7px;font-size:14px}
 .vx-home-custom-actions>button svg{width:14px;height:14px}
-.vx-home-custom-actions>button.active{border-color:var(--vx-red);background:linear-gradient(180deg,rgba(255,35,56,.15),rgba(255,35,56,.05));color:#fff;box-shadow:0 0 18px rgba(255,35,56,.08)}
+.vx-home-custom-actions>button.active{border-color:var(--vx-red);background:linear-gradient(180deg,rgba(255,35,56,.15),rgba(255,0,0,.06));color:#fff;box-shadow:0 0 18px rgba(255,35,56,.08)}
 .vx-home-add-menu{display:flex;align-items:center;gap:6px;max-width:760px;overflow-x:auto;scrollbar-width:none}
 .vx-home-add-menu::-webkit-scrollbar{display:none}
 .vx-home-add-menu>span{font-size:14px;color:#737780;white-space:nowrap}
@@ -299,7 +299,7 @@ svg{stroke-width:1.8}
 .vxp-modebar{height:58px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1b1d21;margin-bottom:14px}
 .vxp-modebar>div{display:flex;gap:7px}
 .vxp-modebar button{height:36px;border:1px solid transparent;border-radius:7px;background:transparent;color:#aeb1b8;padding:0 20px;font-size:14px}
-.vxp-modebar button.active{border-color:#ff2338;color:#fff;background:linear-gradient(180deg,rgba(255,35,56,.15),rgba(255,35,56,.05));box-shadow:0 0 18px rgba(255,35,56,.06)}
+.vxp-modebar button.active{border-color:#ff2338;color:#fff;background:linear-gradient(180deg,rgba(255,35,56,.15),rgba(255,0,0,.06));box-shadow:0 0 18px rgba(255,35,56,.06)}
 .vxp-modebar>span{font-size:14px;color:#767a82}
 .vxp-summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:14px}
 .vxp-summary-card{min-height:108px;padding:15px 17px}
@@ -482,7 +482,7 @@ svg{stroke-width:1.8}
 .vxs-search-hero q{quotes:none;color:#d5d7db;font-size:14px;line-height:1.45}
 .vxs-search-command{min-height:76px;border-bottom:1px solid #1b1d21;display:flex;align-items:center;gap:10px}
 .vxs-search-command form{height:46px;min-width:0;flex:1;border:1px solid #373a40;border-radius:8px;background:#090a0c;display:flex;align-items:center;padding:0 8px 0 13px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.005)}
-.vxs-search-command form:focus-within{border-color:#7c202b;box-shadow:0 0 18px rgba(255,35,56,.05)}
+.vxs-search-command form:focus-within{border-color:#7c202b;box-shadow:0 0 18px rgba(255,0,0,.06)}
 .vxs-search-command form>svg{width:19px;color:#8c9098;flex:0 0 auto}
 .vxs-search-command input{height:100%;flex:1;min-width:80px;border:0;outline:0;background:transparent;color:#f0f1f3;padding:0 11px;font-size:14px}
 .vxs-search-command input::placeholder{color:#7d8189}

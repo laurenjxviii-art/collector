@@ -55,3 +55,5 @@
 .vxsup-portfolio-prefill{min-height:62px;border-bottom:1px solid #402128;background:#110c0e;display:grid;grid-template-columns:24px 1fr auto auto;align-items:center;gap:8px;padding:8px 11px}
 .vxsup-portfolio-prefill>svg{width:15px;color:#ff5968}.vxsup-portfolio-prefill>span{display:flex;flex-direction:column}.vxsup-portfolio-prefill strong{font-size:14px}.vxsup-portfolio-prefill small{font-size:14px;color:#7c8088;margin-top:2px}
 .vxsup-portfolio-prefill button{height:29px;border:1px solid #303239;border-radius:5px;background:#0d0e10;color:#b0b3b9;font-size:14px;padding:0 8px}.vxsup-portfolio-prefill button:first-of-type{border-color:#72212b;background:#180d10;color:#fff}.vxsup-portfolio-prefill button:disabled{opacity:.4}
+
+.vxsup-toolbar-actions{justify-content:flex-end}.vxsup-toolbar-actions>div{margin-left:auto}.vxsup-title.vxp-simple-title{margin-bottom:7px}

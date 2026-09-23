@@ -157,9 +157,22 @@ export function CommandCenter({open,onClose,workspace,navigate,onQuickAdd}:{open
 
   const go=(route:VexumModuleId|'settings')=>{setQuery('');onClose();navigate(route)};
   return <VexumDialog open onClose={onClose} title="VEXUM command center" size="lg" className="vxp-command-shared" hideHeader>
-    <div className="vxp-command"><header><Search/><input aria-label="Search VEXUM or type a command" autoFocus value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search VEXUM or type a command…"/><kbd aria-hidden="true">ESC</kbd></header><div className="vxp-command-body"><section><span>COMMANDS</span>{commands.map(command=><button key={command.label} onClick={()=>'type'in command&&command.type?(onClose(),onQuickAdd(command.type)):go(command.route!)}><Sparkles/><strong>{command.label}</strong><ChevronRight/></button>)}</section><section><span>{clean?'RESULTS':'RECENT / RELEVANT'}</span>{matches.map(row=><button key={row.id} onClick={()=>go(row.route)}><ResultIcon kind={row.kind}/><span><strong>{row.title}</strong><small>{row.kind} · {row.detail}</small></span><ChevronRight/></button>)}{!matches.length?<div className="vxp-panel-empty compact">Nothing in your VEXUM workspace matches “{query}”.</div>:null}</section></div></div>
+    <div className="vxp-command"><header><Search/><input aria-label="Search VEXUM or type a command" autoFocus value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search VEXUM or type a command…"/><button className="vxp-command-close" aria-label="Close command center" onClick={onClose}><X/></button></header><div className="vxp-command-body"><section><span>COMMANDS</span>{commands.map(command=><button key={command.label} onClick={()=>'type'in command&&command.type?(onClose(),onQuickAdd(command.type)):go(command.route!)}><Sparkles/><strong>{command.label}</strong><ChevronRight/></button>)}</section><section><span>{clean?'RESULTS':'RECENT / RELEVANT'}</span>{matches.map(row=><button key={row.id} onClick={()=>go(row.route)}><ResultIcon kind={row.kind}/><span><strong>{row.title}</strong><small>{row.kind} · {row.detail}</small></span><ChevronRight/></button>)}{!matches.length?<div className="vxp-panel-empty compact">Nothing in your VEXUM workspace matches “{query}”.</div>:null}</section></div></div>
+  </VexumDialog>;
+}
+
+export function AskVexumPanel({open,onClose}:{open:boolean;onClose:()=>void}){
+  const [message,setMessage]=useState('');
+  const suggestions=['What needs my attention today?','Show changes in my collection','What bills are coming up?','Find items below my target price'];
+  const send=()=>{if(!message.trim())return;pushVexumToast({title:'Ask VEXUM is ready for AI integration.',message:'The conversational frontend is live; no AI provider is connected yet, so nothing was sent.',kind:'info'});setMessage('')};
+  return <VexumDialog open={open} onClose={onClose} title="Ask VEXUM" eyebrow="VEXUM AI" description="A conversational layer for your VEXUM workspace." size="lg" className="vxp-ask-dialog">
+    <div className="vxp-ask-shell">
+      <div className="vxp-ask-empty"><Sparkles/><strong>Ask across your VEXUM workspace.</strong><p>The interface is ready for tool-based VEXUM AI. Until an AI provider is connected, VEXUM will not fabricate answers from your private data.</p></div>
+      <div className="vxp-ask-suggestions">{suggestions.map(text=><button key={text} onClick={()=>setMessage(text)}>{text}</button>)}</div>
+      <div className="vxp-ask-composer"><textarea value={message} onChange={event=>setMessage(event.target.value)} placeholder="Ask VEXUM anything about your workspace…" rows={3}/><button className="vxui-button primary" disabled={!message.trim()} onClick={send}>Send</button></div>
+    </div>
   </VexumDialog>;
 }
 
 function ResultIcon({kind}:{kind:string}){if(kind==='Task')return <ListTodo/>;if(kind==='Event')return <CalendarDays/>;if(kind==='Goal')return <Goal/>;if(kind==='Workout')return <Dumbbell/>;if(kind==='Transaction')return <CircleDollarSign/>;return <Layers3/>}
-function routeToView(route:string):VexumModuleId|'settings'{const first=route.split('/').filter(Boolean)[0];return (['life','portfolio','search','wishlist','sell','setup','financial','social'].includes(first)?first:'home') as VexumModuleId}
+function routeToView(route:string):VexumModuleId|'settings'{const first=route.split('/').filter(Boolean)[0];return (['life','portfolio','search','wishlist','radar','sell','setup','financial','social'].includes(first)?first:'home') as VexumModuleId}
