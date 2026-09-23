@@ -1,6 +1,6 @@
 'use client';
 
-import {useMemo,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import type {ReactNode} from 'react';
 import {
   AlertTriangle,Bell,CalendarDays,ChevronRight,CircleDollarSign,GripVertical,Layers3,
@@ -18,6 +18,7 @@ import type {Collection,Item,Store} from '../lib/model';
 import {VexumBadge,VexumConfirmDialog,VexumDialog,pushVexumToast} from './VexumUi';
 
 type Tone='green'|'red'|'orange'|'muted';
+type BriefLine={before:string;value?:string;after?:string;tone?:Tone};
 
 const money=(value:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:value<100?2:0}).format(value);
 const shortDate=(value:string)=>new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric'}).format(new Date(value));
@@ -112,6 +113,7 @@ export default function VexumHome(){
   const [configureTarget,setConfigureTarget]=useState<HomeWidgetId|null>(null);
   const [configureValue,setConfigureValue]=useState('');
   const [resetOpen,setResetOpen]=useState(false);
+  const [dailyBriefOpen,setDailyBriefOpen]=useState(false);
 
   const owned=workspace.data.items.filter(item=>item.status==='owned'&&!item.archivedAt);
   const sold=workspace.data.items.filter(item=>item.status==='sold');
@@ -185,6 +187,45 @@ export default function VexumHome(){
     const duplicates=[...keys.values()].filter(value=>value>1).length;
     return {missingLocation,missingImages,missingCost,duplicates,total:missingLocation+missingImages+missingCost+duplicates};
   },[owned,workspace.data.setup]);
+
+  const todayBills=financial.bills.filter(bill=>bill.active&&(bill.nextDueDate===today||(!bill.nextDueDate&&bill.dueDay===new Date().getDate())));
+  const preorderSoon=wishlist.filter(record=>{
+    const preorder=record.preorder;
+    if(!preorder?.enabled||preorder.status==='Cancelled'||preorder.status==='Delivered')return false;
+    const date=preorder.estimatedChargeDate;
+    if(!date)return false;
+    const delta=Date.parse(date+'T12:00:00')-Date.now();
+    return Number.isFinite(delta)&&delta>=0&&delta<=14*86400000;
+  });
+  const portfolioSnapshots=(workspace.data.history||[]).slice(-2).map(snapshot=>Object.values(snapshot.values).reduce((sum,value)=>sum+value,0));
+  const portfolioDeltaPct=portfolioSnapshots.length===2&&portfolioSnapshots[0]>0?(portfolioSnapshots[1]-portfolioSnapshots[0])/portfolioSnapshots[0]*100:null;
+  const leadingProgress=progressRows[0];
+  const briefLines:BriefLine[]=[
+    portfolioDeltaPct!==null?{
+      before:'Your Portfolio ',value:(portfolioDeltaPct>=0?'increased +':'decreased ')+portfolioDeltaPct.toFixed(1)+'%',after:' since the previous snapshot.',tone:portfolioDeltaPct>=0?'green':'red'
+    }:hasPortfolio?{before:'Your Portfolio is currently ',value:money(currentValue),after:'.'}:{before:'Your Portfolio is ready for your first owned item.'},
+    liveWishlist.length?{before:'',value:String(liveWishlist.length)+' Wishlist item'+(liveWishlist.length===1?'':'s'),after:' '+(liveWishlist.length===1?'is':'are')+' at or below your target price.',tone:'green'}:{before:'No Wishlist items are currently below your target price.'},
+    ...todayBills.slice(0,2).map<BriefLine>(bill=>({before:bill.name+' of ',value:money(bill.amount),after:' is due today.',tone:'red'})),
+    preorderSoon.length?{before:'',value:String(preorderSoon.length)+' preorder'+(preorderSoon.length===1?'':'s'),after:' '+(preorderSoon.length===1?'releases':'release')+' or may charge within 14 days.',tone:'orange'}:{before:'No preorder charges are scheduled within the next 14 days.'},
+    leadingProgress?{before:'Your '+leadingProgress.name+' collection is now ',value:Math.min(100,Math.round(leadingProgress.count/Math.max(1,leadingProgress.total)*100))+'% complete',after:'.',tone:'green'}:{before:'Add a measurable collection to track completion here.'},
+    lifeTodayTasks.length||lifeTodayEvents.length?{before:'Today you have ',value:lifeTodayTasks.length+' task'+(lifeTodayTasks.length===1?'':'s')+' and '+lifeTodayEvents.length+' event'+(lifeTodayEvents.length===1?'':'s'),after:'.'}:{before:'Your Life schedule is clear today.'},
+    hasSpend?{before:'Hobby spending is at ',value:money(monthSpend)+' of '+money(monthBudget),after:' this month.',tone:monthSpend>monthBudget?'red':'orange'}:{before:'No hobby budget activity is recorded this month.'},
+    capacityRows[0]?{before:capacityRows[0].name+' is ',value:capacityRows[0].pct+'% full',after:'.',tone:capacityRows[0].pct>=90?'red':capacityRows[0].pct>=75?'orange':'muted'}:{before:'No measured Setup capacity needs attention.'}
+  ];
+
+  useEffect(()=>{
+    if(!workspace.ready||!workspace.session?.user.id)return;
+    const now=new Date();
+    const localDate=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');
+    const key='vexum.dailyBrief.'+workspace.session.user.id;
+    try{
+      if(localStorage.getItem(key)!==localDate){
+        localStorage.setItem(key,localDate);
+        const timer=window.setTimeout(()=>setDailyBriefOpen(true),350);
+        return()=>window.clearTimeout(timer);
+      }
+    }catch{}
+  },[workspace.ready,workspace.session?.user.id]);
 
   const updateDashboard=(widgets:HomeWidgetLayout[])=>workspace.update({...workspace.data,homeDashboard:{version:1,widgets,updatedAt:new Date().toISOString()}});
   const hide=(id:HomeWidgetId)=>updateDashboard(state.widgets.map(widget=>widget.id===id?{...widget,visible:false}:widget));
@@ -294,17 +335,7 @@ export default function VexumHome(){
     if(layout.id==='monthlySpend')return shell(<div className="vxh-metric"><strong>{money(monthSpend)} <small>/ {money(monthBudget)}</small></strong><span>{monthBudget?Math.round(monthSpend/monthBudget*100):0}% of monthly target</span><div className="vxh-progress"><i style={{width:Math.min(100,monthBudget?monthSpend/monthBudget*100:0)+'%'}}/></div></div>);
     if(layout.id==='portfolioPerformance')return shell(<div className="vxh-performance"><div className="vxh-chart-head"><div><strong>{money(currentValue)}</strong><span>{source==='live'?'Workspace value history':'Isolated dashboard demo history'}</span></div><div>{['7D','30D','3M','6M','1Y','ALL'].map(interval=><button className={(layout.config.interval||'30D')===interval?'active':''} key={interval} onClick={()=>updateDashboard(state.widgets.map(w=>w.id===layout.id?{...w,config:{...w.config,interval}}:w))}>{interval}</button>)}</div></div><DashboardChart values={historyValues}/><footer><span><i className="red"/>Market value</span><span><i/>Cost basis {money(costBasis)}</span></footer></div>);
     if(layout.id==='brief'){
-      const rows:ReadonlyArray<readonly [string,string,string]>=[
-        ['Today',lifeTodayTasks.length+' task'+(lifeTodayTasks.length===1?'':'s')+' · '+lifeTodayEvents.length+' event'+(lifeTodayEvents.length===1?'':'s'),lifeTodayTasks.length?'orange':'green'],
-        ...(platform.lifeSections.includes('Fitness')?[['Fitness',lifeTodayWorkouts[0]?.name||'No workout scheduled',lifeTodayWorkouts.length?'green':'muted'] as const]:[]),
-        ['Momentum',lifeMomentum?lifeMomentum+'% over 30 days':'No habit data',lifeMomentum>=80?'green':lifeMomentum?'orange':'muted'],
-        ['Portfolio',hasPortfolio?money(currentValue)+' current value':'No live ownership yet',hasPortfolio?'green':'muted'],
-        ['Wishlist',liveWishlist.length+' target opportunit'+(liveWishlist.length===1?'y':'ies'),liveWishlist.length?'green':'muted'],
-        ['Budget',hasSpend?money(monthSpend)+' / '+money(monthBudget):'No live hobby budget',hasSpend&&monthSpend>monthBudget?'red':hasSpend?'orange':'muted'],
-        ['Audit',auditCounts.total+' issue'+(auditCounts.total===1?'':'s')+' need review',auditCounts.total?'orange':'green'],
-        ['Setup',capacityRows[0]?capacityRows[0].name+' '+capacityRows[0].pct+'% full':'No measured capacity','muted']
-      ];
-      return shell(<div className="vxh-brief"><div className="vxh-brief-lead"><Sparkles/><span><strong>{greeting()}{profileName?', '+profileName:''}.</strong><small>What changed and what needs attention.</small></span></div>{rows.slice(0,Number(layout.config.count)||6).map(([label,value,tone])=><div className="vxh-brief-row" key={label}><span>{label}</span><strong className={'tone-'+tone}>{value}</strong></div>)}</div>);
+      return shell(<div className="vxh-brief vxh-brief-feed"><div className="vxh-brief-lead"><Sparkles/><span><strong>{greeting()}{profileName?', '+profileName:''}.</strong><small>What changed and what needs attention.</small></span></div>{briefLines.slice(0,Number(layout.config.count)||6).map((line,index)=><p className="vxh-brief-sentence" key={index}>{line.before}{line.value?<strong className={line.tone?'tone-'+line.tone:''}>{line.value}</strong>:null}{line.after}</p>)}</div>);
     }
     if(layout.id==='wishlist')return shell(<div className="vxh-list">{(liveWishlist.length?liveWishlist.map(record=>({name:record.snapshot?.name||record.productId,sub:'Target '+money(record.targetPrice||record.maximumPrice||0),value:money(record.currentMarket||0),tone:'green' as Tone})):DEMO_HOME_DATA.wishlist.map(row=>({name:row[0],sub:'Target '+row[2]+' · '+row[4],value:row[3],tone:'green' as Tone}))).slice(0,Number(layout.config.count)||5).map(row=><div key={row.name}><Star/><span><strong>{row.name}</strong><small>{row.sub}</small></span><b className={'tone-'+row.tone}>{row.value}</b></div>)}<button onClick={()=>location.assign('/wishlist')}>Open Wishlist <ChevronRight/></button></div>);
     if(layout.id==='radar')return shell(<div className="vxh-radar">{DEMO_HOME_DATA.radar.slice(0,Number(layout.config.count)||5).map(row=><div key={row[1]}><VexumBadge tone={row[0]==='RESTOCK'?'success':row[0]==='DROP'?'danger':'info'}>{row[0]}</VexumBadge><span><strong>{row[1]}</strong><small>{row[3]}</small></span><b>{row[2]}</b></div>)}<p>Demo fixture until Radar/provider events are wired to Home.</p></div>);
@@ -360,6 +391,13 @@ export default function VexumHome(){
       footer={<><button className="vxui-button secondary" onClick={()=>{setConfigureTarget(null);setConfigureValue('')}}>Cancel</button><button className="vxui-button primary" onClick={saveConfigure}>Save</button></>}>
       <label className="vxh-config-field">{configureTarget==='portfolioPerformance'?'Chart interval':'Rows'}<input autoFocus value={configureValue} onChange={e=>setConfigureValue(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')saveConfigure()}} placeholder={configureTarget==='portfolioPerformance'?'30D':'5'}/></label>
       <small className="vxh-config-help">{configureTarget==='portfolioPerformance'?'Allowed: 7D, 30D, 3M, 6M, 1Y, ALL':'Allowed: 1–12 rows'}</small>
+    </VexumDialog>
+    <VexumDialog open={dailyBriefOpen} onClose={()=>setDailyBriefOpen(false)} title="WELCOME BACK." eyebrow="VEXUM" description="HERE'S YOUR VEXUM BRIEF." size="xl" className="vxh-daily-brief-dialog">
+      <div className="vxh-daily-brief">
+        <div className="vxh-daily-mark"><Sparkles/><span>DAILY INTELLIGENCE</span></div>
+        <div className="vxh-daily-lines">{briefLines.slice(0,8).map((line,index)=><p key={index} style={{animationDelay:(index*90)+'ms'}}>{line.before}{line.value?<strong className={line.tone?'tone-'+line.tone:''}>{line.value}</strong>:null}{line.after}</p>)}</div>
+        <footer><span>Shown once per local calendar day on your first authenticated VEXUM open.</span><button className="vxui-button primary" onClick={()=>setDailyBriefOpen(false)}>Enter VEXUM</button></footer>
+      </div>
     </VexumDialog>
     <VexumConfirmDialog open={resetOpen} onClose={()=>setResetOpen(false)} onConfirm={confirmReset} title="Reset Home layout?" description="This restores the official VEXUM widget layout. Your Portfolio, Financial, Wishlist, Life, and other underlying data will not be deleted." confirmLabel="Reset Layout" danger/>
   </div>;

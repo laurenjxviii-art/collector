@@ -65,3 +65,27 @@
 .vxh-resize-handle svg{width:17px;height:17px}
 .vxh-resize-handle:hover{background:color-mix(in srgb,var(--vx-red) 16%,#130d0f);color:#fff}
 @media(pointer:coarse){.vxh-resize-handle{width:48px;height:48px;right:-3px;bottom:-3px}.vxh-edit-controls button{width:44px;height:44px}}
+
+/* Connected VEXUM Brief */
+.vxh-brief-feed{padding:8px 14px 13px}
+.vxh-brief-feed .vxh-brief-lead{margin-bottom:5px}
+.vxh-brief-sentence{margin:0;padding:9px 1px;border-bottom:1px solid #1d1f23;color:#e7e8eb;font-size:14px;line-height:1.5;letter-spacing:-.005em}
+.vxh-brief-sentence:last-child{border-bottom:0}
+.vxh-brief-sentence strong{font-weight:650;color:#f1f2f4}
+.vxh-brief-sentence strong.tone-green{color:#25e2a0}.vxh-brief-sentence strong.tone-red{color:#ff5968}.vxh-brief-sentence strong.tone-orange{color:#ff9d35}.vxh-brief-sentence strong.tone-muted{color:#d7d9dd}
+
+/* Once-daily authenticated briefing */
+.vxh-daily-brief-dialog .vxui-dialog{width:min(980px,calc(100vw - 32px));min-height:min(720px,calc(100vh - 42px));background:radial-gradient(circle at 72% 8%,color-mix(in srgb,var(--vx-red) 11%,transparent),transparent 34%),linear-gradient(180deg,#09090b,#050506)}
+.vxh-daily-brief-dialog .vxui-dialog-head{padding:30px 34px 20px;border-bottom:1px solid #22242a}
+.vxh-daily-brief-dialog .vxui-dialog-head h2{font-size:clamp(30px,4vw,54px);letter-spacing:-.055em;line-height:.95}
+.vxh-daily-brief-dialog .vxui-dialog-head p{font-size:14px;font-weight:700;letter-spacing:.12em;color:#d7d9dd;margin-top:10px}
+.vxh-daily-brief-dialog .vxui-dialog-body{display:flex;padding:0;min-height:0}
+.vxh-daily-brief{width:100%;display:flex;flex-direction:column;padding:24px 34px 28px}
+.vxh-daily-mark{display:flex;align-items:center;gap:8px;color:var(--vx-red);font-size:11px;font-weight:800;letter-spacing:.13em}.vxh-daily-mark svg{width:15px}
+.vxh-daily-lines{margin-top:18px;display:flex;flex-direction:column}
+.vxh-daily-lines p{opacity:0;transform:translateY(8px);animation:vexumBriefReveal 360ms cubic-bezier(.2,.8,.2,1) forwards;margin:0;padding:13px 0;border-bottom:1px solid #1d1f23;color:#eceef1;font-size:clamp(16px,1.7vw,21px);line-height:1.45;letter-spacing:-.018em}
+.vxh-daily-lines p strong{font-weight:700;color:#f4f5f6}.vxh-daily-lines p strong.tone-green{color:#25e2a0}.vxh-daily-lines p strong.tone-red{color:#ff5968}.vxh-daily-lines p strong.tone-orange{color:#ff9d35}.vxh-daily-lines p strong.tone-muted{color:#e2e3e6}
+.vxh-daily-brief footer{margin-top:auto;padding-top:22px;display:flex;align-items:center;justify-content:space-between;gap:16px;color:#7d8189;font-size:13px}
+@keyframes vexumBriefReveal{to{opacity:1;transform:translateY(0)}}
+@media(max-width:700px){.vxh-daily-brief-dialog .vxui-dialog-head{padding:22px 20px 16px}.vxh-daily-brief{padding:18px 20px 22px}.vxh-daily-brief footer{align-items:stretch;flex-direction:column}.vxh-daily-brief footer button{width:100%}}
+@media(prefers-reduced-motion:reduce){.vxh-daily-lines p{opacity:1;transform:none;animation:none}}
