@@ -143,10 +143,12 @@ function migrateLegacyRecord(productId:string,legacy:Record<string,unknown>,rela
   return record;
 }
 
-export default function VexumWishlist(){
+export default function VexumWishlist({section:controlledSection,onSectionChange}:{section?:string;onSectionChange?:(section:string)=>void}={}){
   const workspace=useWorkspace();
   const migrated=useRef(false);
-  const [tab,setTab]=useState<MainTab>('Overview');
+  const [internalTab,setInternalTab]=useState<MainTab>('Overview');
+  const tab=((controlledSection as MainTab|undefined)||internalTab);
+  const setTab=(next:MainTab)=>{setInternalTab(next);onSectionChange?.(next)};
   const [detailTab,setDetailTab]=useState<DetailTab>('Overview');
   const [query,setQuery]=useState('');
   const [filtersOpen,setFiltersOpen]=useState(false);
@@ -413,18 +415,17 @@ export default function VexumWishlist(){
   }
 
   return <div className="vxw-page">
-    <section className="vxw-hero">
-      <div><span>04 — WISHLIST</span><h1>Wishlist</h1><p>What you want, what it costs, and what buying it changes.</p></div>
-      <aside><span>PURCHASE COMMAND CENTER</span><q>Context, not permission. You make the decision.</q></aside>
+    <section className="vxw-hero vxp-simple-title">
+      <div><span>WISHLIST</span><h1>{tab}</h1></div>
     </section>
 
-    <div className="vxw-tabs">
+    {controlledSection===undefined?<div className="vxw-tabs">
       {(['Overview','Items','Opportunities','Grails','Preorders','Planned','Archive'] as MainTab[]).map(name=>
         <button key={name} className={tab===name?'active':''} onClick={()=>{setTab(name);closeSelectMode()}}>
           {name}<small>{tabCount(name,{activeEntries,opportunities,grails,preorders,planned,archivedEntries})}</small>
         </button>
       )}
-    </div>
+    </div>:null}
 
     <div className="vxw-stats six">
       <StatCard label="Wishlist Items" value={String(activeEntries.length)} note={money(totalMarket)+' labeled market value'} icon={<Star/>}/>
