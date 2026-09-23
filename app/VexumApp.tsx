@@ -77,24 +77,24 @@ function Sidebar({view,navigate,enabled,order,displayName,onQuick}:{view:View;na
 }
 
 function Topbar({hero,displayName,unread,onCommand,onQuick,onNotifications,onProfile}:{hero:string;displayName:string;unread:number;onCommand:()=>void;onQuick:()=>void;onNotifications:()=>void;onProfile:()=>void}){
-  return <div className={'vx-topbar hero-'+hero}>
+  return <header className={'vx-topbar hero-'+hero}>
     <button className="vx-searchbox" aria-label="Search VEXUM or run a command" onClick={onCommand}><Search/><span>Search VEXUM or run a command...</span><kbd aria-hidden="true">⌘ K</kbd></button>
     <div className="vx-topicons vxp-topicons">
       <button className="vxp-add" aria-label="Quick Add" onClick={onQuick} title="Quick Add"><Plus/></button>
       <button className="vxp-bell" aria-label={unread?'Notifications with unread items':'Notifications'} onClick={onNotifications} title="Notifications"><Bell/>{unread?<b aria-hidden="true">{unread>9?'9+':unread}</b>:null}</button>
       <button className="vx-top-avatar" aria-label="Open account menu" onClick={onProfile} title={displayName}>{displayName[0]?.toUpperCase()||'V'}</button>
     </div>
-  </div>;
+  </header>;
 }
 
 function PageFrame({hero,children,displayName,unread,onCommand,onQuick,onNotifications,onProfile}:{hero:string;children:ReactNode;displayName:string;unread:number;onCommand:()=>void;onQuick:()=>void;onNotifications:()=>void;onProfile:()=>void}){
-  return <main className={'vx-content page-'+hero}><Topbar hero={hero} displayName={displayName} unread={unread} onCommand={onCommand} onQuick={onQuick} onNotifications={onNotifications} onProfile={onProfile}/>{children}</main>;
+  return <main id="vexum-main" tabIndex={-1} className={'vx-content page-'+hero}><Topbar hero={hero} displayName={displayName} unread={unread} onCommand={onCommand} onQuick={onQuick} onNotifications={onNotifications} onProfile={onProfile}/>{children}</main>;
 }
 
 function ProfileMenu({open,onClose,displayName,email,navigate,signOut,onAccount}:{open:boolean;onClose:()=>void;displayName:string;email:string;navigate:(v:View)=>void;signOut:()=>Promise<void>;onAccount:()=>void}){
   if(!open)return null;
   const go=(view:View)=>{onClose();navigate(view)};
-  return <div className="vxp-profile-menu" role="menu" aria-label="Account menu">
+  return <div className="vxp-profile-menu" role="region" aria-label="Account menu">
     <header><div className="avatar" aria-hidden="true">{displayName[0]?.toUpperCase()||'V'}</div><span><strong>{displayName}</strong><small>{email||'Local workspace'}</small></span><button aria-label="Close account menu" onClick={onClose}><X/></button></header>
     <button onClick={()=>go('settings')}><UserRound/><span>Profile</span><ChevronDown/></button>
     <button onClick={()=>go('settings')}><Settings/><span>Settings</span><ChevronDown/></button>
@@ -199,7 +199,7 @@ function MfaSessionGate({config,session,onVerified,onSignOut}:{config:CloudConfi
       <p>This account has multi-factor authentication enabled. Enter the code from your authenticator app before continuing.</p>
       <label>Authenticator code<input autoFocus inputMode="numeric" autoComplete="one-time-code" value={code} onChange={e=>setCode(e.target.value.replace(/\D/g,'').slice(0,6))} onKeyDown={e=>{if(e.key==='Enter')void verify()}} placeholder="000000"/></label>
     </>}
-    {error?<div className="error">{error}</div>:null}
+    {error?<div className="error" role="alert">{error}</div>:null}
     <div><button onClick={()=>void onSignOut()}>Sign Out</button><button className="primary" disabled={busy||code.length<6} onClick={()=>void verify()}>{busy?'Verifying…':mode==='enroll'?'Enable 2FA & Continue':'Verify & Continue'}</button></div>
   </section></div>;
 }
@@ -317,6 +317,7 @@ export default function VexumApp({
   const rootClass=['vx-app','vxp-platform','density-'+platform.appearance.density,'text-'+platform.appearance.textSize,'motion-'+platform.appearance.motion,'glow-'+platform.appearance.glow,'sidebar-'+platform.appearance.sidebarWidth].join(' ');
 
   return <div className={rootClass}>
+    <a className="vx-skip-link" href="#vexum-main">Skip to main content</a>
     <Sidebar view={view} navigate={navigate} enabled={enabled} order={platform.moduleOrder} displayName={displayName} onQuick={openQuick}/>
     {content}
     <QuickAddPanel key={quickType||'all'} open={quickOpen} initialType={quickType} onClose={closeQuick} workspace={workspace} navigate={navigate}/>
