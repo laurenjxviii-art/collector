@@ -33,6 +33,9 @@ export type PlaidSnapshot={
   recurring:PlaidRecurringStream[];liabilities:PlaidLiability[];securities:PlaidSecurity[];holdings:PlaidHolding[];
   investmentTransactions:PlaidInvestmentTransaction[];lastSync:string|null;
 };
+export type PlaidLinkSessionResume={
+  sessionId:string;linkToken:string;mode:'connect'|'update';itemId:string|null;expiresAt:string;redirectUri:string;
+};
 
 async function plaidFetch<T>(config:CloudConfig,path:string,init:RequestInit={}):Promise<T>{
   const session=await freshSession(config);
@@ -51,9 +54,23 @@ async function plaidFetch<T>(config:CloudConfig,path:string,init:RequestInit={})
 
 export function loadPlaidSnapshot(config:CloudConfig){return plaidFetch<PlaidSnapshot>(config,'/api/plaid/status')}
 export function createPlaidLinkToken(config:CloudConfig,itemId?:string){
-  return plaidFetch<{linkToken:string;expiration:string;mode:'connect'|'update';itemId:string|null;warnings:string[]}>(config,'/api/plaid/link-token',{method:'POST',body:JSON.stringify(itemId?{itemId}:{})});
+  return plaidFetch<{linkToken:string;expiration:string;mode:'connect'|'update';itemId:string|null;warnings:string[];sessionId:string;redirectUri:string}>(
+    config,'/api/plaid/link-token',{method:'POST',body:JSON.stringify(itemId?{itemId}:{})}
+  );
 }
-export function exchangePlaidPublicToken(config:CloudConfig,publicToken:string,metadata?:{institutionId?:string;institutionName?:string;linkSessionId?:string}){
+export function resumePlaidLinkSession(config:CloudConfig,sessionId:string|undefined,receivedRedirectUri:string){
+  return plaidFetch<PlaidLinkSessionResume>(config,'/api/plaid/link-session',{
+    method:'POST',body:JSON.stringify({action:'resume',sessionId:sessionId||'',receivedRedirectUri})
+  });
+}
+export function completePlaidLinkSession(config:CloudConfig,sessionId:string,mode:'connect'|'update',plaidLinkSessionId=''){
+  return plaidFetch<{ok:true}>(config,'/api/plaid/link-session',{
+    method:'POST',body:JSON.stringify({action:'complete',sessionId,mode,plaidLinkSessionId})
+  });
+}
+export function exchangePlaidPublicToken(config:CloudConfig,publicToken:string,metadata?:{
+  institutionId?:string;institutionName?:string;linkSessionId?:string;linkSessionRecordId?:string
+}){
   return plaidFetch<{itemId:string;snapshot:PlaidSnapshot}>(config,'/api/plaid/exchange',{method:'POST',body:JSON.stringify({publicToken,...metadata})});
 }
 export function syncPlaid(config:CloudConfig,itemId?:string){

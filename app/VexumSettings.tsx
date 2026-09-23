@@ -29,6 +29,15 @@ export default function VexumSettings(){
   const [section,setSection]=useState<Section>('profile');
   const [onboarding,setOnboarding]=useState(false);
   const [message,setMessage]=useState('');
+  useEffect(()=>{
+    const params=new URLSearchParams(location.search);
+    const requested=params.get('section');
+    if(requested&&SECTIONS.some(item=>item.id===requested))setSection(requested as Section);
+    const plaid=params.get('plaid');
+    if(plaid==='connected')setMessage('Financial institution connected and synchronized.');
+    if(plaid==='updated')setMessage('Financial institution access updated and synchronized.');
+    if(requested||plaid)history.replaceState(null,'',location.pathname);
+  },[]);
   const save=(next:PlatformState)=>workspace.update({...workspace.data,platform:next});
 
   const grouped=useMemo(()=>[...new Set(SECTIONS.map(item=>item.group))].map(group=>({group,items:SECTIONS.filter(item=>item.group===group)})),[]);
