@@ -159,3 +159,22 @@
   .vxp-nav-entry>button,.vx-nav>.vxp-nav-entry>button{min-height:44px;height:44px}
   .vxp-subnav button{min-height:40px!important;height:40px!important}
 }
+
+
+/* ===== Full profile modal ===== */
+.vxp-profile-dialog .vxui-dialog-body{padding:0;background:#08090b}
+.vxp-profile-dialog .vxsoc-page{padding:14px 16px 20px;min-height:520px}
+.vxp-profile-dialog .vxsoc-title{display:none}
+.vxp-profile-dialog .vxp-page-actions{display:none}
+.vxp-profile-dialog .vxsoc-profile-page{max-width:980px;margin:0 auto}
+.vxp-profile-dialog .vxsoc-profile-header .banner{height:150px}
+.vxp-profile-dialog .vxsoc-profile-header .identity{min-height:136px}
+.vxp-profile-dialog .vxsoc-profile-header h2{font-size:26px}
+@media(max-width:700px){
+  .vxp-profile-dialog .vxsoc-page{padding:10px}
+  .vxp-profile-dialog .vxsoc-profile-header .banner{height:110px}
+  .vxp-profile-dialog .vxsoc-profile-header .identity{grid-template-columns:58px minmax(0,1fr)}
+  .vxp-profile-dialog .vxsoc-profile-header .identity>button{grid-column:1/-1;width:100%;justify-content:center}
+  .vxp-profile-dialog .vxsoc-profile-metrics{grid-template-columns:1fr 1fr}
+  .vxp-profile-dialog .vxsoc-profile-grid{grid-template-columns:1fr}
+}
