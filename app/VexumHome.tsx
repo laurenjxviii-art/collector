@@ -186,31 +186,31 @@ export default function VexumHome(){
   const todayBills=financial.bills.filter(bill=>bill.active&&(bill.nextDueDate===today||(!bill.nextDueDate&&bill.dueDay===new Date().getDate())));
   const preorderSoon=wishlist.filter(record=>{
     const preorder=record.preorder;
-    if(!preorder?.enabled||preorder.status==='Cancelled'||preorder.status==='Delivered')return false;
-    const date=preorder.estimatedChargeDate;
-    if(!date)return false;
-    const delta=Date.parse(date+'T12:00:00')-Date.now();
+    if(!preorder||!preorder.enabled||preorder.status==='Cancelled'||preorder.status==='Delivered')return false;
+    if(!preorder.estimatedChargeDate)return false;
+    const delta=Date.parse(preorder.estimatedChargeDate+'T12:00:00')-Date.now();
     return Number.isFinite(delta)&&delta>=0&&delta<=14*86400000;
   });
-  const portfolioSnapshots=(workspace.data.history||[]).slice(-2).map(snapshot=>Object.values(snapshot.values).reduce((sum,value)=>sum+value,0));
-  const previousPortfolioValue=portfolioSnapshots.at(-2);
-  const latestPortfolioValue=portfolioSnapshots.at(-1);
-  const portfolioDeltaPct=typeof previousPortfolioValue==='number'&&previousPortfolioValue>0&&typeof latestPortfolioValue==='number'
-    ?(latestPortfolioValue-previousPortfolioValue)/previousPortfolioValue*100:null;
+  const briefLines:BriefLine[]=[];
+  if(hasPortfolio)briefLines.push({before:'Your Portfolio is currently ',value:money(currentValue),after:'.'});
+  else briefLines.push({before:'Your Portfolio is ready for your first owned item.'});
+  if(liveWishlist.length)briefLines.push({before:'',value:String(liveWishlist.length)+' Wishlist item'+(liveWishlist.length===1?'':'s'),after:' '+(liveWishlist.length===1?'is':'are')+' at or below your target price.',tone:'green'});
+  else briefLines.push({before:'No Wishlist items are currently below your target price.'});
+  for(const bill of todayBills.slice(0,2))briefLines.push({before:bill.name+' of ',value:money(bill.amount),after:' is due today.',tone:'red'});
+  if(preorderSoon.length)briefLines.push({before:'',value:String(preorderSoon.length)+' preorder'+(preorderSoon.length===1?'':'s'),after:' '+(preorderSoon.length===1?'releases':'release')+' or may charge within 14 days.',tone:'orange'});
+  else briefLines.push({before:'No preorder charges are scheduled within the next 14 days.'});
   const leadingProgress=progressRows[0];
-  const briefLines:BriefLine[]=[
-    portfolioDeltaPct!==null?{
-      before:'Your Portfolio ',value:(portfolioDeltaPct>=0?'increased +':'decreased ')+portfolioDeltaPct.toFixed(1)+'%',after:' since the previous snapshot.',tone:portfolioDeltaPct>=0?'green':'red'
-    }:hasPortfolio?{before:'Your Portfolio is currently ',value:money(currentValue),after:'.'}:{before:'Your Portfolio is ready for your first owned item.'},
-    liveWishlist.length?{before:'',value:String(liveWishlist.length)+' Wishlist item'+(liveWishlist.length===1?'':'s'),after:' '+(liveWishlist.length===1?'is':'are')+' at or below your target price.',tone:'green'}:{before:'No Wishlist items are currently below your target price.'},
-    ...todayBills.slice(0,2).map(bill=>({before:bill.name+' of ',value:money(bill.amount),after:' is due today.',tone:'red' as Tone})),
-    preorderSoon.length?{before:'',value:String(preorderSoon.length)+' preorder'+(preorderSoon.length===1?'':'s'),after:' '+(preorderSoon.length===1?'releases':'release')+' or may charge within 14 days.',tone:'orange'}:{before:'No preorder charges are scheduled within the next 14 days.'},
-    leadingProgress?{before:'Your '+leadingProgress.name+' collection is now ',value:Math.min(100,Math.round(leadingProgress.count/Math.max(1,leadingProgress.total)*100))+'% complete',after:'.',tone:'green'}:{before:'Add a measurable collection to track completion here.'},
-    lifeTodayTasks.length||lifeTodayEvents.length?{before:'Today you have ',value:lifeTodayTasks.length+' task'+(lifeTodayTasks.length===1?'':'s')+' and '+lifeTodayEvents.length+' event'+(lifeTodayEvents.length===1?'':'s'),after:'.'}:{before:'Your Life schedule is clear today.'},
-    hasSpend?{before:'Hobby spending is at ',value:money(monthSpend)+' of '+money(monthBudget),after:' this month.',tone:monthSpend>monthBudget?'red':'orange'}:{before:'No hobby budget activity is recorded this month.'},
-    capacityRows[0]?{before:capacityRows[0].name+' is ',value:capacityRows[0].pct+'% full',after:'.',tone:capacityRows[0].pct>=90?'red':capacityRows[0].pct>=75?'orange':'muted'}:{before:'No measured Setup capacity needs attention.'}
-  ];
-
+  if(leadingProgress){
+    const completion=Math.min(100,Math.round(leadingProgress.count/Math.max(1,leadingProgress.total)*100));
+    briefLines.push({before:'Your '+leadingProgress.name+' collection is now ',value:completion+'% complete',after:'.',tone:'green'});
+  }else briefLines.push({before:'Add a measurable collection to track completion here.'});
+  if(lifeTodayTasks.length||lifeTodayEvents.length)briefLines.push({before:'Today you have ',value:lifeTodayTasks.length+' task'+(lifeTodayTasks.length===1?'':'s')+' and '+lifeTodayEvents.length+' event'+(lifeTodayEvents.length===1?'':'s'),after:'.'});
+  else briefLines.push({before:'Your Life schedule is clear today.'});
+  if(hasSpend)briefLines.push({before:'Hobby spending is at ',value:money(monthSpend)+' of '+money(monthBudget),after:' this month.',tone:monthSpend>monthBudget?'red':'orange'});
+  else briefLines.push({before:'No hobby budget activity is recorded this month.'});
+  const leadingCapacity=capacityRows[0];
+  if(leadingCapacity)briefLines.push({before:leadingCapacity.name+' is ',value:leadingCapacity.pct+'% full',after:'.',tone:leadingCapacity.pct>=90?'red':leadingCapacity.pct>=75?'orange':'muted'});
+  else briefLines.push({before:'No measured Setup capacity needs attention.'});
 
   const updateDashboard=(widgets:HomeWidgetLayout[])=>workspace.update({...workspace.data,homeDashboard:{version:1,widgets,updatedAt:new Date().toISOString()}});
   const hide=(id:HomeWidgetId)=>updateDashboard(state.widgets.map(widget=>widget.id===id?{...widget,visible:false}:widget));
