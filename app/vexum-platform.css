@@ -135,3 +135,27 @@
   .vx-app:has(.vxp-subnav) .vx-content{padding-bottom:136px}
   .vx-searchbox span{display:none}
 }
+
+
+/* ===== UX SIMPLIFICATION PHASE 1 — compact Vercel-style navigation ===== */
+.vxp-platform{--vx-red:#ff0000;--vx-red2:#b80000}
+.vxp-sidebar-scroll{padding:4px 0 8px;scrollbar-width:thin}
+.vxp-nav-group{margin-bottom:3px;padding:0}
+.vxp-nav-group>span{padding:4px 14px 2px;font-size:9px;line-height:14px;letter-spacing:.14em;font-weight:700;color:#60646c}
+.vxp-nav-group .vx-nav{padding:0 9px;gap:0}
+.vxp-nav-entry>button,.vx-nav>.vxp-nav-entry>button{height:32px;min-height:32px;padding:0 9px;border-radius:5px;gap:8px;font-size:13px;font-weight:500!important}
+.vxp-nav-entry>button>svg{width:14px!important;height:14px!important}
+.vxp-nav-entry>button.active{border-color:#5b1118;background:linear-gradient(90deg,rgba(255,0,0,.12),rgba(255,0,0,.025));box-shadow:inset 2px 0 #ff0000}
+.vxp-nav-entry>button .vxp-nav-chevron{width:11px!important;height:11px!important;color:#666b73}
+.vxp-subnav{gap:0;margin:0 0 3px 26px;padding:2px 0 2px 9px;border-left:1px solid #23252a}
+.vxp-subnav button{height:26px!important;min-height:26px!important;border-radius:4px;padding:0 7px;font-size:12px!important}
+.vxp-subnav button.active{background:#12090b;box-shadow:inset 2px 0 #ff0000}
+.vxp-sidebar-user{min-height:62px;height:62px;padding:0 14px}
+.vxp-sidebar-user .vx-avatar{width:32px;height:32px}
+.vxp-sidebar-user strong{font-size:13px}.vxp-sidebar-user span{font-size:11px}
+.vxp-profile-menu,.vxp-flyout.notification{box-shadow:0 22px 70px rgba(0,0,0,.72)}
+.vxp-topicons .vxp-add{color:#ff3a3a!important;border-color:#4e161b!important;background:#12090b!important}
+@media(pointer:coarse){
+  .vxp-nav-entry>button,.vx-nav>.vxp-nav-entry>button{min-height:44px;height:44px}
+  .vxp-subnav button{min-height:40px!important;height:40px!important}
+}
