@@ -16,7 +16,7 @@
   --vx-orange:#ff9d35;
 }
 *{box-sizing:border-box}
-html,body{margin:0;min-height:100%;background:var(--vx-bg);color:var(--vx-text);font-family:var(--font-vexum),Manrope,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+html,body{margin:0;min-height:100%;background:var(--vx-bg);color:var(--vx-text);font-family:var(--font-vexum),"Space Grotesk",ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
 button,input,select{font:inherit}
 button{cursor:pointer}
 svg{stroke-width:1.8}
@@ -819,3 +819,39 @@ svg{stroke-width:1.8}
 .vx-content :where(button,input,select):not(.vx-fin-stats *,.vxs-summary-metrics *,.vxp-summary-card *){min-height:32px}
 .vx-nav button{min-height:42px}
 .vx-quick button{min-height:38px}
+
+/* VEXUM typography hierarchy */
+.vx-nav button,
+.vxp-nav-group .vx-nav button{
+  font-weight:700;
+}
+.vxh-widget>header h3,
+.vx-panel-head h3,
+.vxl-today-card>header h3,
+.vxl-task-nav h3,
+.vxl-task-main h3,
+.vxl-calendar-main h3,
+.vxl-calendar-layers h3,
+.vxp2-overview-grid header h3,
+.vxp2-analytics-grid header h3,
+.vxp2-collection-analytics header h3,
+.vxp2-audit-layout header h3,
+.vxp2-detail-section header h3,
+.vxp2-market-grid header h3,
+.vxp2-side-stack header h3,
+.vxp2-history header h3,
+.vxp2-tree h3,
+.vxp2-collection-grid h3,
+.vxp2-toolbar h3,
+.vxw-card-copy h3,
+.vxw-form-section h3,
+.vxw-section-toggle h3,
+.vxw-overview-grid section>header strong,
+.vxf-panel-head h3,
+.vxf-panel>header h3,
+.vxsup-panel>header h3,
+.vxsoc-rail>.vxsoc-panel>header strong,
+.vxsoc-community-strip header strong,
+.vxsel-panel>header h3{
+  font-weight:700;
+}

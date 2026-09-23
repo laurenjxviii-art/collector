@@ -12,9 +12,9 @@ import './vexum-setup.css';
 import './vexum-social.css';
 import './vexum-sell.css';
 import type {Metadata} from 'next';
-import {Manrope} from 'next/font/google';
+import {Space_Grotesk} from 'next/font/google';
 
-const vexumFont=Manrope({subsets:['latin'],display:'swap',variable:'--font-vexum'});
+const vexumFont=Space_Grotesk({subsets:['latin'],display:'swap',variable:'--font-vexum'});
 
 export const metadata:Metadata={
   title:'VEXUM',
