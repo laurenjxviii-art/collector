@@ -4,6 +4,9 @@ import {postgrestIn,qs,supabaseRest} from './supabaseRest';
 export type SocialPostType='standard'|'pickup'|'collection_update'|'setup'|'question'|'review'|'trade'|'sale'|'restock'|'drop'|'milestone';
 export type SocialVisibility='public'|'followers'|'community'|'private';
 
+export type SocialProfileLink={label:string;url:string};
+export type SocialProfileOverview={posts:number;reviews:number;activeListings:number};
+
 export type SocialProfile={
   id:string;
   username:string|null;
@@ -22,6 +25,8 @@ export type SocialProfile={
   show_achievements:boolean;
   show_seller_profile:boolean;
   default_social_landing:'for_you'|'following'|'communities';
+  links:SocialProfileLink[];
+  username_updated_at:string|null;
   created_at:string;
   updated_at:string;
 };
@@ -167,6 +172,15 @@ export async function updateSocialProfile(config:CloudConfig,session:Session,pat
     body:JSON.stringify({...patch,id:undefined,updated_at:new Date().toISOString()})
   },'return=representation');
   return rows[0];
+}
+
+export async function loadProfileOverview(config:CloudConfig,session:Session):Promise<SocialProfileOverview>{
+  const [posts,reviews,listings]=await Promise.all([
+    supabaseRest<Array<{id:string}>>(config,session,'/rest/v1/collector_posts?'+qs({user_id:'eq.'+session.user.id,select:'id'})),
+    supabaseRest<Array<{id:string}>>(config,session,'/rest/v1/seller_reviews?'+qs({seller_user_id:'eq.'+session.user.id,select:'id'})),
+    supabaseRest<Array<{id:string;status:string}>>(config,session,'/rest/v1/sell_listings?'+qs({seller_user_id:'eq.'+session.user.id,select:'id,status'}))
+  ]);
+  return {posts:posts.length,reviews:reviews.length,activeListings:listings.filter(row=>!['sold','ended','archived'].includes(row.status)).length};
 }
 
 export async function listPublicProfiles(config:CloudConfig,session:Session|null,limit=8){
