@@ -1,0 +1,85 @@
+/* ===== VEXUM THEME SYSTEM ===== */
+.vx-app{
+  --vx-accent:var(--vx-red,#ff0000);
+  --vx-red2:color-mix(in srgb,var(--vx-accent) 68%,#000);
+  --vx-focus:color-mix(in srgb,var(--vx-accent) 72%,#fff);
+  --vx-accent-soft:color-mix(in srgb,var(--vx-accent) 14%,transparent);
+  --vx-accent-border:color-mix(in srgb,var(--vx-accent) 43%,#26282d);
+}
+.vx-app.glow-off{--vx-glow-shadow:none}
+.vx-app.glow-subtle{--vx-glow-shadow:0 0 20px color-mix(in srgb,var(--vx-accent) 7%,transparent)}
+.vx-app.glow-standard{--vx-glow-shadow:0 0 28px color-mix(in srgb,var(--vx-accent) 13%,transparent)}
+.vx-app :where(.vx-nav button.active,.vxp-subnav button.active,.vx-tabs button.active,.vxt-nav button.active){box-shadow:inset 2px 0 var(--vx-accent),var(--vx-glow-shadow)}
+.vx-app :where(.vxui-button.primary,.vxp-page-actions button.red,.vxsoc-modal button.red,.vxt-actions .primary){border-color:var(--vx-accent-border)}
+.vx-app :where(.vxh-title>div>span,.vxr-title>div:first-child>span,.vxt-section-head>span){color:var(--vx-accent)}
+.vx-app :where(input,select,textarea):focus{border-color:var(--vx-accent-border)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--vx-accent) 9%,transparent)!important}
+
+.vx-app.text-small{font-size:14px}
+.vx-app.text-medium{font-size:16px}
+.vx-app.text-large{font-size:17px}
+.vx-app.density-compact{--vx-density-mult:.88}
+.vx-app.density-standard{--vx-density-mult:1}
+.vx-app.density-comfortable{--vx-density-mult:1.12}
+
+.vx-app.theme-light{
+  color-scheme:light;
+  --vx-bg:#f4f5f7;
+  --vx-bg2:#eceef1;
+  --vx-card:#ffffff;
+  --vx-card2:#f7f8fa;
+  --vx-line:#d8dbe0;
+  --vx-line2:#e5e7eb;
+  --vx-text:#17181b;
+  --vx-muted:#666b73;
+  --vx-muted2:#7b8088;
+  background:
+    radial-gradient(circle at 72% -10%,color-mix(in srgb,var(--vx-accent) 6%,transparent),transparent 28%),
+    #f4f5f7;
+  color:#17181b;
+}
+.theme-light .vx-sidebar{background:#fbfbfc;border-color:#d9dce1}
+.theme-light .vx-logo{border-color:#e1e3e7}
+.theme-light .vx-topbar{background:rgba(244,245,247,.92);border-color:#dfe1e5}
+.theme-light .vx-searchbox{background:#fff;border-color:#d2d5da;color:#4e535b}
+.theme-light .vx-searchbox:hover{border-color:#b9bdc5;background:#fff}
+.theme-light .vxp-nav-group>span{color:#777c84}
+.theme-light .vx-nav button{color:#555b64}
+.theme-light .vx-nav button:hover{background:#f0f1f3;color:#17181b}
+.theme-light .vx-nav button.active{color:#17181b;border-color:color-mix(in srgb,var(--vx-accent) 38%,#d6d9de);background:linear-gradient(90deg,color-mix(in srgb,var(--vx-accent) 11%,#fff),#fff)}
+.theme-light .vxp-subnav{border-color:#d8dbe0}
+.theme-light .vxp-subnav button{color:#6a7078}
+.theme-light .vxp-subnav button:hover{background:#f0f1f3;color:#17181b}
+.theme-light .vxp-subnav button.active{background:color-mix(in srgb,var(--vx-accent) 7%,#fff);color:#17181b}
+.theme-light .vx-user{border-color:#dfe1e5;background:#fbfbfc;color:#26282d}
+.theme-light .vx-avatar,.theme-light .vx-top-avatar{background:#fff;border-color:#d2d5da;color:#33373d}
+.theme-light :where(.vx-panel,.vxh-widget,.vxf-panel,.vxp2-card,.vxp2-panel,.vxw-panel,.vxs-panel,.vxl-panel,.vxsup-panel,.vxsoc-panel,.vxsel-panel){
+  background:#fff!important;
+  border-color:#d9dce1!important;
+  color:#17181b;
+  box-shadow:0 1px 2px rgba(20,25,35,.025);
+}
+.theme-light :where(.vxui-dialog,.auth-modal){background:#fff;color:#17181b;border-color:#d4d7dc}
+.theme-light :where(.vxui-dialog-head,.vxui-dialog-foot){background:#f8f9fa;border-color:#dfe2e6}
+.theme-light :where(.vxt-settings-dialog .vxt-nav){background:#f8f9fa;border-color:#dfe2e6}
+.theme-light :where(.vxt-settings-dialog .vxt-main){background:#fff}
+.theme-light :where(.vxt-settings-dialog .vxt-section-head){background:rgba(255,255,255,.96)}
+.theme-light :where(.vxt-row,.vxt-security-block,.vxt-connection,.vxt-profile-card,.vxt-preset-list,.vxt-life-sections){border-color:#e0e2e6;background:#fff}
+.theme-light :where(input,select,textarea,.vxt-form input,.vxt-form select,.vxt-form textarea,.vxui-prompt-field input){
+  background:#fff!important;color:#17181b!important;border-color:#cfd3d9!important;
+}
+.theme-light :where(button){color:inherit}
+.theme-light :where(.vxui-button.secondary,.vxt-row button,.vxt-actions button,.vxp-profile-hero-actions button){background:#f6f7f8;border-color:#d4d7dc;color:#33383f}
+.theme-light .vxui-backdrop{background:rgba(30,32,36,.42)}
+.theme-light :where(.vxh-editbar,.vxp-command,.vxp-quick-entry,.vxp-ask-shell){background:#fff;color:#17181b}
+.theme-light :where(.vxp-command header,.vxp-ask-composer){border-color:#dfe2e6}
+.theme-light :where(.vxp-command input,.vxp-ask-composer textarea){background:#fff!important;color:#17181b!important}
+.theme-light :where(.tone-muted,small,.vxh-widget p,.vxt-section-head p){color:#6d727a}
+.theme-light .vxp-profile-shell{background:#fff}
+.theme-light .vxp-profile-hero,.theme-light .vxp-profile-tabs,.theme-light .vxp-profile-footer{background:#f8f9fa;border-color:#dfe2e6}
+.theme-light .vxp-profile-form-card,.theme-light .vxp-profile-metrics>div{background:#fff;border-color:#d9dce1}
+.theme-light .vxp-profile-banner{background:linear-gradient(135deg,color-mix(in srgb,var(--vx-accent) 11%,#fff),#e9ebee)}
+.theme-light .vxp-profile-avatar{border-color:#fff;background:#eceef1;color:#17181b}
+
+@media(prefers-color-scheme:light){
+  /* VEXUM follows the explicit in-app setting rather than silently overriding it. */
+}

@@ -1,7 +1,7 @@
 'use client';
 
 import {useEffect,useMemo,useState} from 'react';
-import type {ReactNode} from 'react';
+import type {CSSProperties,ReactNode} from 'react';
 import {
   Bell,Bot,CalendarCheck,ChevronDown,CircleDollarSign,Home,Layers3,Monitor,Plus,Radar as RadarIcon,Search,Settings,Share2,ShoppingBag,Star
 } from 'lucide-react';
@@ -336,9 +336,10 @@ export default function VexumApp({
   else if(view==='social')content=frame('social',<VexumSocial section={moduleSections.social} onSectionChange={section=>setModuleSection('social',section)}/>);
 
 
-  const rootClass=['vx-app','vxp-platform','density-'+platform.appearance.density,'text-'+platform.appearance.textSize,'motion-'+platform.appearance.motion,'glow-'+platform.appearance.glow,'sidebar-'+platform.appearance.sidebarWidth].join(' ');
+  const rootClass=['vx-app','vxp-platform','theme-'+platform.appearance.theme,'density-'+platform.appearance.density,'text-'+platform.appearance.textSize,'motion-'+platform.appearance.motion,'glow-'+platform.appearance.glow,'sidebar-'+platform.appearance.sidebarWidth].join(' ');
+  const rootStyle={'--vx-red':platform.appearance.accentColor,'--vx-accent':platform.appearance.accentColor} as CSSProperties;
 
-  return <div className={rootClass}>
+  return <div className={rootClass} style={rootStyle}>
     <a className="vx-skip-link" href="#vexum-main">Skip to main content</a>
     <Sidebar view={view} navigate={navigate} enabled={enabled} order={platform.moduleOrder} displayName={displayName} sections={sidebarSections} activeSection={activeSection} onSection={setModuleSection} onProfile={openProfile}/>
     {content}
