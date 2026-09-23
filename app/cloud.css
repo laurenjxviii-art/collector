@@ -23,7 +23,7 @@
 .auth-symbol svg{width:15px;height:15px}
 .auth-intro{text-align:center;margin:0 0 18px}
 .auth-intro h3{margin:0 0 6px!important;font-size:18px!important;letter-spacing:-.025em;color:#f5f5f6}
-.auth-intro p{max-width:290px;margin:0 auto!important;font-size:14px!important;line-height:1.55!important;color:#777c85!important}
+.auth-intro p{max-width:290px;margin:0 auto!important;font-size:14px!important;line-height:1.55!important;color:#7d8189c85!important}
 .auth-field{display:block;margin:10px 0!important}
 .auth-field>span{display:flex;align-items:center;gap:6px;margin:0 0 6px;color:#8c9199;font-size:14px;font-weight:650}
 .auth-field>span svg{width:11px;height:11px}
