@@ -9,7 +9,8 @@
   --vx-line2:#1d1f23;
   --vx-text:#f3f4f6;
   --vx-muted:#9ca0a8;
-  --vx-muted2:#70747c;
+  --vx-muted2:#7d8189;
+  --vx-focus:#ff5968;
   --vx-red:#ff2338;
   --vx-red2:#b41222;
   --vx-green:#25e2a0;
@@ -907,3 +908,105 @@ button,.vx-panel-head h3,.vxh-widget>header h3,.vxf-panel-head h3,.vxf-panel>hea
 .vxp2-overview-grid header h3,.vxp2-analytics-grid header h3,.vxp2-detail-section header h3,
 .vxw-card-copy h3,.vxsup-panel>header h3,.vxsel-panel>header h3,.vxt-section-head h2{font-weight:600!important}
 h1,.vxf-title h1,.vxt-title h1,.vx-home-hero h1,.vx-page-title h1,.vx-search-title h1{font-weight:700!important}
+
+
+/* ===== DESIGN REVIEW: GLOBAL CRAFT + ACCESSIBILITY PASS ===== */
+:where(button,a,input,select,textarea,[role="button"],[tabindex]):focus-visible{
+  outline:2px solid var(--vx-focus);
+  outline-offset:3px;
+}
+:where(input,select,textarea):focus-visible{
+  border-color:var(--vx-focus);
+  box-shadow:0 0 0 3px rgba(255,89,104,.14);
+}
+button:disabled,[aria-disabled="true"]{cursor:not-allowed}
+
+/* Respect the user's OS motion preference even when VEXUM's in-app setting is not reduced. */
+@media (prefers-reduced-motion:reduce){
+  html:focus-within{scroll-behavior:auto}
+  .vxp-platform *, .vxp-platform *::before, .vxp-platform *::after{
+    animation-duration:.001ms!important;
+    animation-iteration-count:1!important;
+    transition-duration:.001ms!important;
+    scroll-behavior:auto!important;
+  }
+}
+
+/* Mobile shell: grouped desktop navigation becomes one horizontally scrollable bottom bar. */
+@media (max-width:640px){
+  .vx-sidebar{height:74px}
+  .vxp-sidebar-scroll{
+    height:100%;
+    display:flex;
+    align-items:stretch;
+    overflow-x:auto;
+    overflow-y:hidden;
+    padding:0;
+    scrollbar-width:none;
+    overscroll-behavior-x:contain;
+  }
+  .vxp-sidebar-scroll::-webkit-scrollbar{display:none}
+  .vxp-nav-group{display:contents}
+  .vxp-nav-group>span{display:none!important}
+  .vxp-nav-group .vx-nav{display:contents}
+  .vxp-sidebar-scroll .vx-nav button{
+    flex:0 0 72px;
+    width:72px;
+    height:74px;
+    min-height:74px;
+    border-radius:0;
+    border-width:0;
+    border-top:2px solid transparent;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:5px;
+    padding:7px 6px 6px;
+    font-size:11px;
+  }
+  .vxp-sidebar-scroll .vx-nav button span{
+    display:block;
+    margin:0;
+    line-height:1.1;
+  }
+  .vxp-sidebar-scroll .vx-nav button.active{
+    border-top-color:var(--vx-red);
+    box-shadow:none;
+    background:linear-gradient(180deg,rgba(255,35,56,.14),rgba(255,35,56,.03));
+  }
+
+  .vx-content{padding-bottom:88px}
+  .vx-topbar{gap:8px}
+  .vx-searchbox{
+    width:auto;
+    flex:1;
+    min-width:0;
+    height:44px;
+  }
+  .vx-searchbox kbd{display:none}
+  .vx-topicons{gap:4px;flex:none}
+  .vx-topicons button,
+  .vx-topicons .vx-top-avatar{
+    display:grid!important;
+    width:44px;
+    height:44px;
+    min-width:44px;
+    min-height:44px;
+  }
+}
+
+/* Touch targets for primary navigation and high-frequency controls. */
+@media (pointer:coarse){
+  .vx-tabs button,
+  .vxf-tabs button,
+  .vxp-modebar button,
+  .vxs-intel-tabs button,
+  .vxp-profile-menu>button,
+  .vxp-flyout.notification>nav button,
+  .vxp-quick-entry footer button,
+  .vxf-panel-head button,
+  .vxf-panel>header button{
+    min-height:44px;
+  }
+}
