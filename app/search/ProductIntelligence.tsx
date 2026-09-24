@@ -1,5 +1,7 @@
 'use client';
 
+import {VexumLineChart} from '../VexumLineChart';
+import {VexumMetricTrend} from '../VexumMetricTrend';
 import {useEffect,useState} from 'react';
 import type {ReactNode} from 'react';
 import {Bell,Check,CircleDollarSign,Eye,FileUp,Layers3,MapPin,Plus,Search,Share2,ShoppingBag,Star} from 'lucide-react';
@@ -22,23 +24,21 @@ type Props={
 const money=(value?:number)=>typeof value==='number'?'$'+value.toFixed(2):'—';
 
 function Metric({label,value,sub,tone}:{label:string;value:string;sub?:string;tone?:'green'|'red'|'muted'}){
-  return <div className="vxs-intel-metric"><span>{label}</span><strong className={tone?'tone-'+tone:''}>{value}</strong>{sub?<small>{sub}</small>:null}</div>;
+  return <div className="vxs-intel-metric"><span>{label}</span><strong className={tone?'tone-'+tone:''}>{value}</strong>{sub?<small>{sub}</small>:null}{label==='Market Trend'?<VexumMetricTrend values={[]} label="Market trend"/>:null}</div>;
 }
 
-function DemoChart(){
-  return <svg className="vxs-price-chart" viewBox="0 0 760 260" preserveAspectRatio="none">
-    <defs><linearGradient id="vxs-price-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#ff2338" stopOpacity=".28"/><stop offset="1" stopColor="#ff2338" stopOpacity="0"/></linearGradient></defs>
-    {[45,95,145,195,245].map(y=><line key={y} x1="0" y1={y} x2="760" y2={y} stroke="#202227"/>)}
-    <path d="M0 205 L55 198 L110 183 L165 190 L220 165 L275 153 L330 161 L385 130 L440 121 L495 104 L550 111 L605 78 L660 72 L715 48 L760 40 L760 260 L0 260Z" fill="url(#vxs-price-fill)"/>
-    <path d="M0 205 L55 198 L110 183 L165 190 L220 165 L275 153 L330 161 L385 130 L440 121 L495 104 L550 111 L605 78 L660 72 L715 48 L760 40" fill="none" stroke="#ff2338" strokeWidth="3.5"/>
-  </svg>;
-}
 
 export default function ProductIntelligence({product,relationship,onBack,onAddPortfolio,onAddWishlist,onRemoveWishlist,onRelationshipChange}:Props){
   const workspace=useWorkspace();
   const wishlistRecord=workspace.data.wishlist?.[product.id];
   const [tab,setTab]=useState<Tab>('product');
   const [range,setRange]=useState('30D');
+  const [showMarket,setShowMarket]=useState(true);
+  const [showMsrp,setShowMsrp]=useState(false);
+  const savedPrices=(wishlistRecord?.marketHistory||[]).filter(point=>Number.isFinite(point.value)&&Number.isFinite(Date.parse(point.date))).toSorted((a,b)=>a.date.localeCompare(b.date));
+  const days:Record<string,number>={'7D':7,'30D':30,'3M':90,'6M':180,'1Y':365};
+  const cutoff=range==='ALL'?-Infinity:Date.now()-(days[range]||30)*86400000;
+  const prices=savedPrices.filter(point=>Date.parse(point.date)>=cutoff);
   const [location,setLocation]=useState('');
   const [radar,setRadar]=useState<RadarState>({
     price:wishlistRecord?.alerts.priceTarget.enabled??Boolean(relationship?.tracked),
@@ -177,9 +177,9 @@ export default function ProductIntelligence({product,relationship,onBack,onAddPo
 
     {tab==='market'?<div className="vxs-market-tab">
       <section className="vx-panel vxs-market-chart">
-        <div className="vxs-chart-head"><div><h3>Price History</h3><p>{demo?'Demo chart — not live market data':'No market provider connected'}</p></div><div>{['7D','30D','3M','6M','1Y','ALL'].map(item=><button key={item} className={range===item?'active':''} onClick={()=>setRange(item)}>{item}</button>)}</div></div>
-        {demo?<DemoChart/>:<div className="vxs-source-empty tall"><span>No recent comparable sales found.</span><p>Connect a market provider to populate sold averages, median, high, low, and confidence.</p></div>}
-        <footer><label><input type="checkbox" defaultChecked/>Sold average</label><label><input type="checkbox" defaultChecked/>Current market</label><label><input type="checkbox"/>MSRP</label><span>Snapshot: {demo?'demo':'unavailable'}</span></footer>
+        <div className="vxs-chart-head"><div><h3>Price History</h3><p>{savedPrices.length?'Saved prices for this product':'No dated market history available'}</p></div><div>{['7D','30D','3M','6M','1Y','ALL'].map(item=><button key={item} className={range===item?'active':''} onClick={()=>setRange(item)}>{item}</button>)}</div></div>
+        {prices.length&&showMarket?<VexumLineChart values={prices.map(point=>point.value)} dates={prices.map(point=>point.date)} label={product.canonicalName+' · saved market price'} references={showMsrp&&product.msrp!==undefined?[{label:'MSRP',value:product.msrp,tone:'comparison'}]:[]}/>:<div className="vxs-source-empty tall"><span>{!showMarket?'Market series hidden':savedPrices.length?'No prices in this range. Select a longer range.':'No dated market history for this product yet.'}</span></div>}
+        <footer><label><input type="checkbox" checked={showMarket} onChange={event=>setShowMarket(event.target.checked)}/>Saved market prices</label><label><input type="checkbox" checked={showMsrp} disabled={product.msrp===undefined} onChange={event=>setShowMsrp(event.target.checked)}/>MSRP</label><span>{savedPrices.length} dated observations</span></footer>
       </section>
       <section className="vx-panel vxs-market-stats"><div className="vxs-panel-head"><div><h3>Market Statistics</h3><p>Provider-normalized metrics.</p></div></div>{[
         ['Recent average',demo?money(demo.average30d):'—'],['Median','—'],['30-day high','—'],['30-day low','—'],['30-day change',demo?(demo.trend30d>=0?'+':'')+demo.trend30d+'%':'—'],['Comparable sales','—'],['Sell-through rate','Future'],['Quick-sale estimate','Future']
