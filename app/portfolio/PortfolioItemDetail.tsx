@@ -1,6 +1,9 @@
 'use client';
 
 import {useMemo,useState} from 'react';
+import {VexumLineChart} from '../VexumLineChart';
+import {VexumMetricTrend} from '../VexumMetricTrend';
+import {variantKey} from '../../lib/market';
 import {ArrowLeft,FileText,Heart,Image as ImageIcon,Layers3,MoreHorizontal,Plus,Share2,ShoppingBag,Star} from 'lucide-react';
 import type {Collection,Item,Store} from '../../lib/model';
 import {newPortfolioId} from '../../lib/portfolio';
@@ -14,18 +17,9 @@ function linePath(item:Item,collections:Collection[]){
 }
 
 function MarketChart({item}:{item:Item}){
-  const points=(item.priceHistory||[]).filter(point=>point.kind!=='sale').slice(-30);
+  const points=(item.priceHistory||[]).filter(point=>point.kind!=='sale'&&point.variant===variantKey(item)&&Number.isFinite(point.value)&&Number.isFinite(Date.parse(point.date))).toSorted((a,b)=>a.date.localeCompare(b.date)).slice(-30);
   if(points.length<2)return <div className="vxp2-empty compact">Market history unavailable. Ownership data remains available.</div>;
-  const values=points.map(point=>point.value),min=Math.min(...values),max=Math.max(...values),range=Math.max(1,max-min);
-  const d=values.map((value,index)=>{
-    const x=(index/(values.length-1))*680;
-    const y=205-((value-min)/range)*160;
-    return (index?'L':'M')+x.toFixed(1)+' '+y.toFixed(1);
-  }).join(' ');
-  return <svg className="vxp2-market-chart" viewBox="0 0 680 230" preserveAspectRatio="none">
-    {[45,90,135,180,225].map(y=><line key={y} x1="0" x2="680" y1={y} y2={y} stroke="#202226"/>)}
-    <path d={d} fill="none" stroke="#ff2338" strokeWidth="3"/>
-  </svg>;
+  return <VexumLineChart values={points.map(point=>point.value)} dates={points.map(point=>point.date)} label={item.name+' · unit value'} references={[{label:'Price paid per unit',value:item.purchasePrice,tone:'comparison'}]}/>;
 }
 
 export default function PortfolioItemDetail({store,item,onBack,onChange,onSell}:{store:Store;item:Item;onBack:()=>void;onChange:(item:Item)=>void;onSell:(item:Item)=>void}){
@@ -74,7 +68,7 @@ export default function PortfolioItemDetail({store,item,onBack,onChange,onSell}:
     <section className="vxp2-detail-hero vx-panel">
       <div className="vxp2-detail-art" style={item.image?{backgroundImage:'url("'+item.image.replaceAll('"','')+'")'}:undefined}>{item.image?'':<Layers3/>}</div>
       <div className="vxp2-detail-title"><span>{item.category||'Uncategorized'}</span><h1>{item.name}</h1><p>{path}</p><div><em>{item.condition||'Condition missing'}</em><em>{item.status}</em><em>×{item.quantity}</em>{item.favorite?<em>Favorite</em>:null}</div></div>
-      <aside><span>Current Value</span><strong>{portfolioMoney(item.currentValue*item.quantity)}</strong><small>Price paid {portfolioMoney(item.purchasePrice*item.quantity)}</small><b className={profit>=0?'tone-green':'tone-red'}>{profit>=0?'+':''}{portfolioMoney(profit)} P/L</b></aside>
+      <aside><span>Current Value</span><strong>{portfolioMoney(item.currentValue*item.quantity)}</strong><small>Price paid {portfolioMoney(item.purchasePrice*item.quantity)}</small><b className={profit>=0?'tone-green':'tone-red'}>{profit>=0?'+':''}{portfolioMoney(profit)} P/L</b><VexumMetricTrend values={[item.purchasePrice*item.quantity,item.currentValue*item.quantity]} label="Cost → current value" negative={profit<0}/></aside>
     </section>
     <nav className="vxp2-detail-tabs">{(['overview','market','history','ownership','media','documents'] as Tab[]).map(name=><button key={name} className={tab===name?'active':''} onClick={()=>setTab(name)}>{name[0].toUpperCase()+name.slice(1)}</button>)}</nav>
 
