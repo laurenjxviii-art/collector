@@ -80,160 +80,162 @@
 .vxf-plaid-manager .vxt-connection{margin:0}
 .vxf-plaid-manager+.vxf-account-grid{padding-top:12px}
 
-/* ===== Financial Widget V2 · styled from the VEXUM Figma reference ===== */
+/* ===== 10 Financial skin · Financial page only =====
+   STYLE-ONLY. Existing Financial layout, data, widget positions, dimensions,
+   interactions, Plaid state and responsive structure remain authoritative. */
 .vxf-page.vxf-widget-v2{
-  --vxf-v2-bg:#000;
-  --vxf-v2-border:#262626;
-  --vxf-v2-muted:#adb5bd;
-  --vxf-v2-accent:var(--vx-accent,#ff0000);
+  --vxf-fin-bg:#000000;
+  --vxf-fin-border:#262626;
+  --vxf-fin-border-soft:#181b1c;
+  --vxf-fin-text:#f3f4f5;
+  --vxf-fin-muted:#adb5bd;
+  --vxf-fin-red:#ff171b;
+  --vxf-fin-red-line:#ff1737;
+  --vxf-fin-positive:#00e573;
+  --vxf-fin-neutral-series:#c5c7c8;
+  --vxf-fin-neutral-bar:#8f9498;
+  --vxf-fin-grid:#1c1f21;
+  --vxf-fin-grid-vertical:#141719;
+  --vxf-fin-track:#191b1c;
 }
-.vxf-widget-v2 .vxf-metrics{
-  grid-template-columns:repeat(5,minmax(0,1fr));
-  gap:10px;
-  margin-bottom:10px;
-}
+
+/* Existing metric geometry stays untouched; only the Financial visual skin changes. */
 .vxf-widget-v2 .vxf-metric{
-  min-height:126px;
-  border:1px solid var(--vxf-v2-border);
+  border-color:var(--vxf-fin-border);
   border-radius:8px;
-  background:var(--vxf-v2-bg);
-  padding:15px 17px;
-  position:relative;
-  overflow:visible;
-  box-shadow:0 4px 18px rgba(0,0,0,.32),var(--vx-glow-shadow,none);
-  transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease;
+  background:var(--vxf-fin-bg);
+  box-shadow:0 4px 2px rgba(0,0,0,.25);
+  transition:border-color .16s ease,box-shadow .16s ease;
 }
 .vxf-widget-v2 .vxf-metric:hover{
-  border-color:color-mix(in srgb,var(--vxf-v2-accent) 32%,var(--vxf-v2-border));
-  box-shadow:0 0 22px color-mix(in srgb,var(--vxf-v2-accent) 8%,transparent),0 8px 24px rgba(0,0,0,.36);
+  border-color:#343434;
+  box-shadow:0 4px 2px rgba(0,0,0,.25);
 }
 .vxf-widget-v2 .vxf-metric>span{
-  display:block;
+  color:var(--vxf-fin-text);
   font-size:13px;
   line-height:16px;
-  color:#f3f4f5;
   font-weight:400;
 }
 .vxf-widget-v2 .vxf-metric>strong{
-  display:block;
-  margin-top:7px;
-  font-size:clamp(22px,1.55vw,28px);
-  line-height:35px;
-  letter-spacing:0;
+  color:var(--vxf-fin-text);
   font-weight:600!important;
-  color:#f3f4f5;
-  min-width:0;
+  letter-spacing:0;
 }
 .vxf-widget-v2 .vxf-metric>small{
-  display:block;
-  margin-top:5px;
+  color:var(--vxf-fin-muted);
   font-size:12px;
   line-height:15px;
-  color:var(--vxf-v2-muted);
 }
-.vxf-widget-v2 .vxf-metric .tone-green{color:#00e572;text-shadow:0 0 14px rgba(0,229,114,.18)}
-.vxf-widget-v2 .vxf-metric .tone-red{color:#ff1737;text-shadow:0 0 14px rgba(255,23,55,.18)}
-.vxf-widget-v2 .vxf-metric .tone-orange{color:#ffb020;text-shadow:0 0 14px rgba(255,176,32,.14)}
-.vxf-widget-v2 .vxf-grid-main{
-  display:grid;
-  grid-template-columns:minmax(0,1.72fr) minmax(0,1.04fr) minmax(0,.98fr);
-  gap:10px;
-  align-items:stretch;
-}
+.vxf-widget-v2 .vxf-metric .tone-green{color:var(--vxf-fin-positive);text-shadow:none}
+.vxf-widget-v2 .vxf-metric .tone-red{color:var(--vxf-fin-red);text-shadow:none}
+.vxf-widget-v2 .vxf-metric .tone-orange{text-shadow:none}
+
+/* Existing panel/grid sizes and positions remain defined by the original Financial CSS. */
 .vxf-widget-v2 .vxf-panel{
-  border:1px solid var(--vxf-v2-border);
+  border-color:var(--vxf-fin-border);
   border-radius:8px;
-  background:#000;
-  box-shadow:0 4px 18px rgba(0,0,0,.3),var(--vx-glow-shadow,none);
-  transition:border-color .18s ease,box-shadow .18s ease;
+  background:var(--vxf-fin-bg);
+  box-shadow:none;
+  transition:border-color .16s ease;
 }
 .vxf-widget-v2 .vxf-panel:hover{
-  border-color:color-mix(in srgb,var(--vxf-v2-accent) 20%,var(--vxf-v2-border));
-  box-shadow:0 0 20px color-mix(in srgb,var(--vxf-v2-accent) 5%,transparent),0 8px 24px rgba(0,0,0,.34);
+  border-color:#303030;
+  box-shadow:none;
 }
 .vxf-widget-v2 .vxf-panel-head,
 .vxf-widget-v2 .vxf-panel>header{
-  min-height:46px;
-  padding:0 14px;
-  border-bottom:1px solid #1b1b1b;
+  border-bottom-color:var(--vxf-fin-border-soft);
 }
 .vxf-widget-v2 .vxf-panel-head h3,
 .vxf-widget-v2 .vxf-panel>header h3{
+  color:var(--vxf-fin-text);
   font-size:16px;
   line-height:20px;
   font-weight:600!important;
 }
 .vxf-widget-v2 .vxf-panel-head button,
 .vxf-widget-v2 .vxf-panel>header button{
-  height:28px;
-  border:0;
-  background:transparent;
-  color:#aeb5bd;
-  padding:0 4px;
-  font-size:12px;
+  color:var(--vxf-fin-muted);
 }
-.vxf-widget-v2 .vxf-grid-main>.vxf-panel:nth-child(-n+3){min-height:276px}
-.vxf-widget-v2 .vxf-grid-main>.vxf-panel:nth-child(4){
-  grid-column:1/-1;
-  min-height:231px;
-}
-.vxf-widget-v2 .vxf-progress{
+
+/* 10 Financial progress system — exact visible geometry/colors from the Figma reference. */
+.vxf-widget-v2 .vxf-progress,
+.vxf-widget-v2 .vxf-goals i{
   height:6px;
   border:0;
-  border-radius:999px;
-  background:#171717;
+  border-radius:3px;
+  background:var(--vxf-fin-track);
+  overflow:hidden;
 }
-.vxf-widget-v2 .vxf-progress i{
-  border-radius:999px;
-  background:var(--vxf-v2-accent);
-  box-shadow:0 0 12px color-mix(in srgb,var(--vxf-v2-accent) 35%,transparent);
+.vxf-widget-v2 .vxf-progress i,
+.vxf-widget-v2 .vxf-goals i b{
+  display:block;
+  height:100%;
+  border-radius:3px;
+  background:var(--vxf-fin-red);
+  box-shadow:none;
 }
+
+/* Financial reference treatment for compact inner surfaces. */
 .vxf-widget-v2 .vxf-budget-breakdown span,
 .vxf-widget-v2 .vxf-liquidity>div,
-.vxf-widget-v2 .vxf-coverage>div{
-  background:#080808;
+.vxf-widget-v2 .vxf-coverage>div,
+.vxf-widget-v2 .vxf-account,
+.vxf-widget-v2 .vxf-debt-card{
   border-color:#202020;
   border-radius:8px;
+  background:#080808;
 }
-.vxf-widget-v2 .vxf-grid-main>.vxf-panel:nth-child(3) .vxf-liquidity{
-  grid-template-columns:1fr;
-  gap:6px;
-  padding:10px;
+.vxf-widget-v2 .vxf-table .vxf-table-head{
+  background:#090a0c;
+  color:var(--vxf-fin-muted);
 }
-.vxf-widget-v2 .vxf-grid-main>.vxf-panel:nth-child(3) .vxf-liquidity>div{
-  min-height:58px;
-  padding:8px 10px;
-  display:grid;
-  grid-template-columns:1fr auto;
-  grid-template-areas:"label value" "sub sub";
-  align-items:center;
+.vxf-widget-v2 .vxf-table>div,
+.vxf-widget-v2 .vxf-commit-list>div,
+.vxf-widget-v2 .vxf-mini-list>div,
+.vxf-widget-v2 .vxf-calendar-list>div,
+.vxf-widget-v2 .vxf-goals>div{
+  border-bottom-color:var(--vxf-fin-border-soft);
 }
-.vxf-widget-v2 .vxf-grid-main>.vxf-panel:nth-child(3) .vxf-liquidity span{grid-area:label;font-size:12px}
-.vxf-widget-v2 .vxf-grid-main>.vxf-panel:nth-child(3) .vxf-liquidity strong{grid-area:value;font-size:15px;margin:0;font-weight:600!important}
-.vxf-widget-v2 .vxf-grid-main>.vxf-panel:nth-child(3) .vxf-liquidity small{grid-area:sub;font-size:11px;padding-top:2px;margin:0}
-@media(max-width:1500px){
-  .vxf-widget-v2 .vxf-metrics{grid-template-columns:repeat(4,minmax(0,1fr))}
-  .vxf-widget-v2 .vxf-grid-main{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}
-  .vxf-widget-v2 .vxf-grid-main>.vxf-panel:nth-child(4){grid-column:1/-1}
+
+/*
+  Chart reference tokens captured from 10 Financial.
+  These intentionally do not create, move, or replace any chart. They are the
+  exact visual contract for an EXISTING Financial chart when one is present.
+*/
+.vxf-widget-v2{
+  --vxf-chart-primary:var(--vxf-fin-red-line);
+  --vxf-chart-secondary:var(--vxf-fin-neutral-series);
+  --vxf-chart-bar-primary:var(--vxf-fin-red);
+  --vxf-chart-bar-secondary:var(--vxf-fin-neutral-bar);
+  --vxf-chart-grid:var(--vxf-fin-grid);
+  --vxf-chart-grid-vertical:var(--vxf-fin-grid-vertical);
+  --vxf-chart-axis:var(--vxf-fin-muted);
+  --vxf-chart-line-width:1.5px;
+  --vxf-chart-grid-width:.6px;
+  --vxf-chart-grid-dash:1 2;
+  --vxf-chart-area-primary:rgba(255,23,55,.20);
+  --vxf-chart-area-secondary:rgba(197,199,200,.20);
 }
-@media(max-width:1200px){
-  .vxf-widget-v2 .vxf-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .vxf-widget-v2 .vxf-grid-main{grid-template-columns:1fr}
-  .vxf-widget-v2 .vxf-grid-main>.vxf-panel:nth-child(4){grid-column:auto}
+
+/* Existing timeframe controls, if present, inherit the 10 Financial active state. */
+.vxf-widget-v2 :is(.vxf-chart-head,.vxf-chart-controls) button{
+  min-height:24px;
+  height:24px;
+  border:1px solid transparent;
+  border-radius:6px;
+  background:transparent;
+  color:var(--vxf-fin-muted);
+  padding:0 8px;
+  font-size:11px;
+  font-weight:400;
 }
-@media(max-width:720px){
-  .vxf-widget-v2 .vxf-metrics{grid-template-columns:1fr}
-  .vxf-widget-v2 .vxf-metric{min-height:112px}
+.vxf-widget-v2 :is(.vxf-chart-head,.vxf-chart-controls) button.active{
+  border-color:var(--vxf-fin-red);
+  background:#170303;
+  color:var(--vxf-fin-text);
+  box-shadow:0 0 5px rgba(255,23,55,.18);
 }
-.vxf-widget-v2 .vxf-commit-list>.vxf-empty-row{
-  min-height:calc(276px - 46px);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:24px;
-  text-align:center;
-  color:#7d8189;
-  font-size:12px;
-  line-height:18px;
-  white-space:normal;
-}
+
+/* Keep the pre-existing responsive/layout rules. No Financial-reference grid overrides here. */
