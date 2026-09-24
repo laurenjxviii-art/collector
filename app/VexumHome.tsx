@@ -1,6 +1,6 @@
 'use client';
 
-import {useMemo,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import type {ReactNode} from 'react';
 import {
   AlertTriangle,Bell,CalendarDays,ChevronRight,CircleDollarSign,GripVertical,Layers3,
@@ -112,6 +112,8 @@ export default function VexumHome(){
   const [configureTarget,setConfigureTarget]=useState<HomeWidgetId|null>(null);
   const [configureValue,setConfigureValue]=useState('');
   const [resetOpen,setResetOpen]=useState(false);
+  const [dailyBriefOpen,setDailyBriefOpen]=useState(false);
+  const [dailyBriefReveal,setDailyBriefReveal]=useState(0);
 
   const owned=workspace.data.items.filter(item=>item.status==='owned'&&!item.archivedAt);
   const sold=workspace.data.items.filter(item=>item.status==='sold');
@@ -185,6 +187,38 @@ export default function VexumHome(){
     const duplicates=[...keys.values()].filter(value=>value>1).length;
     return {missingLocation,missingImages,missingCost,duplicates,total:missingLocation+missingImages+missingCost+duplicates};
   },[owned,workspace.data.setup]);
+
+  const briefLines=useMemo(()=>[
+    {before:'Today you have ',value:lifeTodayTasks.length+' task'+(lifeTodayTasks.length===1?'':'s')+' and '+lifeTodayEvents.length+' event'+(lifeTodayEvents.length===1?'':'s'),after:'.',tone:lifeTodayTasks.length?'orange':'muted' as Tone},
+    ...(platform.lifeSections.includes('Fitness')?[{before:lifeTodayWorkouts.length?'Your workout today is ':'No workout is scheduled today.',value:lifeTodayWorkouts[0]?.name,after:lifeTodayWorkouts.length?'.':'',tone:lifeTodayWorkouts.length?'green':'muted' as Tone}]:[]),
+    {before:lifeMomentum?'Your 30-day habit momentum is ':'No habit momentum is available yet.',value:lifeMomentum?lifeMomentum+'%':undefined,after:lifeMomentum?'.':'',tone:lifeMomentum>=80?'green':lifeMomentum?'orange':'muted' as Tone},
+    {before:hasPortfolio?'Your Portfolio is currently ':'Your Portfolio is ready for your first owned item.',value:hasPortfolio?money(currentValue):undefined,after:hasPortfolio?'.':'',tone:'muted' as Tone},
+    {before:liveWishlist.length?'':'No Wishlist items are currently at your target price.',value:liveWishlist.length?liveWishlist.length+' Wishlist opportunit'+(liveWishlist.length===1?'y':'ies'):undefined,after:liveWishlist.length?' are at or below target.':'',tone:liveWishlist.length?'green':'muted' as Tone},
+    {before:hasSpend?'Hobby spending is at ':'No live hobby budget is recorded this month.',value:hasSpend?money(monthSpend)+' of '+money(monthBudget):undefined,after:hasSpend?' this month.':'',tone:hasSpend&&monthSpend>monthBudget?'red':hasSpend?'orange':'muted' as Tone},
+    {before:auditCounts.total?'':'Your Portfolio audit is clear.',value:auditCounts.total?auditCounts.total+' Portfolio issue'+(auditCounts.total===1?'':'s'):undefined,after:auditCounts.total?' need review.':'',tone:auditCounts.total?'orange':'green' as Tone},
+    {before:capacityRows[0]?capacityRows[0].name+' is ':'No measured Setup capacity needs attention.',value:capacityRows[0]?capacityRows[0].pct+'% full':undefined,after:capacityRows[0]?'.':'',tone:'muted' as Tone}
+  ],[lifeTodayTasks.length,lifeTodayEvents.length,lifeTodayWorkouts,lifeMomentum,platform.lifeSections,hasPortfolio,currentValue,liveWishlist.length,hasSpend,monthSpend,monthBudget,auditCounts.total,capacityRows]);
+
+  useEffect(()=>{
+    if(!workspace.ready||!workspace.session?.user?.id)return;
+    const now=new Date();
+    const localDate=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');
+    const key='vexum.dailyBrief.'+workspace.session.user.id;
+    try{
+      if(localStorage.getItem(key)===localDate)return;
+      localStorage.setItem(key,localDate);
+    }catch{}
+    setDailyBriefReveal(0);
+    setDailyBriefOpen(true);
+  },[workspace.ready,workspace.session?.user?.id]);
+
+  useEffect(()=>{
+    if(!dailyBriefOpen)return;
+    if(typeof window!=='undefined'&&window.matchMedia('(prefers-reduced-motion: reduce)').matches){setDailyBriefReveal(briefLines.length);return}
+    if(dailyBriefReveal>=briefLines.length)return;
+    const timer=window.setTimeout(()=>setDailyBriefReveal(value=>Math.min(briefLines.length,value+1)),dailyBriefReveal===0?520:230);
+    return()=>window.clearTimeout(timer);
+  },[dailyBriefOpen,dailyBriefReveal,briefLines.length]);
 
   const updateDashboard=(widgets:HomeWidgetLayout[])=>workspace.update({...workspace.data,homeDashboard:{version:1,widgets,updatedAt:new Date().toISOString()}});
   const hide=(id:HomeWidgetId)=>updateDashboard(state.widgets.map(widget=>widget.id===id?{...widget,visible:false}:widget));
@@ -294,17 +328,7 @@ export default function VexumHome(){
     if(layout.id==='monthlySpend')return shell(<div className="vxh-metric"><strong>{money(monthSpend)} <small>/ {money(monthBudget)}</small></strong><span>{monthBudget?Math.round(monthSpend/monthBudget*100):0}% of monthly target</span><div className="vxh-progress"><i style={{width:Math.min(100,monthBudget?monthSpend/monthBudget*100:0)+'%'}}/></div></div>);
     if(layout.id==='portfolioPerformance')return shell(<div className="vxh-performance"><div className="vxh-chart-head"><div><strong>{money(currentValue)}</strong><span>{source==='live'?'Workspace value history':'Isolated dashboard demo history'}</span></div><div>{['7D','30D','3M','6M','1Y','ALL'].map(interval=><button className={(layout.config.interval||'30D')===interval?'active':''} key={interval} onClick={()=>updateDashboard(state.widgets.map(w=>w.id===layout.id?{...w,config:{...w.config,interval}}:w))}>{interval}</button>)}</div></div><DashboardChart values={historyValues}/><footer><span><i className="red"/>Market value</span><span><i/>Cost basis {money(costBasis)}</span></footer></div>);
     if(layout.id==='brief'){
-      const rows:Array<{before:string;value?:string;after?:string;tone?:Tone}>=[
-        {before:'Today you have ',value:lifeTodayTasks.length+' task'+(lifeTodayTasks.length===1?'':'s')+' and '+lifeTodayEvents.length+' event'+(lifeTodayEvents.length===1?'':'s'),after:'.',tone:lifeTodayTasks.length?'orange':'muted'},
-        ...(platform.lifeSections.includes('Fitness')?[{before:lifeTodayWorkouts.length?'Your workout today is ':'No workout is scheduled today.',value:lifeTodayWorkouts[0]?.name,after:lifeTodayWorkouts.length?'.':'',tone:lifeTodayWorkouts.length?'green':'muted' as Tone}]:[]),
-        {before:lifeMomentum?'Your 30-day habit momentum is ':'No habit momentum is available yet.',value:lifeMomentum?lifeMomentum+'%':undefined,after:lifeMomentum?'.':'',tone:lifeMomentum>=80?'green':lifeMomentum?'orange':'muted'},
-        {before:hasPortfolio?'Your Portfolio is currently ':'Your Portfolio is ready for your first owned item.',value:hasPortfolio?money(currentValue):undefined,after:hasPortfolio?'.':'',tone:'muted'},
-        {before:liveWishlist.length?'':'No Wishlist items are currently at your target price.',value:liveWishlist.length?liveWishlist.length+' Wishlist opportunit'+(liveWishlist.length===1?'y':'ies'):undefined,after:liveWishlist.length?' are at or below target.':'',tone:liveWishlist.length?'green':'muted'},
-        {before:hasSpend?'Hobby spending is at ':'No live hobby budget is recorded this month.',value:hasSpend?money(monthSpend)+' of '+money(monthBudget):undefined,after:hasSpend?' this month.':'',tone:hasSpend&&monthSpend>monthBudget?'red':hasSpend?'orange':'muted'},
-        {before:auditCounts.total?'':'Your Portfolio audit is clear.',value:auditCounts.total?auditCounts.total+' Portfolio issue'+(auditCounts.total===1?'':'s'):undefined,after:auditCounts.total?' need review.':'',tone:auditCounts.total?'orange':'green'},
-        {before:capacityRows[0]?capacityRows[0].name+' is ':'No measured Setup capacity needs attention.',value:capacityRows[0]?capacityRows[0].pct+'% full':undefined,after:capacityRows[0]?'.':'',tone:'muted'}
-      ];
-      return shell(<div className="vxh-brief vxh-brief-feed"><div className="vxh-brief-lead"><Sparkles/><span><strong>{greeting()}{profileName?', '+profileName:''}.</strong><small>What changed and what needs attention.</small></span></div>{rows.slice(0,Number(layout.config.count)||6).map((line,index)=><p className="vxh-brief-sentence" key={index}>{line.before}{line.value?<strong className={'tone-'+(line.tone||'muted')}>{line.value}</strong>:null}{line.after}</p>)}</div>);
+      return shell(<div className="vxh-brief vxh-brief-feed"><div className="vxh-brief-lead"><Sparkles/><span><strong>{greeting()}{profileName?', '+profileName:''}.</strong><small>What changed and what needs attention.</small></span></div>{briefLines.slice(0,Number(layout.config.count)||6).map((line,index)=><p className="vxh-brief-sentence" key={index}>{line.before}{line.value?<strong className={'tone-'+(line.tone||'muted')}>{line.value}</strong>:null}{line.after}</p>)}</div>);
     }
     if(layout.id==='wishlist')return shell(<div className="vxh-list">{(liveWishlist.length?liveWishlist.map(record=>({name:record.snapshot?.name||record.productId,sub:'Target '+money(record.targetPrice||record.maximumPrice||0),value:money(record.currentMarket||0),tone:'green' as Tone})):DEMO_HOME_DATA.wishlist.map(row=>({name:row[0],sub:'Target '+row[2]+' · '+row[4],value:row[3],tone:'green' as Tone}))).slice(0,Number(layout.config.count)||5).map(row=><div key={row.name}><Star/><span><strong>{row.name}</strong><small>{row.sub}</small></span><b className={'tone-'+row.tone}>{row.value}</b></div>)}<button onClick={()=>location.assign('/wishlist')}>Open Wishlist <ChevronRight/></button></div>);
     if(layout.id==='radar')return shell(<div className="vxh-radar">{DEMO_HOME_DATA.radar.slice(0,Number(layout.config.count)||5).map(row=><div key={row[1]}><VexumBadge tone={row[0]==='RESTOCK'?'success':row[0]==='DROP'?'danger':'info'}>{row[0]}</VexumBadge><span><strong>{row[1]}</strong><small>{row[3]}</small></span><b>{row[2]}</b></div>)}<p>Demo fixture until Radar/provider events are wired to Home.</p></div>);
@@ -347,6 +371,17 @@ export default function VexumHome(){
   };
 
   return <div className="vxh-page">
+    <VexumDialog open={dailyBriefOpen} onClose={()=>setDailyBriefOpen(false)} title="Daily VEXUM Brief" size="xl" className="vxh-daily-brief" hideHeader showClose={false} closeOnBackdrop={false}>
+      <div className="vxh-daily-brief-inner">
+        <button className="vxh-daily-close" aria-label="Close daily VEXUM Brief" onClick={()=>setDailyBriefOpen(false)}><X/></button>
+        <div className="vxh-daily-kicker">WELCOME BACK.</div>
+        <h2>HERE&apos;S YOUR <span>VEXUM BRIEF.</span></h2>
+        <p className="vxh-daily-date">{new Intl.DateTimeFormat('en-US',{weekday:'long',month:'long',day:'numeric'}).format(new Date())}</p>
+        <div className="vxh-daily-lines" aria-live="polite">
+          {briefLines.map((line,index)=><p className={index<dailyBriefReveal?'visible':''} key={index}>{line.before}{line.value?<strong className={'tone-'+(line.tone||'muted')}>{line.value}</strong>:null}{line.after}</p>)}
+        </div>
+      </div>
+    </VexumDialog>
     <section className="vxh-title">
       <div><span>HOME</span><div className="vxh-greeting-row"><h1>{greeting()}{profileName?', '+profileName:''}.</h1><img className="vxh-wordmark" src="/vexum-wordmark.png" alt="VEXUM"/></div><p>{dateLabel} · Your VEXUM command center.</p></div>
       <div className="vxh-title-actions"><button className={editing?'active':''} onClick={()=>setEditing(value=>!value)}><SlidersHorizontal/>{editing?'Done Editing':'Edit Widgets'}</button></div>

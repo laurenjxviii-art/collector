@@ -135,6 +135,26 @@ export const COLLECTOR_CATEGORIES=[
 ];
 export const COLLECTOR_INTERESTS=['Marvel','Pokémon','DC','Star Wars','Anime','Sports','Gaming','Streetwear','Music','LEGO'];
 
+export type CollectorNicheGroup={label:string;options:Array<string|{label:string;options:string[]}>};
+export const COLLECTOR_NICHES:CollectorNicheGroup[]=[
+  {label:'Action Figures',options:['Marvel Legends','McFarlane','S.H.Figuarts','Hot Toys','NECA','MAFEX','Mezco One:12','Other Action Figures']},
+  {label:'Trading Cards',options:[
+    {label:'Pokémon',options:['Scarlet & Violet','Mega Evolution','Sword & Shield','Sun & Moon','XY','Vintage / WOTC','Other Pokémon']},
+    'Magic: The Gathering','Union Arena','Yu-Gi-Oh!','Sports Cards','Disney Lorcana','One Piece Card Game','Other Trading Cards'
+  ]},
+  {label:'Collectible Figures',options:['Funko','Designer Toys','Pop Mart','Bearbrick','Other Collectible Figures']},
+  {label:'Statues',options:['Marvel','DC','Anime','Gaming','Other Statues']},
+  {label:'Comics',options:['Marvel','DC','Image','Manga','Indie / Other']},
+  {label:'LEGO / Model Kits',options:['LEGO','Gundam / Gunpla','Scale Models','Other Model Kits']},
+  {label:'Video Games',options:['Nintendo','PlayStation','Xbox','PC','Retro Games','Other Video Games']},
+  {label:'Sneakers',options:['Nike / Jordan','adidas','New Balance','ASICS','Designer','Other Sneakers']},
+  {label:'Sports Memorabilia',options:['Basketball','Baseball','Football','Hockey','Soccer','Other Sports']},
+  {label:'Vinyl',options:['Records','Limited Pressings','Soundtracks','Other Vinyl']},
+  {label:'Guitars / Instruments',options:['Electric Guitars','Acoustic Guitars','Bass','Pedals / Gear','Other Instruments']},
+  {label:'Technology',options:['Computers','Gaming Hardware','Audio','Cameras','Retro Tech','Other Technology']},
+  {label:'Other',options:['Custom / Other']}
+];
+
 export function defaultPlatformState(legacy=true):PlatformState{
   return {
     version:1,
