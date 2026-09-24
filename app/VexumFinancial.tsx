@@ -151,7 +151,7 @@ export default function VexumFinancial({section,onSectionChange}:{section?:strin
 
   if(!workspace.ready)return <div className="vxf-page"><VexumPageSkeleton label="Loading Financial workspace…"/></div>;
 
-  return <div className="vxf-page">
+  return <div className="vxf-page vxf-widget-v2">
     <section className="vxf-title vxp-simple-title"><div><span>FINANCIAL</span><h1>{tab}</h1></div></section>
 
     {externalFinanceNeedsUpdate||externalFinanceLocked?<section className="vxf-security-gate">
@@ -162,12 +162,13 @@ export default function VexumFinancial({section,onSectionChange}:{section?:strin
 
     {tab==='Overview'&&<>
       <div className="vxf-metrics">
+        <Metric label="Net Worth" value={viewFinancial.accounts.length?money(financialNetWorth(viewFinancial)):'Not set'} sub="Accounts only · collection excluded" tone={viewFinancial.accounts.length&&financialNetWorth(viewFinancial)>=0?'green':'muted'}/>
+        <Metric label="Collection Estimated Value" value={money(collectionValue)} sub="Estimated market value" tone="green"/>
+        <Metric label="Monthly Hobby Spend" value={overallBudget!==undefined?money(hobbySpend)+' / '+money(overallBudget):money(hobbySpend)} sub={overallBudget===undefined?'No target set':(budgetRemaining!==undefined&&budgetRemaining<0?money(Math.abs(budgetRemaining))+' over target':money(Math.max(0,budgetRemaining||0))+' remaining')} tone={budgetRemaining!==undefined&&budgetRemaining<0?'red':'muted'}/>
+        <Metric label="Total Debt" value={debtAccounts.length?money(financialDebt(viewFinancial)):'Not set'} sub={debtAccounts.length?debtAccounts.length+' debt account'+(debtAccounts.length===1?'':'s'):'No debt accounts recorded'} tone={debtAccounts.length?'red':'muted'}/>
+        <Metric label="Budget Remaining" value={overallBudget===undefined?'Not set':money(budgetRemaining||0)} sub={overallBudget===undefined?'Set a monthly hobby target':pct(hobbySpend,overallBudget)+'% of monthly target'} tone={budgetRemaining!==undefined&&budgetRemaining<0?'red':overallBudget===undefined?'muted':'green'}/>
         <Metric label="Cash" value={viewFinancial.accounts.length?money(financialCash(viewFinancial)):'Not set'} sub={connectedFinancial.accounts.length?connectedFinancial.accounts.length+' connected account'+(connectedFinancial.accounts.length===1?'':'s'):financial.accounts.length?'Existing manual records':'Connect a bank to begin'} />
-        <Metric label="Debt" value={debtAccounts.length?money(financialDebt(viewFinancial)):'Not set'} sub={debtAccounts.length?debtAccounts.length+' debt account'+(debtAccounts.length===1?'':'s'):'No debt accounts recorded'} tone={debtAccounts.length?'orange':'muted'}/>
-        <Metric label="Financial Net Worth" value={viewFinancial.accounts.length?money(financialNetWorth(viewFinancial)):'Not set'} sub="Accounts only · collection excluded" tone={viewFinancial.accounts.length&&financialNetWorth(viewFinancial)>=0?'green':'muted'}/>
-        <Metric label="Collection Value" value={money(collectionValue)} sub="Estimated market value" tone="green"/>
         <Metric label="Collection Cost Basis" value={money(costBasis)} sub="Recorded acquisition cost"/>
-        <Metric label="Hobby Spend This Month" value={overallBudget!==undefined?money(hobbySpend)+' / '+money(overallBudget):money(hobbySpend)} sub={overallBudget===undefined?'No target set':(budgetRemaining!==undefined&&budgetRemaining<0?money(Math.abs(budgetRemaining))+' over target':money(Math.max(0,budgetRemaining||0))+' remaining')} tone={budgetRemaining!==undefined&&budgetRemaining<0?'red':'muted'}/>
         <Metric label="Upcoming Commitments" value={money(preorderTotal)} sub={money(preorder30)+' preorder balance due in 30 days'} tone="orange"/>
         <Metric label="Resale Profit This Month" value="Unavailable" sub="Sell ledger not connected"/>
       </div>
