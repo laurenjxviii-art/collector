@@ -245,14 +245,8 @@ export default function VexumPortfolio({section:controlledSection,onSectionChang
   const conditions=[...new Set(owned.map(item=>item.condition).filter(Boolean))].sort();
   const completionCollections=activeCollections.filter(collection=>collection.measurable&&collection.targetItemCount);
 
-  return <div className="vxp2-page">
-    <section className="vxp2-title vxp-simple-title"><div><span>PORTFOLIO</span><h1>{section==='items'?'All Items':section[0].toUpperCase()+section.slice(1)}</h1></div><aside><strong>{analytics.count} owned units</strong><span>{activeCollections.length} collections</span></aside></section>
-    <div className="vxp2-top-actions vxp-page-actions"><button onClick={()=>location.assign('/search')}><Search/>Search & Add</button><button onClick={()=>setManualOpen(true)}><Plus/>Add Manually</button><button onClick={()=>setTemplatesOpen(true)}><Settings2/>Templates</button><button onClick={()=>exportItems(owned,'csv')}><Download/>Export</button></div>
-
-    {section==='overview'?<PortfolioOverview store={store} analytics={analytics} issues={issues} health={health} onOpenItems={()=>setSection('items')} onCategory={category=>{setCategoryFilter(category);setActiveCollectionId('');setQuery('');setConditionFilter('');setFiltersOpen(true);setSection('items')}} onOpenAudit={()=>setSection('audit')} onCollection={id=>{setActiveCollectionId(id);setSection('items')}}/>:null}
-    {section==='collections'?<CollectionsView store={store} collections={activeCollections} activeId={activeCollectionId} onActive={setActiveCollectionId} onCreate={parentId=>setCollectionEditor({mode:'create',parentId})} onEdit={collection=>setCollectionEditor({mode:'edit',collection})} onArchive={archiveCollection} onOpenItems={id=>{setActiveCollectionId(id);setSection('items')}}/>:null}
-    {section==='items'?<section className="vxp2-items">
-      <div className="vxp2-toolbar vx-panel"><div><h3>{activeCollection?.name||'All Items'}</h3><span>{filtered.reduce((sum,item)=>sum+item.quantity,0)} units · {filtered.length} records</span></div><div className="vxp2-toolbar-actions">
+  const renderItemsExperience=(embedded=false)=><section className={'vxp2-items'+(embedded?' vxp2-overview-items-widget vx-panel':'')}>
+      <div className={'vxp2-toolbar '+(embedded?'vxp2-overview-items-toolbar':'vx-panel')}><div><h3>{embedded?'All Items':activeCollection?.name||'All Items'}</h3><span>{filtered.reduce((sum,item)=>sum+item.quantity,0)} units · {filtered.length} records</span></div><div className="vxp2-toolbar-actions">
         <label className="search"><Search/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search owned items…"/></label>
         <button className={filtersOpen?'active':''} onClick={()=>setFiltersOpen(value=>!value)}><SlidersHorizontal/>Filters</button>
         <select value={preferences.sort} onChange={e=>persistPreferences({sort:e.target.value})}>{SORTS.map(([value,label])=><option value={value} key={value}>{label}</option>)}</select>
@@ -263,7 +257,15 @@ export default function VexumPortfolio({section:controlledSection,onSectionChang
       {filtersOpen?<FilterBar categories={categories} conditions={conditions} category={categoryFilter} condition={conditionFilter} filters={preferences.filters} onCategory={setCategoryFilter} onCondition={setConditionFilter} onFilters={filters=>persistPreferences({filters})}/>:null}
       {selectedIds.size?<BulkBar count={selectedIds.size} collections={activeCollections} onMove={bulkMove} onTag={bulkTag} onField={bulkField} onSetup={()=>{localStorage.setItem('vexum.setup.prefillItemIds',JSON.stringify([...selectedIds]));location.assign('/setup')}} onSell={()=>{const first=store.items.find(item=>selectedIds.has(item.id));if(first)sellItem(first)}} onArchive={bulkArchive} onExport={()=>exportItems(store.items.filter(item=>selectedIds.has(item.id)),'json')} onDelete={bulkDelete} onClear={()=>setSelectedIds(new Set())}/>:null}
       <PortfolioItems rows={filtered} store={store} view={preferences.view} columns={preferences.columns} selectedIds={selectedIds} onSelect={id=>setSelectedIds(current=>{const next=new Set(current);if(next.has(id))next.delete(id);else next.add(id);return next})} onOpen={setSelectedItemId} onFavorite={item=>updateItem({...item,favorite:!item.favorite,updatedAt:new Date().toISOString()})}/>
-    </section>:null}
+    </section>;
+
+  return <div className="vxp2-page">
+    <section className="vxp2-title vxp-simple-title"><div><span>PORTFOLIO</span><h1>{section==='items'?'All Items':section[0].toUpperCase()+section.slice(1)}</h1></div><aside><strong>{analytics.count} owned units</strong><span>{activeCollections.length} collections</span></aside></section>
+    <div className="vxp2-top-actions vxp-page-actions"><button onClick={()=>location.assign('/search')}><Search/>Search & Add</button><button onClick={()=>setManualOpen(true)}><Plus/>Add Manually</button><button onClick={()=>setTemplatesOpen(true)}><Settings2/>Templates</button><button onClick={()=>exportItems(owned,'csv')}><Download/>Export</button></div>
+
+    {section==='overview'?<PortfolioOverview store={store} analytics={analytics} itemsExperience={renderItemsExperience(true)}/>:null}
+    {section==='collections'?<CollectionsView store={store} collections={activeCollections} activeId={activeCollectionId} onActive={setActiveCollectionId} onCreate={parentId=>setCollectionEditor({mode:'create',parentId})} onEdit={collection=>setCollectionEditor({mode:'edit',collection})} onArchive={archiveCollection} onOpenItems={id=>{setActiveCollectionId(id);setSection('items')}}/>:null}
+    {section==='items'?renderItemsExperience(false):null}
     {section==='analytics'?<PortfolioAnalytics store={store} analytics={analytics} issues={issues} onCategory={category=>{setCategoryFilter(category);setActiveCollectionId('');setSection('items')}}/>:null}
     {section==='audit'?<PortfolioAudit store={store} issues={issues} health={health} focus={auditFocus} onFocus={setAuditFocus} onOpenItem={id=>setSelectedItemId(id)} onBulkFix={async(kind,value)=>{
       const ids=new Set(issues.filter(issue=>issue.kind===kind).map(issue=>issue.itemId));if(!ids.size)return;
@@ -284,28 +286,49 @@ export default function VexumPortfolio({section:controlledSection,onSectionChang
   </div>;
 }
 
-function PortfolioOverview({store,analytics,issues,health,onOpenItems,onOpenAudit,onCollection,onCategory}:{store:Store;analytics:ReturnType<typeof computePortfolioAnalytics>;issues:AuditIssue[];health:number;onOpenItems:()=>void;onOpenAudit:()=>void;onCategory:(category:string)=>void;onCollection:(id:string)=>void}){
-  const recent=analytics.owned.toSorted((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,5);
-  const collections=store.collections.filter(collection=>!collection.archivedAt).map(collection=>({collection,...collectionStats(store,collection)})).sort((a,b)=>b.value-a.value).slice(0,6);
-  const snapshots=(store.history||[]).filter(row=>Number.isFinite(Date.parse(row.date))).toSorted((a,b)=>a.date.localeCompare(b.date)).slice(-24);
-  const history=snapshots.map(snapshot=>Object.values(snapshot.values).reduce((sum,value)=>sum+value,0));
-  const movers=analytics.owned.map(item=>{
-    const history=(item.priceHistory||[]).filter(point=>point.kind!=='sale');
-    const before=history.length>1?history[0].value:item.currentValue;
-    return {item,delta:item.currentValue-before};
-  }).sort((a,b)=>Math.abs(b.delta)-Math.abs(a.delta)).slice(0,5);
-  const completion=store.collections.filter(c=>c.measurable&&c.targetItemCount).map(c=>collectionStats(store,c).completion||0);
-  const completionAvg=completion.length?completion.reduce((a,b)=>a+b,0)/completion.length:0;
-  return <div className="vxp2-overview">
-    <div className="vxp2-metrics"><PortfolioMetric label="Current Value" value={portfolioMoney(analytics.value)} sub={analytics.count+' owned units'}/><PortfolioMetric label="Cost Basis" value={portfolioMoney(analytics.cost)} sub="Recorded acquisition cost"/><PortfolioMetric trend={[analytics.cost,analytics.value]} trendLabel="Cost → current value" label="Unrealized P/L" value={(analytics.unrealized>=0?'+':'')+portfolioMoney(analytics.unrealized)} sub={analytics.cost?(analytics.unrealized>=0?'+':'')+(analytics.unrealized/analytics.cost*100).toFixed(1)+'%':'No cost basis'} tone={analytics.unrealized>=0?'green':'red'}/><PortfolioMetric label="Items Owned" value={String(analytics.count)} sub={analytics.owned.length+' records'}/><PortfolioMetric label="Collection Health" value={health+'%'} sub={issues.length+' audit issues'} tone={health>=90?'green':health>=70?'orange':'red'}/><PortfolioMetric label="Completion" value={completion.length?completionAvg.toFixed(0)+'%':'—'} sub={completion.length?completion.length+' measurable collections':'No tracked targets'}/></div>
-    <div className="vxp2-overview-grid">
-      <section className="vx-panel vxp2-overview-chart"><header><div><h3>Portfolio Value</h3><p>Workspace snapshots only. Market provider failure does not remove ownership.</p></div></header><SimpleLine values={history} dates={snapshots.map(row=>row.date)}/><footer><span>Current {portfolioMoney(analytics.value)}</span><span>Cost basis {portfolioMoney(analytics.cost)}</span></footer></section>
-      <section className="vx-panel"><header><div><h3>Collection Breakdown</h3><p>Click a category to filter ownership.</p></div></header><div className="vxp2-bars">{analytics.categories.slice(0,7).map(row=><button key={row.name} onClick={()=>onCategory(row.name)}><span><strong>{row.name}</strong><b>{portfolioMoney(row.value)}</b></span><i><b style={{width:(analytics.value?row.value/analytics.value*100:0)+'%'}}/></i><small>{analytics.value?(row.value/analytics.value*100).toFixed(1):0}%</small></button>)}</div></section>
-      <section className="vx-panel"><header><div><h3>Recent Additions</h3><p>Newest owned records.</p></div><button onClick={onOpenItems}>All Items</button></header><MiniItems rows={recent} store={store}/></section>
-      <section className="vx-panel"><header><div><h3>Largest Movers</h3><p>Based only on stored item price history.</p></div></header><div className="vxp2-movers">{movers.map(({item,delta})=><div key={item.id}><ItemThumb item={item}/><span><strong>{item.name}</strong><small>{item.marketLink?.provider||'Stored value history'}</small></span><b className={delta>=0?'tone-green':'tone-red'}>{delta>=0?'+':''}{portfolioMoney(delta)}</b></div>)}{!movers.length?<Empty compact text="No item price history yet."/>:null}</div></section>
-      <section className="vx-panel vxp2-overview-wide"><header><div><h3>Collections</h3><p>Values include nested child collections.</p></div></header><div className="vxp2-collection-strip">{collections.map(row=><button key={row.collection.id} onClick={()=>onCollection(row.collection.id)}><CollectionCover collection={row.collection}/><span><strong>{row.collection.name}</strong><small>{row.count} items · {portfolioMoney(row.value)}</small>{row.completion!==null?<em>{row.completion.toFixed(0)}% complete</em>:null}</span></button>)}{!collections.length?<Empty compact text="No collections yet."/>:null}</div></section>
-      <section className="vx-panel vxp2-overview-wide"><header><div><h3>Audit Issues</h3><p>Organizational feedback from your actual records.</p></div><button onClick={onOpenAudit}>Audit Collection</button></header><div className="vxp2-audit-summary"><div><strong>{health}%</strong><span>Collection Health</span></div>{Object.entries(issues.reduce((acc,issue)=>{acc[issue.label]=(acc[issue.label]||0)+1;return acc},{} as Record<string,number>)).slice(0,6).map(([label,count])=><div key={label}><span>{label}</span><b>{count}</b></div>)}{!issues.length?<div className="clean"><Check/>No audit issues detected.</div>:null}</div></section>
-    </div>
+function PortfolioOverview({store,analytics,itemsExperience}:{store:Store;analytics:ReturnType<typeof computePortfolioAnalytics>;itemsExperience:ReactNode}){
+  const [range,setRange]=useState<'1W'|'1M'|'3M'|'1Y'|'ALL'>('3M');
+  const snapshots=(store.history||[])
+    .filter(row=>Number.isFinite(Date.parse(row.date)))
+    .toSorted((a,b)=>a.date.localeCompare(b.date))
+    .map(snapshot=>({date:snapshot.date,value:Object.values(snapshot.values).reduce((sum,value)=>sum+value,0)}));
+  const rangeDays:Record<Exclude<typeof range,'ALL'>,number>={'1W':7,'1M':30,'3M':90,'1Y':365};
+  const cutoff=range==='ALL'?-Infinity:Date.now()-rangeDays[range]*86400000;
+  const visibleSnapshots=snapshots.filter(snapshot=>Date.parse(snapshot.date)>=cutoff);
+  const values=visibleSnapshots.map(snapshot=>snapshot.value);
+  const first=values[0];
+  const change=values.length>1?analytics.value-first:null;
+  const changePct=change!==null&&first?change/first*100:null;
+  const collectionCount=store.collections.filter(collection=>!collection.archivedAt).length;
+  const changeText=change===null
+    ?'No prior snapshot in range'
+    :(change>=0?'+':'')+portfolioMoney(change)+(changePct===null?'':' · '+(changePct>=0?'+':'')+changePct.toFixed(1)+'%');
+
+  return <div className="vxp2-overview vxp2-overview-composed">
+    <section className="vx-panel vxp2-portfolio-value-widget">
+      <header>
+        <div><h3>Portfolio Value</h3></div>
+        <div className="vxp2-portfolio-ranges" aria-label="Portfolio history timeframe">
+          {(['1W','1M','3M','1Y','ALL'] as const).map(option=><button type="button" className={range===option?'active':''} key={option} onClick={()=>setRange(option)}>{option}</button>)}
+        </div>
+      </header>
+      <div className="vxp2-portfolio-value-summary">
+        <div className="vxp2-portfolio-primary">
+          <span>Portfolio Value</span>
+          <strong>{portfolioMoney(analytics.value)}</strong>
+          <small className={change===null?'tone-muted':change>=0?'tone-green':'tone-red'}>{changeText}</small>
+        </div>
+        <div className="vxp2-portfolio-counts">
+          <div><span>Items</span><strong>{analytics.count}</strong></div>
+          <div><span>Collections</span><strong>{collectionCount}</strong></div>
+          <div><span>Categories</span><strong>{analytics.categories.length}</strong></div>
+        </div>
+      </div>
+      <div className="vxp2-portfolio-value-chart">
+        {values.length>=2?<VexumLineChart values={values} dates={visibleSnapshots.map(snapshot=>snapshot.date)} label="Portfolio Value"/>:<Empty compact text="Not enough historical snapshots in this timeframe yet."/>}
+      </div>
+    </section>
+    {itemsExperience}
   </div>;
 }
 
