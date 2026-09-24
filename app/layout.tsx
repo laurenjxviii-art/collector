@@ -15,6 +15,7 @@ import './vexum-setup.css';
 import './vexum-social.css';
 import './vexum-sell.css';
 import './vexum-theme.css';
+import './vexum-design-system.css';
 import type {Metadata} from 'next';
 import {Inter} from 'next/font/google';
 
