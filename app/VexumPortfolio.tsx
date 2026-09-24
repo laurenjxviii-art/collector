@@ -308,7 +308,7 @@ function PortfolioOverview({store,analytics,itemsExperience}:{store:Store;analyt
     <section className="vx-panel vxp2-portfolio-value-widget">
       <header>
         <div><h3>Portfolio Value</h3></div>
-        <div className="vxp2-portfolio-ranges" aria-label="Portfolio history timeframe">
+        <div className="vx-ranges vxp2-portfolio-ranges" aria-label="Portfolio history timeframe">
           {(['1W','1M','3M','1Y','ALL'] as const).map(option=><button type="button" className={range===option?'active':''} key={option} onClick={()=>setRange(option)}>{option}</button>)}
         </div>
       </header>
