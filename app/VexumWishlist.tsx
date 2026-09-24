@@ -1,5 +1,8 @@
 'use client';
 
+import {variantKey} from '../lib/market';
+import {VexumLineChart} from './VexumLineChart';
+
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {
   AlertTriangle,Archive,BarChart3,Bell,CalendarDays,Check,ChevronRight,CircleDollarSign,
@@ -238,7 +241,7 @@ export default function VexumWishlist(){
       const market=record.currentMarket??(item&&item.currentValue>0?item.currentValue:undefined)??product?.demoMarket?.current;
       const history=[
         ...record.marketHistory,
-        ...(item?.priceHistory||[]).map(p=>({date:p.date,value:p.value,source:p.source}))
+        ...(item?.priceHistory||[]).filter(point=>point.kind!=='sale'&&item&&point.variant===variantKey(item)).map(p=>({date:p.date,value:p.value,source:p.source}))
       ].toSorted((a,b)=>a.date.localeCompare(b.date));
       const uniqueHistory=Array.from(new Map(history.map(point=>[point.date.slice(0,16)+'|'+point.value,point])).values());
       return {
@@ -905,24 +908,18 @@ function TargetComparison({entry}:{entry:WishlistEntry}){
 
 function WishlistPriceChart({entry}:{entry:WishlistEntry}){
   const [range,setRange]=useState('ALL');
-  const all=entry.marketHistory.filter(point=>finite(point.value));
+  const all=entry.marketHistory.filter(point=>finite(point.value)&&Number.isFinite(Date.parse(point.date))).toSorted((a,b)=>a.date.localeCompare(b.date));
   const days=range==='7D'?7:range==='30D'?30:range==='3M'?90:range==='6M'?180:range==='1Y'?365:Infinity;
   const cutoff=days===Infinity?0:Date.now()-days*86400000;
   const points=all.filter(point=>Date.parse(point.date)>=cutoff);
-  const values=[...points.map(p=>p.value),entry.record.targetPrice,entry.msrp].filter((v):v is number=>typeof v==='number'&&Number.isFinite(v));
-  if(!points.length)return <section className="vxw-chart-empty"><BarChart3/><strong>Price history unavailable</strong><p>Refresh a supported market source or accumulate saved values to build history.</p></section>;
-  const min=Math.min(...values),max=Math.max(...values),pad=Math.max(1,(max-min)*.15),lo=min-pad,hi=max+pad;
-  const x=(index:number)=>points.length===1?350:index/(points.length-1)*680+10;
-  const y=(value:number)=>210-(value-lo)/(hi-lo)*180;
-  const path=points.map((p,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(p.value).toFixed(1)).join(' ');
+  if(!all.length)return <section className="vxw-chart-empty"><BarChart3/><strong>Price history unavailable</strong><p>Refresh a supported market source or accumulate saved values to build history.</p></section>;
   return <section className="vxw-price-chart">
     <header><div><strong>Price history</strong><span>{points.length} saved point{points.length===1?'':'s'}</span></div><div>{['7D','30D','3M','6M','1Y','ALL'].map(value=><button key={value} className={range===value?'active':''} onClick={()=>setRange(value)}>{value}</button>)}</div></header>
-    <svg viewBox="0 0 700 230" preserveAspectRatio="none">{[40,85,130,175,210].map(row=><line key={row} x1="10" y1={row} x2="690" y2={row} stroke="#202227"/>)}
-      {entry.msrp!==undefined?<line x1="10" y1={y(entry.msrp)} x2="690" y2={y(entry.msrp)} stroke="#8c9098" strokeDasharray="5 5"/>:null}
-      {entry.record.targetPrice!==undefined?<line x1="10" y1={y(entry.record.targetPrice)} x2="690" y2={y(entry.record.targetPrice)} stroke="#25e2a0" strokeDasharray="4 5"/>:null}
-      <path d={path} fill="none" stroke="#ff2338" strokeWidth="3"/>{points.map((p,i)=><circle key={p.date+i} cx={x(i)} cy={y(p.value)} r="3.5" fill="#ff2338"/>)}
-    </svg>
-    <footer><span><i className="red"/>Market history</span><span><i className="green"/>Target</span><span><i className="gray"/>MSRP</span></footer>
+    {!points.length?<div className="vxw-chart-empty">No saved prices in this range. Choose a longer range.</div>:<VexumLineChart values={points.map(point=>point.value)} dates={points.map(point=>point.date)} label="Market history" references={[
+      ...(entry.msrp!==undefined?[{label:'MSRP',value:entry.msrp,tone:'comparison' as const}]:[]),
+      ...(entry.record.targetPrice!==undefined?[{label:'Target',value:entry.record.targetPrice,tone:'positive' as const}]:[])
+    ]}/>}
+
   </section>;
 }
 

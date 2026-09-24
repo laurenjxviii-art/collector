@@ -1,0 +1,81 @@
+/* Typography authority: 01 Foundations 60:57–60:81; 02 Components 61:59.
+   Loaded last so the retired 700/800-weight UI cannot override these roles. */
+:root {
+  --vx-font-family: Inter, sans-serif;
+  --vx-type-metric: 600 28px/35px var(--vx-font-family);
+  --vx-type-widget: 600 16px/20px var(--vx-font-family);
+  --vx-type-compact: 600 15px/19px var(--vx-font-family);
+  --vx-type-label: 400 13px/16px var(--vx-font-family);
+  --vx-type-nav: 500 14px/18px var(--vx-font-family);
+  --vx-type-control: 500 12px/16px var(--vx-font-family);
+  --vx-type-body: 400 12px/18px var(--vx-font-family);
+  --vx-type-dense: 400 11px/15px var(--vx-font-family);
+  --vx-type-meta: 400 10px/14px var(--vx-font-family);
+}
+html, body, .vx-app, .vxui-portal, .vxui-dialog, .vxt-overlay {
+  font-family: var(--vx-font-family);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+  font-synthesis: none;
+  font-optical-sizing: auto;
+}
+.vx-app :is(h1,h2,h3,h4,p,span,small,strong,b,button,input,textarea,select,label,td,th),
+.vxui-dialog, .vxt-overlay {
+  font-family: var(--vx-font-family) !important;
+}
+.vx-app h1 {
+  font: var(--vx-type-metric) !important;
+  letter-spacing: normal !important;
+}
+.vx-app :is(h2,h3,h4) {
+  font: var(--vx-type-widget) !important;
+  letter-spacing: normal;
+}
+.vx-app :is(button,input,textarea,select), .vxui-button, .vxui-dialog button {
+  font: var(--vx-type-control) !important;
+  letter-spacing: normal;
+}
+.vx-app :is(input,textarea,select) { font-weight: 400 !important; }
+.vx-app :is(.vx-nav,.vxt-nav) button { font: var(--vx-type-nav) !important; }
+.vx-app :is(.vxh-title,.vxl-title,.vxf-title,.vxp2-title,.vxsup-title,.vxsel-title,.vxsoc-title)>div>span {
+  font: var(--vx-type-meta) !important;
+  letter-spacing: 1.2px;
+}
+.vx-app :is(.vxh-title,.vxl-title,.vxf-title,.vxp2-title,.vxsup-title,.vxsel-title,.vxsoc-title) p,
+.vx-app :is(.vx-panel,.vxh-widget,.vxf-panel,.vxsup-panel,.vxsel-panel,.vxsoc-panel) p {
+  font: var(--vx-type-body) !important;
+  letter-spacing: normal;
+}
+.vx-app :is(.vx-stat,.vxf-metric,.vxp2-metric,.vxw-stat,.vxsup-metric,.vxsel-metric,.vxl-metric,.vxs-intel-metric)>strong,
+.vx-app .vxh-metric>strong, .vx-app .vxh-chart-head>div>strong {
+  font: var(--vx-type-metric) !important;
+  letter-spacing: normal !important;
+  font-variant-numeric: normal;
+}
+.vx-app :is(.vx-stat-label,.vxf-metric>span,.vxp2-metric>span,.vxw-stat>span,.vxsup-metric>span,.vxsel-metric>span,.vxl-metric>span,.vxs-intel-metric>span),
+.vx-app .vxh-widget.size-metric>header h3 {
+  font: var(--vx-type-label) !important;
+  letter-spacing: normal;
+}
+.vx-app :is(.vxf-metric,.vxp2-metric,.vxw-stat,.vxsup-metric,.vxsel-metric,.vxl-metric,.vxs-intel-metric)>small,
+.vx-app .vxh-metric>span {
+  font: var(--vx-type-dense) !important;
+  letter-spacing: normal;
+}
+.vx-app .vxh-metric>span:is(.tone-green,.tone-red) { font: var(--vx-type-control) !important; }
+.vx-app :is(.vxh-widget.size-medium>header h3,.vxf-panel-head h3,.vxsup-panel>header h3,.vxsel-panel>header h3,.vxsoc-panel>header h3),
+.vx-app :is(.vxw-overview-grid section>header,.vxw-price-chart>header) strong {
+  font: var(--vx-type-compact) !important;
+}
+.vx-app :is(.vxh-list,.vxh-progress-list,.vxh-radar,.vxp2-bars,.vxp2-mini-items,.vxp2-movers,.vxf-mini-list,.vxf-commit-list,.vxf-goals,.vxw-overview-grid,.vxsel-analytic-list) :is(strong,b,small,time,em),
+.vx-app :is(.vxh-table,.vxf-table,.vxp2-table,.vxw-table-row,.vxsel-table) :is(strong,b,small,time,em),
+.vx-app .vxh-brief-feed :is(p,strong,small) {
+  font: var(--vx-type-dense) !important;
+  letter-spacing: normal !important;
+}
+.vx-app .vxh-brief-lead strong { font: var(--vx-type-control) !important; }
+.vx-app .vxds-line-chart text { font: var(--vx-type-meta); }
+.vx-app .vxds-chart-legend { font: var(--vx-type-body); }
+.vx-app .vxds-metric-trend figcaption, .vx-app .vxds-trend-empty { font: var(--vx-type-meta) !important; }
+.vx-app .vxh-source { font: 500 10px/14px var(--vx-font-family) !important; }

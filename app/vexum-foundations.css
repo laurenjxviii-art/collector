@@ -1,0 +1,193 @@
+/* VEXUM UI Reconstruction: 01 Foundations (60:2), 02 Components (61:59).
+   Presentation tokens only. Layout configuration, content and data belong to callers. */
+@font-face {
+  font-family: Inter;
+  src: url('/fonts/inter-latin-variable.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+:root {
+  --vx-bg: #000000;
+  --vx-bg2: #0a0a0a;
+  --vx-card: #000000;
+  --vx-card2: #0a0a0a;
+  --vx-line: #262626;
+  --vx-line2: #191b1c;
+  --vx-text: #f3f4f5;
+  --vx-muted: #adb5bd;
+  --vx-muted2: #8f9498;
+  --vx-red: #ff171b;
+  --vx-red2: #9f1c1e;
+  --vx-green: #00e5a1;
+  --vx-focus: #ff1737;
+  --vx-chart-primary: #ff1737;
+  --vx-chart-comparison: #c5c7c8;
+  --vx-chart-grid: #181a1c;
+  --vx-progress-track: #191b1c;
+  --vx-active: #1c0606;
+  --vxui-radius-control: 7px;
+  --vxui-radius-card: 8px;
+  --vxui-radius-dialog: 8px;
+}
+
+/* Keep the existing theme preference and user-selected accent functional. */
+.vxp-platform { --vx-red: var(--vx-accent, #ff171b); --vx-red2: #9f1c1e; }
+.vx-app:not(.theme-light), .vx-app:not(.theme-light) .vx-content { background: var(--vx-bg); }
+.vx-app:not(.theme-light) .vx-sidebar { background: var(--vx-bg); border-color: var(--vx-line); }
+.vx-app:not(.theme-light) .vx-topbar { background: var(--vx-bg); }
+.vx-app:not(.theme-light) .vx-user { background: var(--vx-card); border-color: var(--vx-line); }
+
+/* 02 Components / navigation and search. Geometry stays responsive below. */
+.vxp-platform .vx-nav { gap: 0; }
+.vxp-platform .vx-nav button { font-size: 14px; gap: 9px; }
+.vxp-platform .vx-nav button svg { width: 18px; height: 18px; stroke-width: 1.5; }
+.vxp-platform .vx-nav button.active { background: var(--vx-active); border-color: var(--vx-red2); box-shadow: none; }
+.vxp-platform .vxp-nav-group { margin-bottom: 7px; }
+.vxp-platform .vxp-nav-group > span { font-size: 10px; letter-spacing: 1.2px; }
+.vx-app .vx-searchbox { height: 44px; background: var(--vx-card); border-color: var(--vx-line); gap: 12px; }
+.vx-app .vx-searchbox span { font-size: 12px !important; }
+.vx-app .vx-searchbox > svg { width: 16px; height: 16px; stroke-width: 1.5; }
+.vx-app .vx-searchbox kbd { font-size: 10px !important; border: 1px solid var(--vx-line); border-radius: 6px; padding: 6px 8px; background: var(--vx-bg2); }
+.vx-app .vx-topicons button svg { width: 18px; height: 18px; stroke-width: 1.5; }
+
+/* Card families already used by every module. Do not change their grid spans. */
+.vx-app :is(.vx-panel,.vxh-widget,.vxf-panel,.vxf-metric,.vxw-stat,.vxw-insight-card,.vxsup-panel,.vxsup-metric,.vxsoc-panel,.vxsel-panel,.vxsel-metric,.vxr-card,.vxloc-card) {
+  background: var(--vx-card) !important;
+  border: 1px solid var(--vx-line) !important;
+  border-radius: 8px !important;
+  color: var(--vx-text);
+  box-shadow: none;
+  min-width: 0;
+}
+.vx-app :is(.vx-panel-head,.vxh-widget>header,.vxf-panel-head,.vxf-panel>header,.vxsup-panel>header,.vxsel-panel>header,.vxsoc-panel>header,.vxl-today-card>header,.vxp2-overview-grid>.vx-panel>header,.vxp2-analytics-grid>.vx-panel>header) {
+  min-height: 44px;
+  height: auto;
+  padding: 12px 16px 8px;
+  border-bottom: 0;
+  gap: 8px;
+  align-items: center;
+}
+.vx-app :is(.vx-panel-head,.vxh-widget>header,.vxf-panel-head,.vxf-panel>header,.vxsup-panel>header,.vxsel-panel>header,.vxsoc-panel>header,.vxl-today-card>header,.vxp2-overview-grid,.vxp2-analytics-grid) h3 {
+  font-size: 16px; line-height: 20px; font-weight: 600 !important;
+}
+.vx-app .vxh-widget-icon { width: 16px; height: 16px; background: transparent; color: var(--vx-muted); }
+.vx-app .vxh-widget-icon svg { width: 14px; height: 14px; stroke-width: 1.5; }
+.vx-app .vxh-widget>header h3 { white-space: normal; overflow: visible; }
+.vx-app .vxh-widget>header>div:first-child { flex-wrap: wrap; }
+.vx-app .vxh-source { height: 17px; padding: 0 5px; font-size: 9px; letter-spacing: .03em; }
+
+/* Metric sample: 126px tall, 16px inset, 13px label, 28/35 semibold value. */
+.vx-app :is(.vx-stat,.vxf-metric,.vxp2-metric,.vxw-stat,.vxsup-metric,.vxsel-metric,.vxl-metric) {
+  min-height: 126px; padding: 14px 16px; background: var(--vx-card); border-radius: 8px;
+}
+.vx-app :is(.vx-stat,.vxf-metric,.vxp2-metric,.vxw-stat,.vxsup-metric,.vxsel-metric,.vxl-metric)>strong,
+.vx-app .vxh-metric>strong {
+  font-size: 28px; line-height: 35px; font-weight: 600 !important; letter-spacing: -.025em; margin-top: 7px; font-variant-numeric: tabular-nums;
+}
+.vx-app :is(.vx-stat-label,.vxf-metric>span,.vxp2-metric>span,.vxw-stat>span,.vxsup-metric>span,.vxsel-metric>span,.vxl-metric>span) {
+  font-size: 13px; line-height: 16px; color: var(--vx-text); font-weight: 400;
+}
+.vx-app :is(.vxf-metric,.vxp2-metric,.vxw-stat,.vxsup-metric,.vxsel-metric,.vxl-metric)>small {
+  font-size: 11px !important; line-height: 15px; color: var(--vx-muted); margin-top: 6px;
+}
+.vx-app .vxh-widget.size-metric { min-height: 126px; }
+.vx-app .vxh-widget.size-metric>header { padding: 14px 16px 0; min-height: 30px; }
+.vx-app .vxh-widget.size-metric>header h3 { font-size: 13px; line-height: 16px; font-weight: 400 !important; }
+.vx-app .vxh-metric { height: auto; padding: 0 16px 14px; justify-content: flex-start; }
+.vx-app .vxh-metric>span { font-size: 12px; line-height: 15px; color: var(--vx-muted); margin-top: 6px; }
+.vx-app .vxh-widget.size-medium { min-height: 231px; }
+.vx-app .vxh-widget.size-large { min-height: 276px; }
+.vx-app .vxh-widget.size-wide,.vx-app .vxh-widget.size-full { min-height: 276px; }
+
+/* Existing compact lists retain their rows, imagery and actions. */
+.vx-app :is(.vxh-list,.vxh-brief-feed,.vxp2-bars,.vxp2-mini-items,.vxp2-movers,.vxf-mini-list,.vxf-commit-list,.vxf-goals) { padding-left: 16px; padding-right: 16px; }
+.vx-app :is(.vxh-list,.vxh-brief-feed,.vxp2-bars,.vxp2-mini-items,.vxp2-movers,.vxf-mini-list,.vxf-commit-list,.vxf-goals) :is(p,small,time) { font-size: 11px !important; line-height: 15px; }
+.vx-app :is(.vxh-list,.vxp2-bars,.vxp2-mini-items,.vxp2-movers,.vxf-mini-list,.vxf-commit-list,.vxf-goals) :is(strong,b) { font-size: 12px; line-height: 16px; }
+.vx-app :is(.vxh-list,.vxp2-mini-items,.vxp2-movers)>div { padding-left: 0; padding-right: 0; border-bottom-color: var(--vx-line2); }
+.vx-app :is(.vxf-commit-list,.vxf-mini-list,.vxf-goals)>.vxf-empty-row {
+  display: block; min-height: 64px; padding: 16px 0; width: 100%; text-align: left; color: var(--vx-muted); font-size: 12px; line-height: 18px;
+}
+
+/* Progress from the existing value/percentage. No demo widths from Figma. */
+.vx-app :is(.vx-progress,.vxh-progress,.vxw-progress,.vxf-progress,.vxf-goals i,.vx-cat-track,.vxp2-bars button>i,.vxl-goal-progress>i,.muscle-load i,.vxsup-capacity>i) {
+  display: block; height: 6px; border: 0; border-radius: 3px; background: var(--vx-progress-track); overflow: hidden; box-shadow: none;
+}
+.vx-app :is(.vx-progress,.vxh-progress,.vxw-progress,.vxf-progress,.vx-cat-track)>i,
+.vx-app :is(.vxf-goals i,.vxp2-bars button>i,.vxl-goal-progress>i,.muscle-load i)>b,
+.vx-app .vxsup-capacity>i>em {
+  display: block; height: 100%; border-radius: 3px; background: var(--vx-red); box-shadow: none;
+}
+
+/* Controls: reference active/ghost treatments, retaining disabled/focus states. */
+.vx-app :is(.vx-tabs,.vxf-tabs,.vxp2-tabs,.vxw-tabs,.vxsup-tabs,.vxsel-tabs,.vxsoc-tabs) button {
+  border-radius: 7px; font-size: 12px !important; font-weight: 500 !important; min-height: 36px;
+}
+.vx-app :is(.vx-tabs,.vxf-tabs,.vxp2-tabs,.vxw-tabs,.vxsup-tabs,.vxsel-tabs,.vxsoc-tabs) button.active {
+  background: var(--vx-active); border-color: var(--vx-red2); box-shadow: none; color: var(--vx-text);
+}
+.vxui-button { font-size: 12px; font-weight: 500 !important; border-color: var(--vx-line); border-radius: 7px; }
+.vxui-button.secondary { background: var(--vx-card); color: var(--vx-muted); }
+.vxui-button.primary { background: var(--vx-active); border-color: var(--vx-red2); }
+.vxui-dialog { background: var(--vx-bg2); border-color: var(--vx-line); }
+.vxui-dialog-head,.vxui-dialog-foot { background: var(--vx-card); border-color: var(--vx-line); }
+.vxui-dialog-head h2 { font-size: 16px; line-height: 20px; font-weight: 600; }
+.vxui-dialog-head p { font-size: 12px; color: var(--vx-muted); }
+.vxui-toast { background: var(--vx-bg2); border-color: var(--vx-line); }
+.vx-app :is(button,input,select,textarea):focus-visible,.vxui-dialog :is(button,input,select,textarea):focus-visible { outline: 2px solid var(--vx-focus); outline-offset: 3px; }
+
+/* Charts keep live paths and axis values; Figma determines rendering only. */
+.vx-app :is(.vxh-chart,.vxp2-line,.vxw-price-chart>svg) { background: var(--vx-card); }
+.vx-app :is(.vxh-chart,.vxp2-line,.vxw-price-chart>svg)>line { stroke: var(--vx-chart-grid); stroke-width: .6px; stroke-dasharray: 1 2; vector-effect: non-scaling-stroke; }
+.vx-app :is(.vxh-chart,.vxp2-line,.vxw-price-chart>svg) path[fill="none"] { stroke: var(--vx-chart-primary); stroke-width: 1.5px; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.vx-app .vxw-price-chart>svg>line[stroke-dasharray="5 5"] { stroke: var(--vx-chart-comparison); stroke-width: 1px; }
+.vx-app .vxw-price-chart>svg>line[stroke-dasharray="4 5"] { stroke: var(--vx-green); stroke-width: 1px; }
+.vx-app .vxw-price-chart>svg circle { fill: var(--vx-chart-primary); r: 2.5px; }
+.vx-app :is(.vxh-chart-head,.vxw-price-chart>header,.vx-ranges) button { font-size: 11px !important; font-weight: 400 !important; min-height: 24px; height: 24px; border-radius: 6px; padding: 0 8px; }
+.vx-app :is(.vxh-chart-head,.vxw-price-chart>header,.vx-ranges) button.active { background: #170303; border: 1px solid var(--vx-red); box-shadow: 0 0 5px #ff17372e; color: var(--vx-text); }
+.vx-app .vxh-performance { padding: 4px 16px 12px; }
+.vx-app .vxh-chart { height: 180px; }
+.vx-app .vxp2-line { height: 195px; padding: 8px 16px 0; }
+.vx-app .vxw-price-chart { background: var(--vx-card); border-color: var(--vx-line); border-radius: 8px; }
+.vx-app .vxw-price-chart footer { font-size: 11px; color: var(--vx-muted); }
+
+/* Preserve readable touch inputs and the app's mobile navigation/column rules. */
+.vxds-line-chart { min-width: 0; padding: 4px 16px 8px; }
+.vx-app :is(.vxf-metric,.vxp2-metric,.vxsel-metric,.vxh-metric):has(.vxds-metric-trend) { position: relative; padding-bottom: 60px; }
+.vx-app .vxds-metric-trend { position: absolute; bottom: 8px; right: 12px; width: 108px; margin: 0; color: var(--vx-green); }
+.vx-app .vxds-metric-trend.negative { color: var(--vx-red); }
+.vx-app .vxds-metric-trend svg { width: 108px; height: 40px; display: block; }
+.vx-app .vxds-metric-trend figcaption { font-size: 9px; line-height: 12px; color: var(--vx-muted); text-align: right; }
+.vx-app .vxds-trend-empty { font-size: 10px !important; color: var(--vx-muted) !important; display: block; margin-top: 8px; }
+.vx-app :is(.vxw-list-panel,.vxw-card) { background: var(--vx-card); border-color: var(--vx-line); }
+.vx-app .vxw-card.selected { border-color: var(--vx-red); }
+.vx-app :is(.vxw-overview-grid section>header,.vxw-price-chart>header) strong { font-size: 15px; line-height: 19px; }
+.vxds-line-chart>svg { display: block; width: 100%; height: auto; max-height: 240px; overflow: visible; }
+.vxds-line-chart text { fill: var(--vx-muted); font: 11px Inter,system-ui,sans-serif; }
+.vxds-chart-legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; line-height: 15px; color: var(--vx-muted); margin: 0 0 4px; }
+.vxds-chart-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.vxds-chart-legend i { width: 8px; height: 8px; border-radius: 50%; background: var(--vx-chart-primary); }
+.vxds-chart-legend i.comparison { background: var(--vx-chart-comparison); }
+.vxds-chart-legend i.positive { background: var(--vx-green); }
+.vxds-grid { stroke: var(--vx-chart-grid); stroke-width: .6px; stroke-dasharray: 1 2; vector-effect: non-scaling-stroke; }
+.vxds-grid.vertical { opacity: .5; }
+.vxds-series { fill: none; stroke: var(--vx-chart-primary); stroke-width: 1.5px; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.vxds-reference { stroke: var(--vx-chart-comparison); stroke-width: 1px; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; }
+.vxds-reference.positive { stroke: var(--vx-green); }
+.vxds-point { fill: var(--vx-chart-primary); }
+.vxds-endpoint { fill: #40090a; stroke: var(--vx-red); stroke-width: 1px; }
+.vxds-line-chart .vxds-endpoint-text { fill: var(--vx-text); font-size: 10px; font-weight: 500; }
+.vx-app .vxw-price-chart .vxds-line-chart { padding: 4px 0; }
+@media(max-width:640px) {
+  .vx-app .vx-searchbox { width: 44px; }
+  .vx-app .vx-searchbox kbd { display: none; }
+  .vx-app :is(input,select,textarea),.vxui-dialog :is(input,select,textarea) { font-size: 16px !important; }
+  .vx-app :is(.vx-stat,.vxf-metric,.vxp2-metric,.vxw-stat,.vxsup-metric,.vxsel-metric,.vxl-metric) { padding: 12px; }
+  .vx-app .vxh-widget>header { padding-left: 12px; padding-right: 12px; }
+}
+@media(pointer:coarse) {
+  .vx-app :is(.vx-tabs,.vxf-tabs,.vxp2-tabs,.vxw-tabs,.vxsup-tabs,.vxsel-tabs,.vxsoc-tabs) button,.vxui-button { min-height: 44px; }
+}
+
+.vx-app .vxh-editbar[hidden] { display: none; }
+.vx-app .vxp2-detail-hero>aside { position: relative; padding-bottom: 64px; }

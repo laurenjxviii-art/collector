@@ -1,5 +1,7 @@
 'use client';
 
+import {VexumMetricTrend} from './VexumMetricTrend';
+
 import {useEffect,useMemo,useState} from 'react';
 import {
   AlertTriangle,ArrowDownRight,ArrowUpRight,CalendarDays,CircleDollarSign,
@@ -46,8 +48,8 @@ function dateLabel(value?:string){
   return Number.isFinite(d.getTime())?new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric',year:'numeric'}).format(d):value;
 }
 
-function Metric({label,value,sub,tone='muted'}:{label:string;value:string;sub:string;tone?:'muted'|'green'|'red'|'orange'}){
-  return <section className="vxf-metric"><span>{label}</span><strong>{value}</strong><small className={'tone-'+tone}>{sub}</small></section>;
+function Metric({label,value,sub,tone='muted',trend,trendLabel='Recorded history'}:{label:string;value:string;sub:string;tone?:'muted'|'green'|'red'|'orange';trend?:number[];trendLabel?:string}){
+  return <section className="vxf-metric"><span>{label}</span><strong>{value}</strong><small className={'tone-'+tone}>{sub}</small>{trend!==undefined?<VexumMetricTrend values={trend} label={trendLabel} negative={tone==='red'}/>:null}</section>;
 }
 function Head({title,action}:{title:string;action?:React.ReactNode}){
   return <header className="vxf-panel-head"><div><h3>{title}</h3></div>{action}</header>;
@@ -162,7 +164,7 @@ export default function VexumFinancial({section,onSectionChange}:{section?:strin
 
     {tab==='Overview'&&<>
       <div className="vxf-metrics">
-        <Metric label="Net Worth" value={viewFinancial.accounts.length?money(financialNetWorth(viewFinancial)):'Not set'} sub="Accounts only · collection excluded" tone={viewFinancial.accounts.length&&financialNetWorth(viewFinancial)>=0?'green':'muted'}/>
+        <Metric trend={[]} label="Net Worth" value={viewFinancial.accounts.length?money(financialNetWorth(viewFinancial)):'Not set'} sub="Accounts only · collection excluded" tone={viewFinancial.accounts.length&&financialNetWorth(viewFinancial)>=0?'green':'muted'}/>
         <Metric label="Collection Estimated Value" value={money(collectionValue)} sub="Estimated market value" tone="green"/>
         <Metric label="Monthly Hobby Spend" value={overallBudget!==undefined?money(hobbySpend)+' / '+money(overallBudget):money(hobbySpend)} sub={overallBudget===undefined?'No target set':(budgetRemaining!==undefined&&budgetRemaining<0?money(Math.abs(budgetRemaining))+' over target':money(Math.max(0,budgetRemaining||0))+' remaining')} tone={budgetRemaining!==undefined&&budgetRemaining<0?'red':'muted'}/>
         <Metric label="Total Debt" value={debtAccounts.length?money(financialDebt(viewFinancial)):'Not set'} sub={debtAccounts.length?debtAccounts.length+' debt account'+(debtAccounts.length===1?'':'s'):'No debt accounts recorded'} tone={debtAccounts.length?'red':'muted'}/>
@@ -170,7 +172,7 @@ export default function VexumFinancial({section,onSectionChange}:{section?:strin
         <Metric label="Cash" value={viewFinancial.accounts.length?money(financialCash(viewFinancial)):'Not set'} sub={connectedFinancial.accounts.length?connectedFinancial.accounts.length+' connected account'+(connectedFinancial.accounts.length===1?'':'s'):financial.accounts.length?'Existing manual records':'Connect a bank to begin'} />
         <Metric label="Collection Cost Basis" value={money(costBasis)} sub="Recorded acquisition cost"/>
         <Metric label="Upcoming Commitments" value={money(preorderTotal)} sub={money(preorder30)+' preorder balance due in 30 days'} tone="orange"/>
-        <Metric label="Resale Profit This Month" value="Unavailable" sub="Sell ledger not connected"/>
+        <Metric trend={(()=>{let total=0;const rows=viewFinancial.transactions.filter(tx=>tx.date>=range.start&&tx.date<=range.end&&tx.direction!=='transfer').toSorted((a,b)=>a.date.localeCompare(b.date));return rows.length?[0,...rows.map(tx=>total+=tx.direction==='income'?tx.amount:-tx.amount)]:[]})()} trendLabel="Recorded monthly cash flow" label="Net Cash Flow" value={(monthIncome>=monthExpenses?'+':'')+exactMoney(monthIncome-monthExpenses)} sub="Recorded income minus expenses" tone={monthIncome>=monthExpenses?'green':'red'}/>
       </div>
 
       <div className="vxf-grid-main">
@@ -279,7 +281,7 @@ export default function VexumFinancial({section,onSectionChange}:{section?:strin
     </div>}
 
     {tab==='Collection'&&<>
-      <div className="vxf-collection-metrics"><Metric label="Market Value" value={exactMoney(collectionValue)} sub={owned.length+' owned records'} tone="green"/><Metric label="Cost Basis" value={exactMoney(costBasis)} sub="Recorded acquisition cost"/><Metric label="Unrealized Difference" value={exactMoney(collectionValue-costBasis)} sub="Not realized until sold" tone={collectionValue>=costBasis?'green':'red'}/><Metric label="Quick-Sale Estimate" value={quickSaleCount?exactMoney(quickSaleKnown):'Unavailable'} sub={quickSaleCount?quickSaleCount+' explicit values':'No invented liquidity discount'}/></div>
+      <div className="vxf-collection-metrics"><Metric label="Market Value" value={exactMoney(collectionValue)} sub={owned.length+' owned records'} tone="green"/><Metric label="Cost Basis" value={exactMoney(costBasis)} sub="Recorded acquisition cost"/><Metric trend={[costBasis,collectionValue]} trendLabel="Cost → current value" label="Unrealized Difference" value={(collectionValue>=costBasis?'+':'')+exactMoney(collectionValue-costBasis)} sub="Not realized until sold" tone={collectionValue>=costBasis?'green':'red'}/><Metric label="Quick-Sale Estimate" value={quickSaleCount?exactMoney(quickSaleKnown):'Unavailable'} sub={quickSaleCount?quickSaleCount+' explicit values':'No invented liquidity discount'}/></div>
       <section className="vxf-panel vxf-full"><Head title="Collection Financials"/><div className="vxf-table collection"><div className="vxf-table-head"><span>Item</span><span>Condition</span><span>Paid</span><span>Market</span><span>Difference</span><span>Location</span><span/></div>{owned.slice().sort((a,b)=>b.currentValue*b.quantity-a.currentValue*a.quantity).map(item=><div key={item.id}><span><strong>{item.name}</strong><small>{item.category} · ×{item.quantity}</small></span><span>{item.condition}</span><b>{exactMoney(item.purchasePrice*item.quantity)}</b><b>{exactMoney(item.currentValue*item.quantity)}</b><b className={item.currentValue>=item.purchasePrice?'tone-green':'tone-red'}>{exactMoney((item.currentValue-item.purchasePrice)*item.quantity)}</b><span>{item.location||'Unassigned in Setup'}</span><span/></div>)}</div></section>
     </>}
 

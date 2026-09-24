@@ -15,10 +15,9 @@ import './vexum-setup.css';
 import './vexum-social.css';
 import './vexum-sell.css';
 import './vexum-theme.css';
+import './vexum-foundations.css';
+import './vexum-typography.css';
 import type {Metadata} from 'next';
-import {Inter} from 'next/font/google';
-
-const vexumFont=Inter({subsets:['latin'],display:'swap',weight:['400','500','600','700']});
 
 export const metadata:Metadata={
   title:'VEXUM',
@@ -37,5 +36,5 @@ export const viewport={
 };
 
 export default function Layout({children}:{children:React.ReactNode}){
-  return <html lang="en"><body className={vexumFont.className}>{children}</body></html>;
+  return <html lang="en"><head><link rel="preload" href="/fonts/inter-latin-variable.woff2" as="font" type="font/woff2" crossOrigin="anonymous"/></head><body>{children}</body></html>;
 }
