@@ -162,6 +162,8 @@
 /* 10 Financial progress system — exact visible geometry/colors from the Figma reference. */
 .vxf-widget-v2 .vxf-progress,
 .vxf-widget-v2 .vxf-goals i{
+  display:block;
+  width:100%;
   height:6px;
   border:0;
   border-radius:3px;
