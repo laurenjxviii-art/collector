@@ -1,6 +1,7 @@
 'use client';
 
 import {createElement,useEffect,useId,useLayoutEffect,useMemo,useRef,useState,type CSSProperties,type ReactNode} from 'react';
+import ControlCenter from './ControlCenter';
 import rawNodes from './nodes.json';
 import widgets from './widgets.json';
 import {homeBindings,type Auxiliary,type Series} from './data';
@@ -52,7 +53,7 @@ function LiveChart({series}: {series:Series}){
 export default function FigmaHome(props:HomeProps){
  const {workspace}=props,store=workspace.data,platform=normalizePlatformState(store.platform,true);
  const [aux,setAux]=useState<Auxiliary>(EMPTY_AUX),[now,setNow]=useState(()=>new Date()),[ranges,setRanges]=useState<Record<string,string>>({overall:'6M',portfolio:'1M',radar:'30D',sell:'30D'});
- const [cursor,setCursor]=useState(()=>new Date()),[menu,setMenu]=useState<string|null>(null),[editing,setEditing]=useState(false),[contentWidth,setContentWidth]=useState(1614),[query,setQuery]=useState('');
+ const [cursor,setCursor]=useState(()=>new Date()),[menu,setMenu]=useState<string|null>(null),[libraryRequest,setLibraryRequest]=useState(0),[contentWidth,setContentWidth]=useState(1614);
  const stage=useRef<HTMLDivElement>(null),life=normalizeLifeData(store.life);
  useEffect(()=>{const timer=setInterval(()=>setNow(new Date()),60000);return()=>clearInterval(timer)},[]);
  useEffect(()=>{const el=stage.current;if(!el)return;const resize=()=>{const css=getComputedStyle(el);setContentWidth(Math.max(200,el.clientWidth-parseFloat(css.getPropertyValue('--vxf-sidebar-width'))-2*parseFloat(css.getPropertyValue('--vxf-gutter'))))};resize();const observer=new ResizeObserver(resize);observer.observe(el);return()=>observer.disconnect()},[]);
@@ -66,7 +67,7 @@ export default function FigmaHome(props:HomeProps){
  function toggleWidget(id:string){const rows=layouts.map(w=>w.id===id?{...w,visible:!w.visible}:w);workspace.update({...store,platform:{...platform,dashboardLayouts:{...platform.dashboardLayouts,[HOME_LAYOUT_KEY]:rows}}});}
  const go=(module:VexumModuleId,section?:string)=>props.navigate(module,section);
  const actions:Partial<Record<string,()=>void>>={
- '2:8':props.onCommand,'2:19':props.onAsk,'2:30':props.onQuick,'2:34':props.onNotifications,'2:38':props.onSettings,'2:42':props.onProfile,'2:1135':props.onProfile,'2:996':()=>go('home'),'175:16':()=>go('home'),'2:1013':()=>go('life'),'2:1032':()=>go('portfolio'),'2:1044':()=>go('search'),'2:1052':()=>go('wishlist'),'2:1059':()=>go('radar'),'2:1073':()=>go('sell'),'2:1085':()=>go('setup'),'2:1102':()=>go('financial'),'2:1119':()=>go('social'),'2:61':()=>setEditing(true),'248:3570':props.onAsk,'248:3470':props.onNotifications,'248:3146':props.onNotifications,
+ '2:8':props.onCommand,'2:19':props.onAsk,'2:30':props.onQuick,'2:34':props.onNotifications,'2:38':props.onSettings,'2:42':props.onProfile,'2:1135':props.onProfile,'2:996':()=>go('home'),'175:16':()=>go('home'),'2:1013':()=>go('life'),'2:1032':()=>go('portfolio'),'2:1044':()=>go('search'),'2:1052':()=>go('wishlist'),'2:1059':()=>go('radar'),'2:1073':()=>go('sell'),'2:1085':()=>go('setup'),'2:1102':()=>go('financial'),'2:1119':()=>go('social'),'2:61':()=>setLibraryRequest(n=>n+1),'248:3570':props.onAsk,'248:3470':props.onNotifications,'248:3146':props.onNotifications,
  '248:3433':()=>{workspace.update({...store,platform:{...platform,notifications:{...platform.notifications,readIds:[...new Set([...(platform.notifications.readIds||[]),...(bindings.alertIds||[])])]}}});},
  '248:3200':()=>setCursor(new Date()),'248:3201':()=>setCursor(new Date()),'248:3324':()=>go('life','Calendar'),'248:3571':props.onAsk,'248:3572':props.onAsk,'248:3573':props.onAsk
  };
@@ -87,14 +88,15 @@ export default function FigmaHome(props:HomeProps){
  [0,1,2].forEach(i=>{const e=eventsToday[i];Object.assign(text,{['248:'+(3302+i*5)]:e?new Date(e.start).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):'',['248:'+(3303+i*5)]:e?.title||(!i?'Nothing scheduled':''),['248:'+(3304+i*5)]:e?.location||'',['248:'+(3305+i*5)]:''})});
  const upcoming=life.events.filter(e=>e.start.slice(0,10)>todayKey(now)).toSorted((a,b)=>a.start.localeCompare(b.start));[0,1].forEach(i=>Object.assign(text,{['248:'+(3319+i*3)]:upcoming[i]?new Date(upcoming[i].start).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'',['248:'+(3320+i*3)]:upcoming[i]?.title||''}));
 
- function render(node:Node,root:string,inControl=false):ReactNode{
-  if(hiddenNodes.has(node.id))return null;
+ function render(node:Node,root:string,inControl=false,preview=false):ReactNode{
+  if(hiddenNodes.has(node.id)||node.id==='2:61')return null;
   const number=Number(node.id.split(':')[1]);if(root==='248:3186'&&node.id.startsWith('248:')&&number>=3209&&number<=3289)return null;
+  if(preview&&node.id==='248:3199')return <div key={node.id} className={node.className}>‹　›</div>;
   if(node.id==='248:3199')return <div key={node.id} className={node.className} data-node-id={node.id}><button aria-label="Previous month" onClick={()=>setCursor(new Date(cursor.getFullYear(),cursor.getMonth()-1,1))}>‹</button>{'      '}<button aria-label="Next month" onClick={()=>setCursor(new Date(cursor.getFullYear(),cursor.getMonth()+1,1))}>›</button></div>;
   let click:(()=>void)|undefined=decorativeControls.has(node.id)?undefined:actions[node.id];const ownText=node.children.filter(c=>typeof c==='string').join('');
   if(!click&&/^(Open |Adjust target)/.test(ownText)){const route=destination(title(root));click=()=>go(route.module,route.section)}
   if(node.name==='Ellipsis')click=()=>setMenu(root);
-  let content:ReactNode=node.children.map((child,i)=>typeof child==='string'?child:render(child,root,inControl||!!click));
+  let content:ReactNode=node.children.map((child,i)=>typeof child==='string'?child:render(child,root,inControl||!!click,preview));
   if(Object.prototype.hasOwnProperty.call(text,node.id))content=text[node.id as keyof typeof text];
   let series=bindings.charts[node.id];
   if(!series&&node.name?.startsWith('Chart /')){const map:Record<string,string>={'175:35':'smallPortfolio','177:202':'smallFocus','177:177':'smallTasks','177:771':'smallTracker','177:439':'smallDrop'};series={values:bindings.series?.[map[root]]||[],color:root==='175:35'?'#ff171b':'#00e5a1'};}
@@ -102,11 +104,11 @@ export default function FigmaHome(props:HomeProps){
   if(bindings.images[node.id]&&node.tag!=='img')content=<img src={bindings.images[node.id]} alt="" className="vxf-item-image"/>;
   const shellStyles:Record<string,CSSProperties>={'2:995':{height:'100%',width:250},'2:998':{flex:1,height:'auto',overflowY:'auto'},'2:1135':{flexShrink:0},'2:18':{left:'auto',right:0},'2:61':{left:'auto',right:0},'2:60':{display:'none'},'2:7':{display:'none'},'2:74':{display:'none'},'2:8':{width:Math.min(475,Math.max(44,contentWidth-310))},'2:47':{width:'100%'},'2:56':{display:'none'},'2:50':{display:'none'}};
   const selected=chartRanges.find(([id])=>id===node.id);const style={...node.style,...bindings.style[node.id],...shellStyles[node.id],...(decorativeControls.has(node.id)?{pointerEvents:'none' as const}:{}),...(selected?{backgroundColor:ranges[selected[1]]===selected[2]?'#141618':'transparent',color:ranges[selected[1]]===selected[2]?'#f3f4f5':'#8f9498',borderRadius:5.76}: {})};
-  const tag=node.tag==='img'?'img':click&&!inControl?'button':node.tag;
+  const tag=node.tag==='img'?'img':click&&!inControl&&!preview?'button':node.tag;
   const base:Record<string,unknown>={key:node.id,className:node.className,'data-node-id':node.id,'data-name':node.name,style,'data-live-text':Object.prototype.hasOwnProperty.call(text,node.id)?'true':undefined};
   if(tag==='img')return createElement('img',{...base,src:bindings.images[node.id]||node.src,alt:node.alt||'',draggable:false});
-  if(click&&!inControl){base.type='button';base.onClick=click;base['aria-label']=buttonLabels[node.id]||(node.name==='Ellipsis'?'Open '+title(root)+' menu':(node.name?.startsWith('Button - ')?node.name.slice(9):ownText||node.name||'Open '+title(root)));if(selected)base['aria-pressed']=ranges[selected[1]]===selected[2];if(['177:173','177:175'].includes(node.id)){const task=tasksToday[node.id==='177:173'?0:1];base.role='checkbox';base['aria-checked']=task?.status==='completed';base['aria-label']='Complete '+task?.title;}}
-  if(root==='248:3186'&&node.id===root)content=<>{content}<div className="vxf-calendar-cells" style={{gridTemplateRows:'repeat('+weeks+',1fr)'}}>{days.map(day=>{const key=todayKey(day),events=life.events.filter(e=>e.start.startsWith(key));return <button key={key} aria-label={day.toLocaleDateString('en-US',{dateStyle:'full'})} onClick={()=>go('life','Calendar')} className={(day.getMonth()!==cursor.getMonth()?'muted ':'')+(key===todayKey(now)?'today':'')}><span>{day.getDate()}</span>{events.slice(0,2).map(e=><small key={e.id}>{e.title}</small>)}</button>})}</div></>;
+  if(click&&!inControl&&!preview){base.type='button';base.onClick=click;base['aria-label']=buttonLabels[node.id]||(node.name==='Ellipsis'?'Open '+title(root)+' menu':(node.name?.startsWith('Button - ')?node.name.slice(9):ownText||node.name||'Open '+title(root)));if(selected)base['aria-pressed']=ranges[selected[1]]===selected[2];if(['177:173','177:175'].includes(node.id)){const task=tasksToday[node.id==='177:173'?0:1];base.role='checkbox';base['aria-checked']=task?.status==='completed';base['aria-label']='Complete '+task?.title;}}
+  if(root==='248:3186'&&node.id===root)content=<>{content}<div className="vxf-calendar-cells" style={{gridTemplateRows:'repeat('+weeks+',1fr)'}}>{days.map(day=>{const key=todayKey(day),events=life.events.filter(e=>e.start.startsWith(key));return <button key={key} disabled={preview} aria-label={day.toLocaleDateString('en-US',{dateStyle:'full'})} onClick={()=>go('life','Calendar')} className={(day.getMonth()!==cursor.getMonth()?'muted ':'')+(key===todayKey(now)?'today':'')}><span>{day.getDate()}</span>{events.slice(0,2).map(e=><small key={e.id}>{e.title}</small>)}</button>})}</div></>;
   return createElement(tag,base,content);
  }
  const menuRoute=menu?destination(title(menu)):null;
@@ -117,12 +119,11 @@ export default function FigmaHome(props:HomeProps){
     <main className="vxf-main">
      <div className="vxf-topbar">{render(nodes['2:6'],'2:6')}</div>
      <div className="vxf-greeting">{render(nodes['2:45'],'2:45')}</div>
-     <div className="vxf-widget-area" style={{height:packed.height}}>{packed.items.map(w=><section key={w.id} data-widget-id={w.id} aria-label={title(w.id)} style={{position:'absolute',left:w.left,top:w.top,width:w.renderedWidth,height:w.renderedHeight,overflow:"hidden",borderRadius:9.216*w.scale}}><div style={{width:w.width,height:w.height,transform:'scale('+w.scale+')',transformOrigin:'top left'}}>{render(nodes[w.id],w.id)}</div></section>)}</div>
-     {!packed.items.length?<button className="vxf-empty-add" onClick={()=>setEditing(true)}>Add your first widget</button>:null}
+     <ControlCenter width={contentWidth} layouts={layouts} libraryRequest={libraryRequest} onChange={rows=>workspace.update({...store,platform:{...platform,dashboardLayouts:{...platform.dashboardLayouts,[HOME_LAYOUT_KEY]:rows}}})} renderWidget={(id,preview)=>render(nodes[id],id,false,preview)}/>
     </main>
    </div>
   </div>
-  <VexumDialog open={!!menu} onClose={()=>setMenu(null)} title={menu?title(menu):'Widget'}><div className="vxf-dialog-actions"><button onClick={()=>{if(menuRoute)go(menuRoute.module,menuRoute.section);setMenu(null)}}>Open {menuRoute?.module}</button><button onClick={()=>{if(menu)toggleWidget(menu);setMenu(null)}}>Remove from Home</button><button onClick={()=>{setMenu(null);setEditing(true)}}>Add Widgets</button></div></VexumDialog>
-  <VexumDialog open={editing} onClose={()=>setEditing(false)} title="Add Widgets" description={packed.items.length+' widgets on Home. Choose what you want to see.'}><div className="vxf-picker-search"><input aria-label="Find widgets" value={query} onChange={event=>setQuery(event.target.value)} placeholder="Find a widget…"/></div><div className="vxf-widget-picker">{widgets.filter(w=>w.name.toLowerCase().includes(query.toLowerCase())).map(w=><label key={w.id}><input type="checkbox" checked={!hidden.has(w.id)} onChange={()=>toggleWidget(w.id)}/><span>{title(w.id)}<small>{w.name.split(' / ')[1]}</small></span></label>)}</div></VexumDialog>
+  <VexumDialog open={!!menu} onClose={()=>setMenu(null)} title={menu?title(menu):'Widget'}><div className="vxf-dialog-actions"><button onClick={()=>{if(menuRoute)go(menuRoute.module,menuRoute.section);setMenu(null)}}>Open {menuRoute?.module}</button><button onClick={()=>{if(menu)toggleWidget(menu);setMenu(null)}}>Remove from Home</button><button onClick={()=>{setMenu(null);setLibraryRequest(n=>n+1)}}>Add Widgets</button></div></VexumDialog>
+
  </>;
 }

@@ -40,3 +40,9 @@ test('mark-all-read uses the same persisted notification IDs as the Home alerts'
  const unread=homeBindings(store,aux,current,{});assert.ok(unread.alertIds.length>0);assert.notEqual(unread.text['248:3129'],'0');
  store.platform.notifications.readIds=unread.alertIds;const read=homeBindings(store,aux,current,{});assert.equal(read.text['248:3129'],'0');assert.equal(read.text['248:3410'],'You’re all caught up');
 });
+test('free placement keeps gaps, displaces collisions, and restores desktop positions after mobile use',()=>{
+ const {moveHomeWidget,pinHomeLayout}=require('../app/home-figma/widget-layout.ts');
+ const initial=homeWidgetSelection();const sparse=moveHomeWidget(1614,initial,'175:35',7,8);let packed=packHomeWidgets(1614,sparse);let moved=packed.items.find(w=>w.id==='175:35');assert.equal(moved.x,7);assert.equal(moved.y,8);
+ const other=packed.items.find(w=>w.id==='175:306');const collision=moveHomeWidget(1614,sparse,'175:35',other.x,other.y);packed=packHomeWidgets(1614,collision);moved=packed.items.find(w=>w.id==='175:35');assert.equal(moved.x,other.x);assert.equal(moved.y,other.y);const displaced=packed.items.find(w=>w.id==='175:306');assert.ok(displaced.x!==other.x||displaced.y!==other.y);
+ const mobile=pinHomeLayout(406,sparse);const restored=packHomeWidgets(1614,mobile).items.find(w=>w.id==='175:35');assert.equal(restored.x,7);assert.equal(restored.y,8);
+});

@@ -33,3 +33,8 @@ The Home frame was exported in 82 targeted sections: 79 widgets, the header, gre
 This is a port of the desktop Home frame. On narrow phones, large widgets retain their full desktop composition and scale down; they are not a replacement for the separately designed mobile Home frames.
 
 Reputation and payout widgets display unavailable states because the existing workspace has no corresponding live source. Historical charts render only recorded observations. This change has not been deployed to the live site.
+## Control-center customization
+
+Edit Widgets enables free grid placement with intentional empty spaces, animated collision previews while dragging, widget sizing, keyboard arrow movement, on-screen position controls, Undo, Save, and Cancel. Positions are stored per responsive column count so editing on a narrow device preserves the wider layout. Pointer capture supports mouse, pen, and touch; dragging near viewport edges scrolls the canvas. The library includes actual widget previews, categories, search, accessible selection buttons, and focus restoration. Motion respects the system reduced-motion setting. Sidebar navigation targets and text are slightly larger.
+
+Additional validation: free placement and collision unit tests (seven tests total); browser verification of drag previews, saved gaps, keyboard moves, Undo/Cancel, resize persistence, library search focus, narrow-screen fit, and reduced motion. These checks pass against the production build.
