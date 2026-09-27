@@ -75,23 +75,43 @@ export function defaultHomeDashboard():HomeDashboardState{
 export function normalizeHomeDashboard(value?:HomeDashboardState):HomeDashboardState{
   const defaults=defaultHomeDashboard();
   if(!value||value.version!==1||!Array.isArray(value.widgets))return defaults;
-  const supplied=new Map(value.widgets.filter(widget=>widget&&HOME_WIDGET_TITLES[widget.id]).map(widget=>[widget.id,widget]));
+
+  const suppliedRows=value.widgets.filter(widget=>widget&&HOME_WIDGET_TITLES[widget.id]);
+  const supplied=new Map(suppliedRows.map(widget=>[widget.id,widget]));
+  const legacyGrid=suppliedRows.some(widget=>{
+    const expected=widget.size==='metric'?1:widget.size==='medium'?2:widget.size==='large'?4:0;
+    return !expected||widget.width!==expected||widget.height!==expected;
+  });
+
+  // Legacy 12-column dashboards migrate once to the canonical 01 Home arrangement.
+  // After the new 1/2/4-span layout is saved, preserve the user's widget ordering.
+  const orderedIds=legacyGrid
+    ?defaults.widgets.map(widget=>widget.id)
+    :[
+      ...suppliedRows.map(widget=>widget.id),
+      ...defaults.widgets.map(widget=>widget.id).filter(id=>!supplied.has(id))
+    ];
+  const fallbackById=new Map(defaults.widgets.map(widget=>[widget.id,widget]));
+
   return {
     version:1,
-    widgets:defaults.widgets.map((fallback,index)=>{
-      const current=supplied.get(fallback.id);
+    widgets:orderedIds.map((id,index)=>{
+      const fallback=fallbackById.get(id)!;
+      const current=supplied.get(id);
       if(!current)return fallback;
+      const currentSize=current.size==='metric'||current.size==='medium'||current.size==='large'?current.size:fallback.size;
+      const expected=currentSize==='metric'?1:currentSize==='medium'?2:4;
       return {
         ...fallback,
         ...current,
         id:fallback.id,
         type:fallback.type,
         visible:typeof current.visible==='boolean'?current.visible:true,
-        x:Number.isFinite(current.x)?current.x:index%4,
-        y:Number.isFinite(current.y)?current.y:Math.floor(index/4),
-        width:Number.isFinite(current.width)&&current.width>0?current.width:fallback.width,
-        height:Number.isFinite(current.height)&&current.height>0?current.height:fallback.height,
-        size:['metric','medium','large','wide','full'].includes(current.size)?current.size:fallback.size,
+        x:Number.isFinite(current.x)?current.x:index%6,
+        y:Number.isFinite(current.y)?current.y:Math.floor(index/6),
+        width:legacyGrid?fallback.width:(current.width===expected?current.width:expected),
+        height:legacyGrid?fallback.height:(current.height===expected?current.height:expected),
+        size:legacyGrid?fallback.size:currentSize,
         config:current.config&&typeof current.config==='object'&&!Array.isArray(current.config)?current.config:fallback.config
       };
     }),
