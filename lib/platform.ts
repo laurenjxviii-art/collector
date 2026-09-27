@@ -21,6 +21,11 @@ export type PlatformIdentity={
 export type PlatformAppearance={
   theme:ThemeMode;
   accentColor:string;
+  backgroundColor:string;
+  widgetBackgroundColor:string;
+  widgetStrokeColor:string;
+  textColor:string;
+  mutedTextColor:string;
   density:AppearanceDensity;
   textSize:TextSize;
   motion:MotionLevel;
@@ -165,7 +170,7 @@ export function defaultPlatformState(legacy=true):PlatformState{
     collectorCategories:[],
     collectorInterests:[],
     identity:{username:'',displayName:'',birthday:'',country:'United States',currency:'USD',language:'English'},
-    appearance:{theme:'dark',accentColor:'#FF0000',density:'compact',textSize:'medium',motion:'full',glow:'subtle',sidebarWidth:'standard',numberFormat:'full'},
+    appearance:{theme:'dark',accentColor:'#FF0000',backgroundColor:'#000000',widgetBackgroundColor:'#070707',widgetStrokeColor:'#191818',textColor:'#F3F4F5',mutedTextColor:'#ADB5BD',density:'compact',textSize:'medium',motion:'full',glow:'subtle',sidebarWidth:'standard',numberFormat:'full'},
     notifications:{
       push:true,email:false,taskReminders:true,radar:true,marketplace:true,financial:true,social:true,
       quietHours:{enabled:false,start:'23:00',end:'08:00',urgentCategories:['Grail Restock','Financial Security']},
@@ -234,6 +239,11 @@ export function normalizePlatformState(value?:PlatformState,legacy=true):Platfor
     appearance:{
       theme:['dark','light'].includes(appearance.theme)?appearance.theme:'dark',
       accentColor:typeof appearance.accentColor==='string'&&/^#[0-9a-f]{6}$/i.test(appearance.accentColor)?appearance.accentColor.toUpperCase():'#FF0000',
+      backgroundColor:typeof appearance.backgroundColor==='string'&&/^#[0-9a-f]{6}$/i.test(appearance.backgroundColor)?appearance.backgroundColor.toUpperCase():'#000000',
+      widgetBackgroundColor:typeof appearance.widgetBackgroundColor==='string'&&/^#[0-9a-f]{6}$/i.test(appearance.widgetBackgroundColor)?appearance.widgetBackgroundColor.toUpperCase():'#070707',
+      widgetStrokeColor:typeof appearance.widgetStrokeColor==='string'&&/^#[0-9a-f]{6}$/i.test(appearance.widgetStrokeColor)?appearance.widgetStrokeColor.toUpperCase():'#191818',
+      textColor:typeof appearance.textColor==='string'&&/^#[0-9a-f]{6}$/i.test(appearance.textColor)?appearance.textColor.toUpperCase():'#F3F4F5',
+      mutedTextColor:typeof appearance.mutedTextColor==='string'&&/^#[0-9a-f]{6}$/i.test(appearance.mutedTextColor)?appearance.mutedTextColor.toUpperCase():'#ADB5BD',
       density:['compact','standard','comfortable'].includes(appearance.density)?appearance.density:'compact',
       textSize:['small','medium','large'].includes(appearance.textSize)?appearance.textSize:'medium',
       motion:['full','reduced'].includes(appearance.motion)?appearance.motion:'full',
