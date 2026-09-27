@@ -348,7 +348,17 @@ export default function VexumApp({
 
 
   const rootClass=['vx-app','vxp-platform','theme-'+platform.appearance.theme,'density-'+platform.appearance.density,'text-'+platform.appearance.textSize,'motion-'+platform.appearance.motion,'glow-'+platform.appearance.glow,'sidebar-'+platform.appearance.sidebarWidth].join(' ');
-  const rootStyle={'--vx-red':platform.appearance.accentColor,'--vx-accent':platform.appearance.accentColor} as CSSProperties;
+  const rootStyle={
+    '--vx-red':platform.appearance.accentColor,
+    '--vx-accent':platform.appearance.accentColor,
+    '--vx-bg':platform.appearance.backgroundColor,
+    '--vx-card':platform.appearance.widgetBackgroundColor,
+    '--vx-widget-bg':platform.appearance.widgetBackgroundColor,
+    '--vx-line':platform.appearance.widgetStrokeColor,
+    '--vx-widget-stroke':platform.appearance.widgetStrokeColor,
+    '--vx-text':platform.appearance.textColor,
+    '--vx-muted':platform.appearance.mutedTextColor
+  } as CSSProperties;
 
   return <div className={rootClass} style={rootStyle}>
     <a className="vx-skip-link" href="#vexum-main">Skip to main content</a>
