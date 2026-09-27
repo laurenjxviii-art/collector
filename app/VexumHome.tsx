@@ -463,7 +463,7 @@ export default function VexumHome({displayName,unread,onCommand,onAsk,onQuick,on
             ['SETUP',setupTop?setupTop.name+' is nearing capacity.':'No measured Setup capacity.',setupTop?Math.round(setupTop.pct)+'% full':'Open Setup',setupTop?Math.round(setupTop.pct)+'%':'—','orange'],
             ['FINANCIAL',money(monthSpend)+' of hobby purchases recorded this month.',financial.transactions.length+' financial transactions',money(monthSpend),'muted']
           ].map(row=><div className="vxh-brief-row-exact" key={row[0]}><span>{row[0]}</span><div><strong>{row[1]}</strong><small>{row[2]}</small></div><b className={String(row[4])}>{row[3]}</b></div>)}
-          <button className="vxh-brief-ask" onClick={()=>{const button=document.querySelector<HTMLButtonElement>('.vxp-ask');button?.click()}}><Sparkles/>Ask VEXUM about today’s brief… <span>↵</span></button>
+          <button className="vxh-brief-ask" onClick={onAsk}><Sparkles/>Ask VEXUM about today’s brief… <span>↵</span></button>
         </div>
       </LargeWidget>
 
