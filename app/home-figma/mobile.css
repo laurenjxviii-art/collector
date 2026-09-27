@@ -1,0 +1,94 @@
+/* VEXUM phone Home — Figma "01 Home · Mobile". Everything is scoped to .vxm-* so desktop Home is unaffected. */
+/* The app reset leaves elements inline; phone Home declares its own box model. */
+.vxm-home.vxf-home,.vxm-home .vxm-grid,.vxm-home .vxm-clip,.vxm-home .vxm-frame,.vxm-home .vxm-date,.vxm-home .vxm-greeting,.vxm-home .vxm-sr,.vxm-sheet-scroll,.vxm-card,.vxm-preview.vxf-home,.vxm-sheet-sub,.vxm-sheet-head h2{display:block}
+.vxm-home.vxf-home{--vxm-red:#ff171b;min-height:100dvh;padding:calc(env(safe-area-inset-top) + 8px) 16px calc(112px + env(safe-area-inset-bottom));background:#000;overflow-x:clip}
+.vxm-home .vxm-top{display:flex;align-items:center;justify-content:space-between;height:60px}
+.vxm-home .vxm-logo{display:block;height:52px;margin-left:-5px;-webkit-tap-highlight-color:transparent}
+.vxm-home .vxm-logo img{height:52px;width:auto;display:block}
+.vxm-home .vxm-top-actions{display:flex;gap:8px}
+.vxm-home .vxm-round{position:relative;display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:#111214;border:1px solid #262626;color:#f3f4f5;-webkit-tap-highlight-color:transparent;transition:background .15s,transform .15s}
+.vxm-home .vxm-round:active{transform:scale(.94);background:#1a1b1e}
+.vxm-home .vxm-dot{position:absolute;top:6px;right:7px;width:8px;height:8px;border-radius:50%;background:var(--vxm-red);box-shadow:0 0 0 2px #111214}
+.vxm-home .vxm-avatar{background:#240708;border-color:var(--vxm-red);font:600 15px/1 var(--font-inter),Inter,sans-serif}
+.vxm-home .vxm-date{margin-top:10px;color:var(--vxm-red);font:500 12px/14px var(--font-inter),Inter,sans-serif;letter-spacing:.07em;text-transform:uppercase}
+.vxm-home .vxm-greeting{margin-top:4px;color:#f3f4f5;font:600 30px/36px var(--font-inter),Inter,sans-serif;letter-spacing:-.02em}
+.vxm-home .vxm-editbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;animation:vxm-in .2s ease-out}
+.vxm-home .vxm-editbar span{color:#8f9498;font:400 11px/14px var(--font-inter),Inter,sans-serif}
+.vxm-home .vxm-editbar button{color:var(--vxm-red);font:600 15px/18px var(--font-inter),Inter,sans-serif;padding:6px 0 6px 12px}
+.vxm-home .vxm-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.vxm-home .vxm-grid{position:relative;margin-top:24px;transition:height .3s ease}
+.vxm-home .vxm-editbar+.vxm-sr+.vxm-grid{margin-top:14px}
+.vxm-home .vxm-widget{position:absolute;left:0;top:0;border-radius:6.4px;transition:transform .34s cubic-bezier(.2,.8,.2,1),width .3s,height .3s;touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+.vxm-home .vxm-clip{width:100%;height:100%;overflow:hidden;border-radius:6.4px}
+.vxm-home .vxm-frame{transform-origin:top left}
+.vxm-home .vxm-grid.is-editing .vxm-widget{animation:vxm-jiggle .26s ease-in-out infinite alternate;animation-delay:calc(var(--i) * -65ms)}
+.vxm-home .vxm-widget.is-dragging{transition:none;animation:none!important;scale:1.04;box-shadow:0 20px 44px rgba(0,0,0,.8),0 0 0 1px var(--vxm-red),0 0 22px rgba(255,23,27,.28);border-radius:6.4px}
+.vxm-home .vxm-remove{position:absolute;left:-7px;top:-7px;z-index:3;display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#1d1e21;border:1px solid #3a3b40;color:#f3f4f5;box-shadow:0 2px 6px rgba(0,0,0,.6)}
+.vxm-home .vxm-size{position:absolute;right:6px;bottom:6px;z-index:3;padding:3px 8px;border-radius:999px;background:rgba(24,25,28,.94);border:1px solid #3a3b40;color:#f3f4f5;font:500 10px/12px var(--font-inter),Inter,sans-serif}
+.vxm-home .vxm-empty{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:28px;padding:36px 16px;border:1px dashed #2a2b30;border-radius:8px;text-align:center;color:#8f9498;font:400 13px/18px var(--font-inter),Inter,sans-serif}
+.vxm-home .vxm-empty strong{color:#f3f4f5;font-weight:600;font-size:15px}
+.vxm-home .vxm-add{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;height:56px;margin-top:12px;border:1px dashed #3a3b40;border-radius:8px;color:#adb5bd;font:500 14px/18px var(--font-inter),Inter,sans-serif;transition:background .15s,border-color .15s}
+.vxm-home .vxm-add:active{background:#0e0f11;border-color:#56585f}
+.vxm-home .vxm-dock{position:fixed;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom));z-index:40;display:flex;align-items:center;justify-content:space-between;height:60px;padding:0 8px;border-radius:20px;background:rgba(10,10,11,.86);border:1px solid #262626;-webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4);box-shadow:0 12px 32px rgba(0,0,0,.55)}
+.vxm-home .vxm-dock button{display:grid;place-items:center;min-width:26px;height:40px;border-radius:12px;color:#adb5bd;-webkit-tap-highlight-color:transparent;transition:color .15s,transform .15s}
+.vxm-home .vxm-dock button:active{transform:scale(.9);color:#f3f4f5}
+.vxm-home .vxm-dock button.is-active{display:flex;align-items:center;gap:6px;padding:0 12px;border:1px solid var(--vxm-red);background:rgba(255,23,27,.08);color:#f3f4f5;font:500 13px/18px var(--font-inter),Inter,sans-serif}
+.vxm-home .vxm-round:focus-visible,.vxm-home .vxm-dock button:focus-visible,.vxm-home .vxm-add:focus-visible,.vxm-home .vxm-editbar button:focus-visible,.vxm-home .vxm-remove:focus-visible,.vxm-home .vxm-size:focus-visible{outline:2px solid #fff;outline-offset:2px}
+@media(max-width:359px){.vxm-home .vxm-dock button.is-active span{display:none}.vxm-home .vxm-dock{padding:0 6px}}
+/* Phone calendar: this week and next, native Figma units (scaled with the widget). */
+.vxm-home .vxm-cal-cells{position:absolute;display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:repeat(2,1fr)}
+.vxm-home .vxm-cal-cells button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:#f3f4f5}
+.vxm-home .vxm-cal-cells span{display:block;width:26.23px;height:26.23px;border-radius:50%;text-align:center;font:400 12.67px/26.23px var(--font-inter),Inter,sans-serif !important}
+.vxm-home .vxm-cal-cells button.muted span{color:#5f666d}
+.vxm-home .vxm-cal-cells button.today span{background:var(--vxm-red);color:#fff;font-weight:600 !important}
+.vxm-home .vxm-cal-cells i{display:flex;gap:3px;height:5.83px}
+.vxm-home .vxm-cal-cells b{display:block;width:5.83px;height:5.83px;border-radius:50%;background:var(--vxm-red)}
+/* Add-widget sheet */
+.vxm-sheet-root{position:fixed;inset:0;z-index:80;font-family:var(--font-inter),Inter,sans-serif}
+.vxm-scrim{position:absolute;inset:0;background:rgba(0,0,0,.62);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);animation:vxm-fade .22s ease-out;transition:opacity .2s}
+.vxm-sheet{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;height:calc(100dvh - 72px - env(safe-area-inset-top));padding:0 16px;background:#0b0b0c;border:1px solid #262626;border-bottom:0;border-radius:20px 20px 0 0;box-shadow:0 -18px 50px rgba(0,0,0,.6);animation:vxm-up .3s cubic-bezier(.2,.8,.2,1);transition:transform .2s ease-in;outline:none}
+.vxm-sheet-root.is-closing .vxm-sheet{transform:translateY(100%)}
+.vxm-sheet-root.is-closing .vxm-scrim{opacity:0}
+.vxm-sheet button{appearance:none;border:0;background:none;color:inherit;font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.vxm-grabber{display:grid;place-items:center;height:22px;margin:0 -16px;touch-action:none;cursor:grab}
+.vxm-grabber span{width:36px;height:5px;border-radius:3px;background:#3a3b40}
+.vxm-sheet-head{display:flex;align-items:center;justify-content:space-between;margin:6px 0 12px}
+.vxm-sheet-head h2{margin:0;color:#f3f4f5;font:600 22px/26px var(--font-inter),Inter,sans-serif;letter-spacing:-.01em}
+.vxm-sheet .vxm-close{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:#1b1c1f;border:1px solid #2a2b30;color:#f3f4f5}
+.vxm-search{display:flex;align-items:center;gap:10px;height:40px;padding:0 12px;border:1px solid #262626;border-radius:8px;background:#0f1011;color:#8f9498}
+.vxm-search input{flex:1;min-width:0;height:100%;border:0;outline:0;background:transparent;color:#f3f4f5;font:400 16px/20px var(--font-inter),Inter,sans-serif}
+.vxm-search input::placeholder{color:#8f9498}
+.vxm-search:focus-within{border-color:#4a4b52}
+.vxm-chips{display:flex;gap:8px;overflow-x:auto;margin:13px -16px 0;padding:0 16px;scrollbar-width:none}
+.vxm-chips::-webkit-scrollbar{display:none}
+.vxm-sheet .vxm-chips button{flex:none;height:29px;padding:0 12px;border-radius:999px;border:1px solid #2a2b30;background:#0f1011;color:#f3f4f5;font:500 12px/15px var(--font-inter),Inter,sans-serif}
+.vxm-sheet .vxm-chips button[aria-pressed=true]{background:var(--vxm-red,#ff171b);border-color:#ff171b;color:#fff}
+.vxm-seg{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;height:34px;margin-top:14px;padding:2px;border:1px solid #262626;border-radius:8px}
+.vxm-sheet .vxm-seg button{border-radius:6px;border:1px solid transparent;color:#adb5bd;font:500 12px/15px var(--font-inter),Inter,sans-serif;transition:background .15s,color .15s}
+.vxm-sheet .vxm-seg button[aria-pressed=true]{background:#1b1c1f;border-color:#2f3035;color:#f3f4f5}
+.vxm-sheet-sub{display:flex;align-items:baseline;justify-content:space-between;margin:20px 0 10px}
+.vxm-sheet-sub strong{color:#f3f4f5;font:600 13px/16px var(--font-inter),Inter,sans-serif}
+.vxm-sheet-sub span{color:#8f9498;font:400 11px/14px var(--font-inter),Inter,sans-serif}
+.vxm-sheet-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;margin:0 -16px;padding:4px 16px calc(24px + env(safe-area-inset-bottom))}
+.vxm-sheet-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-content:start}
+.vxm-card{position:relative;min-width:0;overflow:hidden;border-radius:6.4px;animation:vxm-in .22s ease-out both}
+.vxm-preview.vxf-home{min-height:0;padding:0;width:100%;height:100%;overflow:hidden;border-radius:6.4px;pointer-events:none;isolation:auto;background:transparent}
+.vxm-preview .vxm-frame{transform-origin:top left}
+.vxm-sheet .vxm-card-add{position:absolute;top:5px;right:5px;z-index:2;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#ff171b;color:#fff;box-shadow:0 0 12px rgba(255,23,27,.45);transition:transform .15s,background .15s}
+.vxm-sheet .vxm-card-add:active{transform:scale(.9)}
+.vxm-card.is-added .vxm-card-add{background:#0b1a14;border:1px solid #00e5a1;color:#00e5a1;box-shadow:none}
+.vxm-card.is-added::after{content:'';position:absolute;inset:0;border-radius:6.4px;box-shadow:inset 0 0 0 1px rgba(0,229,161,.5);pointer-events:none}
+.vxm-none{grid-column:span 2;padding:32px 0;text-align:center;color:#8f9498;font:400 13px/18px var(--font-inter),Inter,sans-serif}
+.vxm-sheet button:focus-visible,.vxm-search input:focus-visible{outline:2px solid #fff;outline-offset:2px}
+/* Widget menu */
+.vxm-menu{display:grid;gap:8px}
+.vxm-menu button{min-height:44px;padding:0 14px;border:1px solid #262626;border-radius:8px;background:#111214;color:#f3f4f5;text-align:left;font:500 14px/18px var(--font-inter),Inter,sans-serif}
+.vxm-menu button.danger{color:#ff5b5f}
+.vxm-menu-sizes{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:6px}
+.vxm-menu .vxm-menu-sizes button{text-align:center}
+.vxm-menu .vxm-menu-sizes button[aria-pressed=true]{border-color:#ff171b;background:rgba(255,23,27,.08)}
+@keyframes vxm-jiggle{from{rotate:-.55deg}to{rotate:.55deg}}
+@keyframes vxm-up{from{transform:translateY(100%)}to{transform:none}}
+@keyframes vxm-fade{from{opacity:0}to{opacity:1}}
+@keyframes vxm-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.vxm-home *,.vxm-sheet-root,.vxm-sheet-root *{animation:none!important;transition:none!important}}
