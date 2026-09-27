@@ -120,15 +120,19 @@ export default function PlaidConnection({config,session,platform,onSave,onMessag
 
   return <div className="vxt-connection vxt-plaid-connection">
     <div><span className="icon"><Link2/></span><span><strong>Financial Accounts</strong><small>Secure Plaid sync for balances, transactions, recurring activity, liabilities, and investments.</small></span></div>
-    <aside><span className={'vxt-status '+statusClass}>{status}</span><div className="vxt-plaid-actions"><button className="primary" disabled={busy||!session||!mfaReady||configured!==true} onClick={()=>void begin()}><Plus/>{busy?'Opening…':connected?'Connect Another Bank':error?'Try Again':'Connect Bank'}</button>{connected?<button disabled={busy} onClick={()=>void manualSync()}><RefreshCw/>Sync now</button>:null}</div></aside>
+    <aside><span className={'vxt-status '+statusClass}>{status}</span><div className="vxt-plaid-actions">{!connected?<button className="primary" disabled={busy||!session||!mfaReady||configured!==true} onClick={()=>void begin()}><Plus/>{busy?'Opening…':error?'Try Again':'Connect bank'}</button>:null}{connected?<button disabled={busy} onClick={()=>void manualSync()}><RefreshCw/>Sync now</button>:null}</div></aside>
     <footer>
       {!mfaReady&&platform.security.requireMfaForExternalFinancial?<p><LockKeyhole/>MFA must be verified before an external financial connection can be enabled.</p>:null}
       {configured===false?<p>Plaid server credentials were not detected by this deployment.</p>:null}
       
       {snapshot?.items.map(item=><div className="vxt-plaid-item" key={item.item_id}><span><strong>{item.institution_name||'Connected institution'}</strong><small>{item.status==='needs_update'?'Login/update required':item.status==='error'?(item.error_code||'Connection error'):'Connected'}{item.last_synced_at?' · synced '+new Date(item.last_synced_at).toLocaleString():''}</small></span><span><button disabled={busy} onClick={()=>void begin(item.item_id)}>{item.status==='needs_update'||item.status==='error'?'Try Again':'Manage'}</button><button disabled={busy} className="danger" onClick={()=>setDisconnectTarget({itemId:item.item_id,name:item.institution_name||'institution'})}><Unplug/>Remove</button></span></div>)}
+      {connected?<button className="vxt-plaid-add-another" disabled={busy||!session||!mfaReady||configured!==true} onClick={()=>void begin()}>
+        <span className="vxt-plaid-add-icon"><Plus/></span>
+        <span><strong>{busy?'Opening Plaid…':'Add another bank'}</strong><small>Connect another bank, card, loan, or investment institution without replacing your existing connections.</small></span>
+      </button>:null}
       {blocked.map(row=><p className="vxt-plaid-product-state" key={row.itemId+row.product}><strong>{row.institution} · {row.product}</strong>: {row.state.status.toUpperCase()}{row.state.errorCode?' · '+row.state.errorCode:''}{row.state.message?' — '+row.state.message:''}</p>)}
       {error?<p className="vxt-plaid-error">{error}</p>:null}
-      <p>Connect as many institutions as you need. Removing an institution deletes only its synced Plaid data; existing VEXUM records are preserved.</p>
+      <p>{connected?'Each institution stays connected separately. Add another at any time; removing one will not affect the others.':'Connect your first institution to begin securely syncing financial accounts through Plaid.'}</p>
     </footer>
     <VexumConfirmDialog open={Boolean(disconnectTarget)} onClose={()=>setDisconnectTarget(null)} onConfirm={disconnect} title="Disconnect financial institution?" description={'Remove '+(disconnectTarget?.name||'this institution')+' from VEXUM? Synced data for this institution will be removed. Other VEXUM records stay intact.'} confirmLabel="Remove" danger busy={busy}/>
   </div>;
