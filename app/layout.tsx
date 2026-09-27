@@ -20,6 +20,8 @@ import './vexum-typography.css';
 import './vexum-home-figma.css';
 import './home-figma/home.css';
 import './home-figma/generated.css';
+import './home-figma/mobile-generated.css';
+import './home-figma/mobile.css';
 import type {Metadata} from 'next';
 import localFont from 'next/font/local';
 

@@ -38,3 +38,13 @@ Reputation and payout widgets display unavailable states because the existing wo
 Edit Widgets enables free grid placement with intentional empty spaces, animated collision previews while dragging, widget sizing, keyboard arrow movement, on-screen position controls, Undo, Save, and Cancel. Positions are stored per responsive column count so editing on a narrow device preserves the wider layout. Pointer capture supports mouse, pen, and touch; dragging near viewport edges scrolls the canvas. The library includes actual widget previews, categories, search, accessible selection buttons, and focus restoration. Motion respects the system reduced-motion setting. Sidebar navigation targets and text are slightly larger.
 
 Additional validation: free placement and collision unit tests (seven tests total); browser verification of drag previews, saved gaps, keyboard moves, Undo/Cancel, resize persistence, library search focus, narrow-screen fit, and reduced motion. These checks pass against the production build.
+
+## Phone Home (Figma "01 Home · Mobile")
+
+Screens up to 700px wide render `app/home-figma/MobileHome.tsx`; wider screens keep the desktop control center unchanged. The phone layout is stored under its own key (`figma-01-home-mobile`), so editing Home on a phone never moves the desktop layout.
+
+- Sizes follow the Figma frame: small is one cell, medium is one column by two rows, large is two columns by two rows. Desktop medium widgets fill the large slot at their designed proportions; Today, Upcoming Events and Portfolio Value also have the 1×2 medium layout, and Overall Value and Calendar have reflowed large layouts, all taken from the Figma phone frames.
+- Mechanics: long-press a widget (or use its ⋯ menu → Edit Home) to enter edit mode; drag to reorder, tap − to remove, tap the size chip to switch sizes, Done to save. "+ Add widget" opens a bottom sheet with search, categories and Small/Medium/Large previews.
+- Top bar (quick add, notifications, profile) and the dock with all ten sections call the existing VEXUM controls.
+- `app/home-figma/mobile-layouts.raw.json` holds the Figma phone geometry (in desktop widget units). After changing it, run `node scripts/build-mobile-home.mjs` to regenerate `mobile-generated.css` and `mobile-layouts.json`.
+- `tests/mobile-home.test.mjs` covers the starter arrangement, packing without overlaps, saved-layout normalization and size rules.
