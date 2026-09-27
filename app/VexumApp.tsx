@@ -324,7 +324,17 @@ export default function VexumApp({
   const activeSection=moduleSections[view]||'';
   const frame=(hero:string,children:ReactNode)=><PageFrame hero={hero} displayName={displayName} unread={unread} onCommand={openCommand} onAsk={openAsk} onQuick={()=>openQuick()} onNotifications={openNotifications} onProfile={openProfile} onSettings={()=>openSettings()}>{children}</PageFrame>;
 
-  let content:ReactNode=frame('home',<VexumHome/>);
+  let content:ReactNode=<VexumHome
+    displayName={displayName}
+    unread={unread}
+    onCommand={openCommand}
+    onAsk={openAsk}
+    onQuick={()=>openQuick()}
+    onNotifications={openNotifications}
+    onProfile={openProfile}
+    onSettings={()=>openSettings()}
+    navigate={module=>navigate(module)}
+  />;
   if(view==='life')content=frame('life',<VexumLife section={moduleSections.life} onSectionChange={section=>setModuleSection('life',section)}/>);
   else if(view==='portfolio')content=frame('plain',<VexumPortfolio section={moduleSections.portfolio} onSectionChange={section=>setModuleSection('portfolio',section)}/>);
   else if(view==='search')content=frame('search',<VexumSearch initialQuery={initialSearchQuery} initialProductId={initialProductId}/>);
@@ -341,7 +351,7 @@ export default function VexumApp({
 
   return <div className={rootClass} style={rootStyle}>
     <a className="vx-skip-link" href="#vexum-main">Skip to main content</a>
-    <Sidebar view={view} navigate={navigate} enabled={enabled} order={platform.moduleOrder} displayName={displayName} sections={sidebarSections} activeSection={activeSection} onSection={setModuleSection} onProfile={openProfile}/>
+    {view==='home'?null:<Sidebar view={view} navigate={navigate} enabled={enabled} order={platform.moduleOrder} displayName={displayName} sections={sidebarSections} activeSection={activeSection} onSection={setModuleSection} onProfile={openProfile}/>} 
     {content}
     <QuickAddPanel key={quickType||'all'} open={quickOpen} initialType={quickType} onClose={closeQuick} workspace={workspace} navigate={navigate}/>
     <NotificationCenter open={notificationsOpen} onClose={()=>setNotificationsOpen(false)} workspace={workspace} navigate={navigate}/>
