@@ -21,6 +21,7 @@ const FIGMA_ROW=119.81156158447266;
 const FIGMA_GAP=17.280517578125;
 const FIGMA_CANVAS=1614;
 const FIGMA_WIDGET_HEIGHT=5603.49462890625;
+const FIGMA_HOME_HEIGHT=5790;
 const figmaX=(col:number)=>(col-1)*(FIGMA_COL+FIGMA_GAP);
 const figmaY=(row:number)=>(row-1)*(FIGMA_ROW+FIGMA_GAP);
 
@@ -356,9 +357,10 @@ export default function VexumHome(){
     {col:6,row:24,title:'Daily Note',kind:'list' as MiniKind,value:'—',sub:'No daily note saved',route:'/life'}
   ];
 
-  return <div className="vxh-figma-stage" ref={stageRef} style={{height:(122+FIGMA_WIDGET_HEIGHT)*figmaScale}}>
+  return <div className="vxh-figma-stage" ref={stageRef} style={{height:FIGMA_HOME_HEIGHT*figmaScale}}>
     <div className={'vxh-exact-page'+(editMode?' is-editing':'')} style={{transform:'scale('+figmaScale+')'}}>
     <section className="vxh-exact-page-title">
+      <img className="vxh-home-title-wordmark" src="/vexum-wordmark.png" alt="" aria-hidden="true"/>
       <div><h1>{greeting()}.</h1><p>{dateLabel()} · Your VEXUM command center.</p></div>
       <button className={editMode?'active':''} onClick={()=>setEditMode(value=>!value)}><ListChecks/>{editMode?'Done Editing':'Edit Widgets'}</button>
     </section>
