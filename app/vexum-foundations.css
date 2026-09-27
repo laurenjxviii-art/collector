@@ -267,3 +267,180 @@
   .vx-app .vxp2-portfolio-value-widget .vxp2-portfolio-ranges{width:100%;margin-left:0;overflow-x:auto}
   .vx-app .vxp2-portfolio-counts{grid-template-columns:repeat(3,1fr)}
 }
+
+
+/* 01 Home / 6-column true grid.
+   Figma desktop geometry: 221×104 base cell, 15px gaps, 6 columns.
+   Small = 1×1, medium = 2×2, large = 4×4. */
+.vx-app .vxh-grid{
+  --vxh-cell-height:104px;
+  display:grid;
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  grid-auto-rows:var(--vxh-cell-height);
+  grid-auto-flow:dense;
+  gap:15px;
+  width:100%;
+  max-width:1401px;
+  margin-inline:auto;
+  align-items:stretch;
+}
+.vx-app .vxh-widget{
+  min-width:0;
+  min-height:0!important;
+  height:100%;
+  overflow:hidden!important;
+  background:#000!important;
+  border:1px solid #262626!important;
+  border-radius:8px!important;
+  box-shadow:none!important;
+}
+.vx-app .vxh-widget.size-metric{
+  grid-column:span 1;
+  grid-row:span 1;
+  min-height:0!important;
+}
+.vx-app .vxh-widget.size-medium{
+  grid-column:span 2;
+  grid-row:span 2;
+  min-height:0!important;
+}
+.vx-app .vxh-widget:is(.size-large,.size-wide,.size-full){
+  grid-column:2 / span 4;
+  grid-row:span 4;
+  min-height:0!important;
+}
+
+/* Current 01 Home arrangement: small metrics flank the first centered large widget. */
+.vx-app .vxh-widget.widget-collectionValue{grid-column:1;grid-row:1}
+.vx-app .vxh-widget.widget-costBasis{grid-column:6;grid-row:1}
+.vx-app .vxh-widget.widget-profitLoss{grid-column:1;grid-row:2}
+.vx-app .vxh-widget.widget-monthlySpend{grid-column:6;grid-row:2}
+.vx-app .vxh-widget.widget-portfolioPerformance{grid-column:2 / span 4;grid-row:1 / span 4}
+
+/* Exact Home widget surfaces/header rhythm from the Figma Home system. */
+.vx-app .vxh-widget>header{
+  min-height:44px;
+  height:44px;
+  padding:12px 16px 8px;
+  border-bottom:0;
+  gap:8px;
+  background:#000;
+}
+.vx-app .vxh-widget>header>div:first-child{gap:7px;min-width:0;flex-wrap:nowrap}
+.vx-app .vxh-widget>header h3{
+  min-width:0;
+  margin:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:var(--vx-text);
+  font-size:16px;
+  line-height:20px;
+  font-weight:600!important;
+}
+.vx-app .vxh-widget.size-metric>header{
+  min-height:36px;
+  height:36px;
+  padding:10px 12px 4px;
+}
+.vx-app .vxh-widget.size-metric>header h3{
+  font-size:12px;
+  line-height:16px;
+  font-weight:500!important;
+}
+.vx-app .vxh-widget>header+*{
+  min-height:0;
+  height:calc(100% - 44px);
+  max-height:calc(100% - 44px);
+  overflow:auto;
+}
+.vx-app .vxh-widget.size-metric>header+*{
+  height:calc(100% - 36px);
+  max-height:calc(100% - 36px);
+  overflow:hidden;
+}
+.vx-app .vxh-widget.size-metric .vxh-metric{
+  padding:2px 12px 10px;
+  justify-content:flex-start;
+}
+.vx-app .vxh-widget.size-metric .vxh-metric>strong{
+  margin-top:2px;
+  font-size:22px;
+  line-height:27px;
+}
+.vx-app .vxh-widget.size-metric .vxh-metric>span{
+  margin-top:2px;
+  font-size:10px;
+  line-height:13px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.vx-app .vxh-widget.size-metric .vxh-source{display:none}
+.vx-app .vxh-widget.size-metric .vxh-menu-wrap>button{width:24px;height:24px}
+.vx-app .vxh-widget.size-metric .vxh-widget-icon{display:none}
+.vx-app .vxh-widget:is(.size-large,.size-wide,.size-full) .vxds-line-chart>svg{
+  max-height:300px;
+}
+.vx-app .vxh-widget:is(.size-large,.size-wide,.size-full) .vxh-performance{
+  height:100%;
+  padding:4px 16px 12px;
+}
+.vx-app .vxh-widget:is(.size-large,.size-wide,.size-full) .vxh-chart-empty{
+  min-height:300px;
+}
+.vx-app .vxh-home-empty{
+  min-height:92px;
+  display:grid;
+  place-items:center;
+  padding:14px;
+  color:var(--vx-muted);
+  font-size:11px;
+  line-height:16px;
+  text-align:center;
+}
+.vx-app .vxh-widget.size-large .vxh-home-empty,
+.vx-app .vxh-widget.size-wide .vxh-home-empty,
+.vx-app .vxh-widget.size-full .vxh-home-empty{min-height:150px}
+.vx-app .vxh-grid :is(button,input,select){min-width:0}
+
+/* Keep the true six-column geometry on normal desktop widths, fluid within the content area. */
+@media(max-width:1515px){
+  .vx-app .vxh-grid{max-width:100%}
+}
+@media(max-width:1180px){
+  .vx-app .vxh-grid{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    grid-auto-rows:104px;
+    gap:15px;
+  }
+  .vx-app .vxh-widget.widget-collectionValue,
+  .vx-app .vxh-widget.widget-costBasis,
+  .vx-app .vxh-widget.widget-profitLoss,
+  .vx-app .vxh-widget.widget-monthlySpend,
+  .vx-app .vxh-widget.widget-portfolioPerformance{
+    grid-column:auto;
+    grid-row:auto;
+  }
+  .vx-app .vxh-widget.size-metric{grid-column:span 1;grid-row:span 1}
+  .vx-app .vxh-widget.size-medium{grid-column:span 2;grid-row:span 2}
+  .vx-app .vxh-widget:is(.size-large,.size-wide,.size-full){grid-column:1 / -1;grid-row:span 4}
+}
+@media(max-width:760px){
+  .vx-app .vxh-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+  .vx-app .vxh-widget.size-medium{grid-column:span 2}
+  .vx-app .vxh-widget:is(.size-large,.size-wide,.size-full){grid-column:1 / -1}
+}
+@media(max-width:520px){
+  .vx-app .vxh-grid{grid-template-columns:1fr;grid-auto-rows:auto}
+  .vx-app .vxh-widget.size-metric,
+  .vx-app .vxh-widget.size-medium,
+  .vx-app .vxh-widget:is(.size-large,.size-wide,.size-full){
+    grid-column:1;
+    grid-row:auto;
+    height:auto;
+  }
+  .vx-app .vxh-widget.size-metric{min-height:104px!important}
+  .vx-app .vxh-widget.size-medium{min-height:223px!important}
+  .vx-app .vxh-widget:is(.size-large,.size-wide,.size-full){min-height:461px!important}
+}
