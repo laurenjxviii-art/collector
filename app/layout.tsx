@@ -18,10 +18,12 @@ import './vexum-theme.css';
 import './vexum-foundations.css';
 import './vexum-typography.css';
 import './vexum-home-figma.css';
+import './home-figma/home.css';
+import './home-figma/generated.css';
 import type {Metadata} from 'next';
-import {Inter} from 'next/font/google';
+import localFont from 'next/font/local';
 
-const inter=Inter({subsets:['latin'],display:'swap',variable:'--font-inter'});
+const inter=localFont({src:'../public/fonts/inter-latin-variable.woff2',weight:'100 900',style:'normal',display:'swap',variable:'--font-inter'});
 
 export const metadata:Metadata={
   title:'VEXUM',

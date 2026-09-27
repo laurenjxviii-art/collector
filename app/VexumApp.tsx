@@ -325,6 +325,7 @@ export default function VexumApp({
   const frame=(hero:string,children:ReactNode)=><PageFrame hero={hero} displayName={displayName} unread={unread} onCommand={openCommand} onAsk={openAsk} onQuick={()=>openQuick()} onNotifications={openNotifications} onProfile={openProfile} onSettings={()=>openSettings()}>{children}</PageFrame>;
 
   let content:ReactNode=<VexumHome
+    workspace={workspace}
     displayName={displayName}
     unread={unread}
     onCommand={openCommand}
@@ -333,7 +334,7 @@ export default function VexumApp({
     onNotifications={openNotifications}
     onProfile={openProfile}
     onSettings={()=>openSettings()}
-    navigate={module=>navigate(module)}
+    navigate={(module,section)=>{if(section)setModuleSection(module,section);navigate(module)}}
   />;
   if(view==='life')content=frame('life',<VexumLife section={moduleSections.life} onSectionChange={section=>setModuleSection('life',section)}/>);
   else if(view==='portfolio')content=frame('plain',<VexumPortfolio section={moduleSections.portfolio} onSectionChange={section=>setModuleSection('portfolio',section)}/>);
