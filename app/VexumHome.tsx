@@ -3,15 +3,15 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
 import type {CSSProperties,ReactNode} from 'react';
 import {
-  AlertTriangle,Bell,CalendarCheck,CalendarDays,ChevronLeft,ChevronRight,CircleDollarSign,Clock3,
-  Dumbbell,Ellipsis,Layers3,ListChecks,Monitor,PackageCheck,Radar,Share2,ShoppingBag,Sparkles,Star,
+  AlertTriangle,Bell,Bot,CalendarCheck,CalendarDays,ChevronDown,ChevronLeft,ChevronRight,CircleDollarSign,Clock3,
+  Dumbbell,Ellipsis,House,Layers3,ListChecks,Monitor,PackageCheck,Plus,Radar,Search,Settings,Share2,ShoppingBag,Sparkles,Star,
   Target,TrendingDown,TrendingUp,WalletCards
 } from 'lucide-react';
 import {useWorkspace} from '../lib/useWorkspace';
 import {normalizeFinancialData} from '../lib/financial';
 import {normalizeSetupData} from '../lib/setup';
 import {normalizeLifeData,todayKey} from '../lib/life';
-import {normalizePlatformState} from '../lib/platform';
+import {normalizePlatformState,type VexumModuleId} from '../lib/platform';
 
 type BadgeTone='live'|'demo'|'warn';
 type MiniKind='metric'|'spark'|'bar'|'ring'|'list'|'split'|'countdown';
@@ -19,9 +19,9 @@ type MiniKind='metric'|'spark'|'bar'|'ring'|'list'|'split'|'countdown';
 const FIGMA_COL=254.59957885742188;
 const FIGMA_ROW=119.81156158447266;
 const FIGMA_GAP=17.280517578125;
-const FIGMA_CANVAS=1614;
+const FIGMA_CANVAS=1920;
 const FIGMA_WIDGET_HEIGHT=5603.49462890625;
-const FIGMA_HOME_HEIGHT=5790;
+const FIGMA_HOME_HEIGHT=5866;
 const figmaX=(col:number)=>(col-1)*(FIGMA_COL+FIGMA_GAP);
 const figmaY=(row:number)=>(row-1)*(FIGMA_ROW+FIGMA_GAP);
 
@@ -160,7 +160,19 @@ function calendarCells(cursor:Date){
   return Array.from({length:42},(_,index)=>{const date=new Date(start);date.setDate(start.getDate()+index);return date});
 }
 
-export default function VexumHome(){
+type FigmaHomeProps={
+  displayName:string;
+  unread:number;
+  onCommand:()=>void;
+  onAsk:()=>void;
+  onQuick:()=>void;
+  onNotifications:()=>void;
+  onProfile:()=>void;
+  onSettings:()=>void;
+  navigate:(module:VexumModuleId)=>void;
+};
+
+export default function VexumHome({displayName,unread,onCommand,onAsk,onQuick,onNotifications,onProfile,onSettings,navigate}:FigmaHomeProps){
   const workspace=useWorkspace();
   const store=workspace.data;
   const financial=normalizeFinancialData(store.financial);
