@@ -1,0 +1,32 @@
+/* The shell fits the viewport; each widget retains its generated Figma geometry. */
+.vxf-home { --vxf-sidebar-width:250px;--vxf-gutter:28px;position:relative;width:100%;min-width:0;min-height:100dvh;background:#000;color:#f3f4f5;font-family:var(--font-inter),Inter,sans-serif;isolation:isolate; }
+.vxf-home * {box-sizing:border-box;margin:0;padding:0;border:0 solid transparent;font-family:inherit;font-size:inherit;font-weight:inherit;line-height:inherit;letter-spacing:normal;min-width:0;min-height:0;}
+.vxf-home button {appearance:none;background:none;color:inherit;cursor:pointer;text-align:inherit;box-shadow:none;transition:none;}
+.vxf-home button:focus-visible {outline:2px solid #fff;outline-offset:3px;}
+.vxf-home img {display:block;max-width:none;}
+.vxf-home [data-live-text] {white-space:nowrap !important;}
+.vxf-canvas {position:relative;width:100%;min-height:100dvh;background:#000;}
+.vxf-sidebar {position:fixed;left:0;top:0;width:var(--vxf-sidebar-width);height:100dvh;overflow:hidden;z-index:20;}
+.vxf-main {position:relative;margin-left:var(--vxf-sidebar-width);padding:0 var(--vxf-gutter) 32px;min-height:100dvh;}
+.vxf-topbar {position:relative;width:100%;height:76px;}
+.vxf-greeting {position:relative;width:100%;height:122px;}
+.vxf-widget-area {position:relative;width:100%;}
+.vxf-home .vxf-chart {display:block;width:100%;height:100%;overflow:visible;}
+.vxf-home .vxf-no-series {display:block;width:100%;height:100%;}
+.vxf-home .vxf-item-image {width:100%;height:100%;object-fit:contain;}
+.vxf-home .vxf-calendar-cells {position:absolute;left:19.58px;top:114.05px;width:576.017px;height:345.61px;display:grid;grid-template-columns:repeat(7,1fr);}
+.vxf-home .vxf-calendar-cells button {border-top:1.152px solid #1e2022;padding:6.912px 9.216px;display:flex;flex-direction:column;align-items:flex-start;gap:4.608px;overflow:hidden;font:400 12.672px/14.976px var(--font-inter),Inter,sans-serif !important;}
+.vxf-home .vxf-calendar-cells button.muted {color:#3e4246;}
+.vxf-home .vxf-calendar-cells button.today>span {background:#ff171b;color:#fff;border-radius:50%;}
+.vxf-home .vxf-calendar-cells small {display:block;max-width:100%;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;font:500 9.216px/11.52px var(--font-inter),Inter,sans-serif !important;background:#091a14;border-left:2.304px solid #00e5a1;color:#f3f4f5;}
+.vxf-dialog-actions {display:flex;gap:12px;flex-wrap:wrap;}
+.vxf-dialog-actions button {padding:10px 14px;border:1px solid #262626;border-radius:6px;}
+.vxf-widget-picker {display:grid;gap:12px;max-height:65vh;overflow:auto;}
+.vxf-widget-picker label {display:flex;gap:10px;align-items:center;}
+.vxf-widget-picker label span {display:flex;flex-direction:column;gap:3px;}
+.vxf-widget-picker label small {color:#8f9498;font-size:11px;}
+.vxf-picker-search {margin-bottom:16px;}
+.vxf-picker-search input {width:100%;padding:10px 12px;border:1px solid #262626;border-radius:6px;}
+.vxf-home .vxf-empty-add {padding:20px;border:1px dashed #3e4246;border-radius:9.216px;color:#adb5bd;}
+@media(max-width:900px){.vxf-home{--vxf-sidebar-width:72px;--vxf-gutter:16px}.vxf-sidebar [data-node-id="2:996"]{visibility:hidden}.vxf-sidebar [data-node-id="2:1141"],.vxf-sidebar [data-node-id="2:1144"]{visibility:hidden}.vxf-home.vxf-home [data-node-id="2:57"]{max-width:100%;overflow:hidden;text-overflow:ellipsis}.vxf-home.vxf-home [data-node-id="2:52"]{font-size:28px !important}.vxf-home.vxf-home [data-node-id="2:13"]{overflow:hidden;text-overflow:ellipsis;max-width:100%;}}
+@media(max-width:600px){.vxf-home{--vxf-sidebar-width:0px;--vxf-gutter:12px}.vxf-sidebar{display:none}.vxf-home.vxf-home [data-node-id="2:8"]{left:0}.vxf-home.vxf-home [data-node-id="2:12"]{display:none}.vxf-home.vxf-home [data-node-id="2:57"]{max-width:calc(100% - 120px);font-size:10px !important}.vxf-home.vxf-home [data-node-id="2:52"]{font-size:26px !important}.vxf-home.vxf-home [data-node-id="2:7"]{display:none}}
