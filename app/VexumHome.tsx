@@ -356,8 +356,9 @@ export default function VexumHome(){
     {col:6,row:24,title:'Daily Note',kind:'list' as MiniKind,value:'—',sub:'No daily note saved',route:'/life'}
   ];
 
-  return <div className={'vxh-exact-page'+(editMode?' is-editing':'')}>
-    <section className="vxh-exact-title">
+  return <div className="vxh-figma-stage" ref={stageRef} style={{height:(122+FIGMA_WIDGET_HEIGHT)*figmaScale}}>
+    <div className={'vxh-exact-page'+(editMode?' is-editing':'')} style={{transform:'scale('+figmaScale+')'}}>
+    <section className="vxh-exact-page-title">
       <div><h1>{greeting()}.</h1><p>{dateLabel()} · Your VEXUM command center.</p></div>
       <button className={editMode?'active':''} onClick={()=>setEditMode(value=>!value)}><ListChecks/>{editMode?'Done Editing':'Edit Widgets'}</button>
     </section>
