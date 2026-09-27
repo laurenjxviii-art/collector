@@ -226,18 +226,30 @@ function SecuritySettings({platform,config,session,onSave,onMessage}:{platform:P
 }
 
 function AppearanceSettings({platform,onSave}:{platform:PlatformState;onSave:(p:PlatformState)=>void}){
-  const a=platform.appearance;const patch=(key:keyof typeof a,value:any)=>onSave({...platform,appearance:{...a,[key]:value}});
+  const a=platform.appearance;
+  const patch=(key:keyof typeof a,value:any)=>onSave({...platform,appearance:{...a,[key]:value}});
   const accents=['#FF0000','#E11D48','#FF5A00','#7C3AED','#0070F3','#00A67E'];
+  const colors:Array<{key:'backgroundColor'|'widgetBackgroundColor'|'widgetStrokeColor'|'textColor'|'mutedTextColor';label:string;description:string}>=[
+    {key:'backgroundColor',label:'App Background',description:'Primary application canvas and page background.'},
+    {key:'widgetBackgroundColor',label:'Widget Background',description:'Background color used by widgets, cards, panels, and matching dark controls.'},
+    {key:'widgetStrokeColor',label:'Widget Stroke',description:'Border and divider color used around widgets, cards, and matching controls.'},
+    {key:'textColor',label:'Primary Text',description:'Primary text color used throughout VEXUM.'},
+    {key:'mutedTextColor',label:'Secondary Text',description:'Muted labels, captions, metadata, and secondary text.'}
+  ];
   return <><SectionHead title="Appearance" subtitle="Changes apply immediately across the shared VEXUM interface."/>
     <SettingRow label="Theme" description="A designed dark or light VEXUM interface."><Segment value={a.theme} values={['dark','light']} onChange={value=>patch('theme',value)}/></SettingRow>
-    <SettingRow label="Accent Color" description="Controls shared highlights, active navigation, focus rings, and glow."><div className="vxt-accent-picker">{accents.map(color=><button key={color} aria-label={'Use accent '+color} aria-pressed={a.accentColor===color} className={a.accentColor===color?'active':''} style={{background:color}} onClick={()=>patch('accentColor',color)}/>)}<label title="Custom accent"><input type="color" value={a.accentColor} onChange={e=>patch('accentColor',e.target.value.toUpperCase())}/><span>{a.accentColor}</span></label></div></SettingRow>
+    <SettingRow label="Accent Color" description="Controls shared highlights, active navigation, focus rings, progress fills, and glow."><div className="vxt-accent-picker">{accents.map(color=><button key={color} aria-label={'Use accent '+color} aria-pressed={a.accentColor===color} className={a.accentColor===color?'active':''} style={{background:color}} onClick={()=>patch('accentColor',color)}/>)}<label title="Custom accent"><input type="color" value={a.accentColor} onChange={e=>patch('accentColor',e.target.value.toUpperCase())}/><span>{a.accentColor}</span></label></div></SettingRow>
+    <div className="vxt-color-section">
+      <header><strong>Interface Colors</strong><span>Customize the shared surfaces and typography used across VEXUM.</span></header>
+      {colors.map(color=><SettingRow key={color.key} label={color.label} description={color.description}><label className="vxt-color-control"><input type="color" value={a[color.key]} onChange={e=>patch(color.key,e.target.value.toUpperCase())}/><input className="vxt-color-hex" value={a[color.key]} maxLength={7} spellCheck={false} aria-label={color.label+' hex color'} onChange={e=>{const value=e.target.value.toUpperCase();if(/^#[0-9A-F]{6}$/.test(value))patch(color.key,value)}}/></label></SettingRow>)}
+    </div>
     <SettingRow label="Interface Density" description="Controls global spacing and information density."><Segment value={a.density} values={['compact','standard','comfortable']} onChange={value=>patch('density',value)}/></SettingRow>
     <SettingRow label="Text Size" description="Global text scaling for VEXUM surfaces."><Segment value={a.textSize} values={['small','medium','large']} onChange={value=>patch('textSize',value)}/></SettingRow>
     <SettingRow label="Reduced Motion" description="Reduce non-essential interface animation."><Toggle checked={a.motion==='reduced'} onChange={value=>patch('motion',value?'reduced':'full')}/></SettingRow>
     <SettingRow label="Glow Intensity" description="Accent glow strength without changing surface colors."><Segment value={a.glow} values={['off','subtle','standard']} onChange={value=>patch('glow',value)}/></SettingRow>
     <SettingRow label="Sidebar Width" description="Compact or standard navigation width."><Segment value={a.sidebarWidth} values={['compact','standard']} onChange={value=>patch('sidebarWidth',value)}/></SettingRow>
     <SettingRow label="Number Formatting" description="$12,481.32 or $12.5K."><Segment value={a.numberFormat} values={['full','compact']} onChange={value=>patch('numberFormat',value)}/></SettingRow>
-    <footer className="vxt-actions"><button onClick={()=>onSave({...platform,appearance:{theme:'dark',accentColor:'#FF0000',density:'compact',textSize:'medium',motion:'full',glow:'subtle',sidebarWidth:'standard',numberFormat:'full'}})}><RefreshCw/>Reset Appearance</button></footer>
+    <footer className="vxt-actions"><button onClick={()=>onSave({...platform,appearance:{theme:'dark',accentColor:'#FF0000',backgroundColor:'#000000',widgetBackgroundColor:'#070707',widgetStrokeColor:'#191818',textColor:'#F3F4F5',mutedTextColor:'#ADB5BD',density:'compact',textSize:'medium',motion:'full',glow:'subtle',sidebarWidth:'standard',numberFormat:'full'}})}><RefreshCw/>Reset Appearance</button></footer>
   </>;
 }
 
