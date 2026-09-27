@@ -159,3 +159,54 @@
   border-color:var(--vx-line);
   color:var(--vx-muted);
 }
+
+
+/* Plaid multi-bank add-another action */
+.vxt-plaid-add-another{
+  width:100%;
+  min-height:58px;
+  margin-top:8px;
+  padding:9px 10px;
+  display:grid;
+  grid-template-columns:32px minmax(0,1fr);
+  align-items:center;
+  gap:9px;
+  text-align:left;
+  border:1px solid var(--vx-line);
+  border-radius:7px;
+  background:var(--vx-card);
+  color:var(--vx-text);
+  transition:border-color 140ms ease,background 140ms ease;
+}
+.vxt-plaid-add-another:hover:not(:disabled){
+  border-color:color-mix(in srgb,var(--vx-accent) 48%,var(--vx-line));
+  background:color-mix(in srgb,var(--vx-accent) 5%,var(--vx-card));
+}
+.vxt-plaid-add-another:disabled{opacity:.45;cursor:not-allowed}
+.vxt-plaid-add-icon{
+  width:32px;
+  height:32px;
+  display:grid;
+  place-items:center;
+  border:1px solid color-mix(in srgb,var(--vx-accent) 36%,var(--vx-line));
+  border-radius:7px;
+  background:color-mix(in srgb,var(--vx-accent) 8%,var(--vx-card));
+  color:var(--vx-accent);
+}
+.vxt-plaid-add-icon svg{width:15px;height:15px}
+.vxt-plaid-add-another>span:last-child{
+  display:flex;
+  min-width:0;
+  flex-direction:column;
+  gap:2px;
+}
+.vxt-plaid-add-another strong{
+  font-size:12px;
+  font-weight:600;
+  color:var(--vx-text);
+}
+.vxt-plaid-add-another small{
+  font-size:11px;
+  line-height:1.4;
+  color:var(--vx-muted);
+}
