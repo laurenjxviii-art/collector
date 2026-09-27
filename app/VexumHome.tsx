@@ -1,6 +1,6 @@
 'use client';
 
-import {useMemo,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import type {CSSProperties,ReactNode} from 'react';
 import {
   AlertTriangle,Bell,CalendarCheck,CalendarDays,ChevronLeft,ChevronRight,CircleDollarSign,Clock3,
@@ -15,6 +15,14 @@ import {normalizePlatformState} from '../lib/platform';
 
 type BadgeTone='live'|'demo'|'warn';
 type MiniKind='metric'|'spark'|'bar'|'ring'|'list'|'split'|'countdown';
+
+const FIGMA_COL=254.59957885742188;
+const FIGMA_ROW=119.81156158447266;
+const FIGMA_GAP=17.280517578125;
+const FIGMA_CANVAS=1614;
+const FIGMA_WIDGET_HEIGHT=5603.49462890625;
+const figmaX=(col:number)=>(col-1)*(FIGMA_COL+FIGMA_GAP);
+const figmaY=(row:number)=>(row-1)*(FIGMA_ROW+FIGMA_GAP);
 
 const money=(value:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:value<100?2:0}).format(Number.isFinite(value)?value:0);
 const compact=(value:number)=>new Intl.NumberFormat('en-US',{notation:'compact',maximumFractionDigits:1}).format(Number.isFinite(value)?value:0);
@@ -69,9 +77,9 @@ function MiniWidget({col,row,title,badge='live',kind='metric',value,sub,trend,tr
   progress?:number;values?:number[];secondary?:string;route?:string;
 }){
   const [open,setOpen]=useState(false);
-  const style:CSSProperties={gridColumn:String(col),gridRow:String(row)};
+  const style:CSSProperties={left:figmaX(col),top:figmaY(row),width:FIGMA_COL,height:FIGMA_ROW};
   return <section className={'vxh-exact-widget vxh-exact-small kind-'+kind} style={style}>
-    <header><span className="vxh-exact-icon">{iconFor(title)}</span><span className="vxh-exact-title">{title}</span><span className={'vxh-exact-badge '+badge}>{badgeText(badge)}</span>
+    <header><span className="vxh-exact-icon">{iconFor(title)}</span><span className="vxh-exact-widget-title">{title}</span><span className={'vxh-exact-badge '+badge}>{badgeText(badge)}</span>
       <div className="vxh-exact-menu-wrap"><button aria-label={'Open '+title+' menu'} onClick={()=>setOpen(value=>!value)}><Ellipsis/></button>{open?<div className="vxh-exact-menu">{route?<button onClick={()=>location.assign(route)}>Open</button>:null}<button onClick={()=>setOpen(false)}>Close</button></div>:null}</div>
     </header>
     <div className="vxh-exact-small-body">
@@ -89,15 +97,15 @@ type MiniSpec=Parameters<typeof MiniWidget>[0];
 
 function MediumWidget({col,row,title,badge='live',children,route}:{col:number;row:number;title:string;badge?:BadgeTone;children:ReactNode;route?:string}){
   const [open,setOpen]=useState(false);
-  return <section className="vxh-exact-widget vxh-exact-medium" style={{gridColumn:String(col)+' / span 2',gridRow:String(row)+' / span 2'}}>
-    <header><span className="vxh-exact-icon">{iconFor(title)}</span><span className="vxh-exact-title">{title}</span><span className={'vxh-exact-badge '+badge}>{badgeText(badge)}</span><div className="vxh-exact-menu-wrap"><button aria-label={'Open '+title+' menu'} onClick={()=>setOpen(value=>!value)}><Ellipsis/></button>{open?<div className="vxh-exact-menu">{route?<button onClick={()=>location.assign(route)}>Open</button>:null}<button onClick={()=>setOpen(false)}>Close</button></div>:null}</div></header>
+  return <section className="vxh-exact-widget vxh-exact-medium" style={{left:figmaX(col),top:figmaY(row),width:FIGMA_COL*2+FIGMA_GAP,height:FIGMA_ROW*2+FIGMA_GAP}}>
+    <header><span className="vxh-exact-icon">{iconFor(title)}</span><span className="vxh-exact-widget-title">{title}</span><span className={'vxh-exact-badge '+badge}>{badgeText(badge)}</span><div className="vxh-exact-menu-wrap"><button aria-label={'Open '+title+' menu'} onClick={()=>setOpen(value=>!value)}><Ellipsis/></button>{open?<div className="vxh-exact-menu">{route?<button onClick={()=>location.assign(route)}>Open</button>:null}<button onClick={()=>setOpen(false)}>Close</button></div>:null}</div></header>
     <div className="vxh-exact-medium-body">{children}</div>
   </section>;
 }
 
 function LargeWidget({row,title,badge='live',children,route}:{row:number;title:string;badge?:BadgeTone;children:ReactNode;route?:string}){
   const [open,setOpen]=useState(false);
-  return <section className="vxh-exact-widget vxh-exact-large" style={{gridColumn:'2 / span 4',gridRow:String(row)+' / span 4'}}>
+  return <section className="vxh-exact-widget vxh-exact-large" style={{left:figmaX(2),top:figmaY(row),width:FIGMA_COL*4+FIGMA_GAP*3,height:FIGMA_ROW*4+FIGMA_GAP*3}}>
     <header><span className="vxh-exact-icon">{iconFor(title)}</span><span className="vxh-exact-title">{title}</span><span className={'vxh-exact-badge '+badge}>{badgeText(badge)}</span><div className="vxh-exact-menu-wrap"><button aria-label={'Open '+title+' menu'} onClick={()=>setOpen(value=>!value)}><Ellipsis/></button>{open?<div className="vxh-exact-menu">{route?<button onClick={()=>location.assign(route)}>Open</button>:null}<button onClick={()=>setOpen(false)}>Close</button></div>:null}</div></header>
     {children}
   </section>;
@@ -159,8 +167,23 @@ export default function VexumHome(){
   const life=normalizeLifeData(store.life);
   const platform=normalizePlatformState(store.platform,true);
   const [editMode,setEditMode]=useState(false);
+  const stageRef=useRef<HTMLDivElement|null>(null);
+  const [figmaScale,setFigmaScale]=useState(1);
   const [range,setRange]=useState<'1M'|'3M'|'6M'|'1Y'|'ALL'>('6M');
   const [calendarCursor,setCalendarCursor]=useState(()=>{const now=new Date();return new Date(now.getFullYear(),now.getMonth(),1)});
+
+  useEffect(()=>{
+    const element=stageRef.current;
+    if(!element)return;
+    const update=()=>{
+      const width=element.clientWidth||FIGMA_CANVAS;
+      setFigmaScale(Math.min(1,width/FIGMA_CANVAS));
+    };
+    update();
+    const observer=new ResizeObserver(update);
+    observer.observe(element);
+    return()=>observer.disconnect();
+  },[]);
 
   const owned=store.items.filter(item=>item.status==='owned'&&!item.archivedAt);
   const sold=store.items.filter(item=>item.status==='sold');
@@ -415,6 +438,7 @@ export default function VexumHome(){
       <MediumWidget col={5} row={33} title="Upcoming Events" badge="live" route="/life"><div className="vxm-list">{upcoming.slice(0,4).map(row=><div key={row.sort}><span><b>{row.title}</b><small>{row.kind}</small></span><strong>{new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric'}).format(new Date(row.date+'T12:00:00'))}</strong></div>)}{!upcoming.length?<p className="empty">No upcoming Life events.</p>:null}<button onClick={()=>location.assign('/life')}>Open Life →</button></div></MediumWidget>
 
       <MediumWidget col={3} row={35} title="Cash Flow" badge="live" route="/financial"><div className="vxm-cashflow"><strong className={cashFlow<0?'red':'green'}>{cashFlow>=0?'+':''}{money(cashFlow)}</strong><span>net this month</span><div>{[incomeMonth,expenseMonth,Math.max(0,incomeMonth-expenseMonth),expenseMonth*.7,incomeMonth*.8].map((value,index)=><i key={index}><b className={index===1||index===3?'red':''} style={{height:(Math.max(incomeMonth,expenseMonth,1)?value/Math.max(incomeMonth,expenseMonth,1)*100:0)+'%'}}/></i>)}</div><footer><span>Income {money(incomeMonth)}</span><span>Outflow {money(expenseMonth)}</span></footer></div></MediumWidget>
+    </div>
     </div>
   </div>;
 }
