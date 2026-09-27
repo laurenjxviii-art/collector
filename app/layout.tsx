@@ -22,6 +22,7 @@ import './home-figma/home.css';
 import './home-figma/generated.css';
 import './home-figma/mobile-generated.css';
 import './home-figma/mobile.css';
+import './vexum-user-theme.css';
 import type {Metadata} from 'next';
 import localFont from 'next/font/local';
 
