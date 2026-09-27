@@ -85,6 +85,8 @@ function MiniWidget({col,row,title,badge='live',kind='metric',value,sub,trend,tr
   </section>;
 }
 
+type MiniSpec=Parameters<typeof MiniWidget>[0];
+
 function MediumWidget({col,row,title,badge='live',children,route}:{col:number;row:number;title:string;badge?:BadgeTone;children:ReactNode;route?:string}){
   const [open,setOpen]=useState(false);
   return <section className="vxh-exact-widget vxh-exact-medium" style={{gridColumn:String(col)+' / span 2',gridRow:String(row)+' / span 2'}}>
@@ -272,7 +274,7 @@ export default function VexumHome(){
     missingCost?{tone:'warn',label:'Portfolio audit',text:missingCost+' owned item'+(missingCost===1?' is':'s are')+' missing cost basis',route:'/portfolio'}:null
   ].filter(Boolean) as Array<{tone:string;label:string;text:string;route:string}>;
 
-  const miniSpecs=[
+  const miniSpecs:MiniSpec[]=[
     {col:1,row:1,title:'Collection Value',kind:'spark' as MiniKind,value:money(currentValue),sub:units+' owned units',trend:pct(delta.pct),trendTone:delta.pct<0?'red':'green',values:history.map(row=>row.value),route:'/portfolio'},
     {col:6,row:1,title:'Hobby Spend',kind:'bar' as MiniKind,value:money(monthSpend),sub:'Recorded hobby spend',progress:budget?monthSpend/budget*100:0,route:'/financial'},
     {col:1,row:2,title:'Calendar',kind:'countdown' as MiniKind,value:String(new Date().getDate()),sub:new Intl.DateTimeFormat('en-US',{weekday:'long'}).format(new Date()),secondary:upcoming[0]?.title||'No upcoming events',route:'/life'},
