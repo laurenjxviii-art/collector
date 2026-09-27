@@ -43,22 +43,23 @@ export const HOME_WIDGET_TITLES:Record<HomeWidgetId,string>={
 };
 
 const definition:Array<[HomeWidgetId,HomeWidgetSize,number,number,Record<string,string|number|boolean|string[]>?]>= [
-  ['collectionValue','metric',3,1],
-  ['costBasis','metric',3,1],
-  ['profitLoss','metric',3,1],
-  ['monthlySpend','metric',3,1],
-  ['portfolioPerformance','wide',8,4,{interval:'30D'}],
-  ['brief','medium',4,4],
-  ['wishlist','medium',4,3,{priority:['High','Grail']}],
-  ['radar','medium',4,3],
-  ['progress','medium',4,3,{count:3}],
-  ['purchases','large',6,3,{count:5}],
-  ['sales','large',6,3,{count:5}],
-  ['capacity','medium',4,3],
-  ['alerts','medium',4,3],
-  ['finance','medium',4,3],
-  ['social','medium',4,3],
-  ['calendar','wide',8,3]
+  // 01 Home true-grid sizing: small = 1×1, medium = 2×2, large = 4×4.
+  ['collectionValue','metric',1,1],
+  ['costBasis','metric',1,1],
+  ['profitLoss','metric',1,1],
+  ['monthlySpend','metric',1,1],
+  ['portfolioPerformance','large',4,4,{interval:'30D'}],
+  ['brief','large',4,4],
+  ['wishlist','medium',2,2,{priority:['High','Grail']}],
+  ['radar','large',4,4],
+  ['progress','medium',2,2,{count:3}],
+  ['purchases','medium',2,2,{count:5}],
+  ['sales','medium',2,2,{count:5}],
+  ['capacity','medium',2,2],
+  ['alerts','large',4,4],
+  ['finance','medium',2,2],
+  ['social','medium',2,2],
+  ['calendar','large',4,4]
 ];
 
 export function defaultHomeDashboard():HomeDashboardState{
