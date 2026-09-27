@@ -369,15 +369,59 @@ export default function VexumHome({displayName,unread,onCommand,onAsk,onQuick,on
     {col:6,row:24,title:'Daily Note',kind:'list' as MiniKind,value:'—',sub:'No daily note saved',route:'/life'}
   ];
 
-  return <div className="vxh-figma-stage" ref={stageRef} style={{height:FIGMA_HOME_HEIGHT*figmaScale}}>
-    <div className={'vxh-exact-page'+(editMode?' is-editing':'')} style={{transform:'scale('+figmaScale+')'}}>
-    <section className="vxh-exact-page-title">
-      <img className="vxh-home-title-wordmark" src="/vexum-wordmark.png" alt="" aria-hidden="true"/>
-      <div><h1>{greeting()}.</h1><p>{dateLabel()} · Your VEXUM command center.</p></div>
-      <button className={editMode?'active':''} onClick={()=>setEditMode(value=>!value)}><ListChecks/>{editMode?'Done Editing':'Edit Widgets'}</button>
-    </section>
+  return <div className="figma-home-viewport" ref={stageRef} style={{height:FIGMA_HOME_HEIGHT*figmaScale}}>
+    <div className={'figma-home-canvas'+(editMode?' is-editing':'')} style={{transform:'scale('+figmaScale+')'}}>
+      <aside className="figma-home-sidebar" aria-label="Primary navigation">
+        <button className="figma-home-logo" aria-label="Go to VEXUM home" onClick={()=>navigate('home')}><img src="/vexum-wordmark.png" alt="VEXUM"/></button>
+        <div className="figma-home-sidebar-scroll">
+          <section className="figma-home-nav-section personal"><span>PERSONAL</span>
+            <nav>
+              <button className="active" onClick={()=>navigate('home')}><House/><b>Home</b><ChevronDown/></button>
+              <button onClick={()=>navigate('life')}><CalendarCheck/><b>Life</b><ChevronDown/></button>
+            </nav>
+          </section>
+          <section className="figma-home-nav-section collect"><span>COLLECT</span>
+            <nav>
+              <button onClick={()=>navigate('portfolio')}><Layers3/><b>Portfolio</b><ChevronDown/></button>
+              <button onClick={()=>navigate('search')}><Search/><b>Search</b></button>
+              <button onClick={()=>navigate('wishlist')}><Star/><b>Wishlist</b></button>
+              <button onClick={()=>navigate('radar')}><Radar/><b>Radar</b></button>
+              <button onClick={()=>navigate('sell')}><ShoppingBag/><b>Sell</b><ChevronDown/></button>
+              <button onClick={()=>navigate('setup')}><Monitor/><b>Setup</b><ChevronDown/></button>
+            </nav>
+          </section>
+          <section className="figma-home-nav-section money"><span>MONEY</span>
+            <nav><button onClick={()=>navigate('financial')}><CircleDollarSign/><b>Financial</b><ChevronDown/></button></nav>
+          </section>
+          <section className="figma-home-nav-section community"><span>COMMUNITY</span>
+            <nav><button onClick={()=>navigate('social')}><Share2/><b>Social</b><ChevronDown/></button></nav>
+          </section>
+        </div>
+        <button className="figma-home-profile" onClick={onProfile} aria-label="Open profile">
+          <span className="avatar">{displayName[0]?.toUpperCase()||'V'}</span>
+          <span className="copy"><strong>{displayName}</strong><small>View profile</small></span>
+          <ChevronDown/>
+        </button>
+      </aside>
 
-    <div className="vxh-exact-grid" aria-label="VEXUM Home widgets">
+      <main id="vexum-main" className="figma-home-main">
+        <header className="figma-home-header">
+          <button className="figma-home-search" onClick={onCommand} aria-label="Search VEXUM or run a command"><Search/><span>Search VEXUM or run a command...</span></button>
+          <div className="figma-home-actions">
+            <button className="ask" onClick={onAsk} aria-label="Ask VEXUM"><Bot/><span>Ask VEXUM</span></button>
+            <button className="quick" onClick={onQuick} aria-label="Quick Add"><Plus/></button>
+            <button className="bell" onClick={onNotifications} aria-label="Notifications"><Bell/>{unread?<i>{unread>9?'9+':unread}</i>:null}</button>
+            <button onClick={onSettings} aria-label="Settings"><Settings/></button>
+            <button className="profile" onClick={onProfile} aria-label="Open profile">{displayName[0]?.toUpperCase()||'V'}</button>
+          </div>
+        </header>
+
+        <section className="figma-home-hero">
+          <div className="figma-home-greeting"><h1>{greeting()}.</h1><img src="/vexum-wordmark.png" alt="" aria-hidden="true"/><p>{dateLabel()} · Your VEXUM command center</p></div>
+          <button className={editMode?'active':''} onClick={()=>setEditMode(value=>!value)}><ListChecks/>{editMode?'Done Editing':'Edit Widgets'}</button>
+        </section>
+
+        <div className="vxh-exact-grid" aria-label="VEXUM Home widgets">
       {miniSpecs.map(spec=><MiniWidget key={spec.title+'-'+spec.col+'-'+spec.row} {...spec} badge={spec.title==='Next Drop'||spec.title==='Offers'||spec.title==='Top Post'?'demo':'live'}/>)}
 
       <LargeWidget row={1} title="Overall Value" badge="live" route="/portfolio">
@@ -453,7 +497,8 @@ export default function VexumHome({displayName,unread,onCommand,onAsk,onQuick,on
       <MediumWidget col={5} row={33} title="Upcoming Events" badge="live" route="/life"><div className="vxm-list">{upcoming.slice(0,4).map(row=><div key={row.sort}><span><b>{row.title}</b><small>{row.kind}</small></span><strong>{new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric'}).format(new Date(row.date+'T12:00:00'))}</strong></div>)}{!upcoming.length?<p className="empty">No upcoming Life events.</p>:null}<button onClick={()=>location.assign('/life')}>Open Life →</button></div></MediumWidget>
 
       <MediumWidget col={3} row={35} title="Cash Flow" badge="live" route="/financial"><div className="vxm-cashflow"><strong className={cashFlow<0?'red':'green'}>{cashFlow>=0?'+':''}{money(cashFlow)}</strong><span>net this month</span><div>{[incomeMonth,expenseMonth,Math.max(0,incomeMonth-expenseMonth),expenseMonth*.7,incomeMonth*.8].map((value,index)=><i key={index}><b className={index===1||index===3?'red':''} style={{height:(Math.max(incomeMonth,expenseMonth,1)?value/Math.max(incomeMonth,expenseMonth,1)*100:0)+'%'}}/></i>)}</div><footer><span>Income {money(incomeMonth)}</span><span>Outflow {money(expenseMonth)}</span></footer></div></MediumWidget>
-    </div>
+        </div>
+      </main>
     </div>
   </div>;
 }
