@@ -456,7 +456,6 @@
   }
   .vx-app:has(.page-home) .vx-content.page-home{
     margin-left:250px!important;
-    min-width:1670px;
     padding:0 28px 20px!important;
     background:#000!important;
     overflow:visible!important;
@@ -568,6 +567,13 @@
   }
 }
 
+.vxh-figma-stage{
+  position:relative;
+  width:100%;
+  max-width:1614px;
+  overflow:hidden;
+  background:#000;
+}
 .vxh-exact-page{
   width:1614px;
   min-height:5790px;
@@ -576,18 +582,19 @@
   background:#000;
   color:#f3f4f5;
   font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  transform-origin:top left;
 }
-.vxh-exact-title{
+.vxh-exact-page-title{
   position:relative;
   width:1614px;
   height:122px;
 }
-.vxh-exact-title>div{
+.vxh-exact-page-title>div{
   position:absolute;
   left:-8px;
-  top:31px;
+  top:42px;
 }
-.vxh-exact-title h1{
+.vxh-exact-page-title h1{
   margin:0;
   color:#f3f4f5;
   font-size:28px!important;
@@ -595,14 +602,14 @@
   font-weight:600!important;
   letter-spacing:-.02em!important;
 }
-.vxh-exact-title p{
+.vxh-exact-page-title p{
   margin:8px 0 0 4px;
   color:#8f9498;
   font-size:12px!important;
   line-height:18px!important;
   font-weight:400!important;
 }
-.vxh-exact-title>button{
+.vxh-exact-page-title>button{
   position:absolute;
   top:80px;
   right:3px;
@@ -621,29 +628,33 @@
   font-size:12px;
   font-weight:500;
 }
-.vxh-exact-title>button svg{width:14px;height:14px}
-.vxh-exact-title>button.active{border-color:#5a2026;background:#160b0e;color:#fff}
+.vxh-exact-page-title>button svg{width:14px;height:14px}
+.vxh-exact-page-title>button.active{border-color:#5a2026;background:#160b0e;color:#fff}
+.vxh-home-title-wordmark{
+  position:absolute;
+  left:243px;
+  top:8px;
+  width:180px;
+  height:58px;
+  object-fit:contain;
+  pointer-events:none;
+}
 
 .vxh-exact-grid{
   --vxh-col:254.59957885742188px;
   --vxh-row:119.81156158447266px;
   --vxh-gap:17.280517578125px;
   position:relative;
-  display:grid;
-  grid-template-columns:repeat(6,var(--vxh-col));
-  grid-auto-rows:var(--vxh-row);
-  gap:var(--vxh-gap);
+  display:block;
   width:1614px;
   min-width:1614px;
   height:5603.49462890625px;
   min-height:5603.49462890625px;
-  align-items:stretch;
-  justify-items:stretch;
   background:#000;
 }
 
 .vxh-exact-widget{
-  position:relative;
+  position:absolute;
   min-width:0;
   min-height:0!important;
   overflow:hidden;
@@ -675,7 +686,7 @@
   color:#aeb1b7;
 }
 .vxh-exact-icon svg{width:16.128479px;height:16.128479px;stroke-width:1.65}
-.vxh-exact-title{
+.vxh-exact-widget-title{
   margin-left:3.456103px;
   color:#f3f4f5;
   font-size:13.824411px!important;
