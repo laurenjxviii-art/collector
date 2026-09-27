@@ -10,9 +10,11 @@
 :root {
   --vx-bg: #000000;
   --vx-bg2: #0a0a0a;
-  --vx-card: #000000;
+  --vx-card: #070707;
+  --vx-widget-bg: #070707;
   --vx-card2: #0a0a0a;
-  --vx-line: #262626;
+  --vx-line: #191818;
+  --vx-widget-stroke: #191818;
   --vx-line2: #191b1c;
   --vx-text: #f3f4f5;
   --vx-muted: #adb5bd;
@@ -443,4 +445,83 @@
   .vx-app .vxh-widget.size-metric{min-height:104px!important}
   .vx-app .vxh-widget.size-medium{min-height:223px!important}
   .vx-app .vxh-widget:is(.size-large,.size-wide,.size-full){min-height:461px!important}
+}
+
+
+/* ===== USER-CUSTOMIZABLE VEXUM SURFACES ===== */
+/* Defaults requested for the live site. Inline Appearance tokens on .vx-app override these immediately. */
+.vx-app{
+  --vx-widget-bg:var(--vx-card,#070707);
+  --vx-widget-stroke:var(--vx-line,#191818);
+  color:var(--vx-text);
+}
+
+/* Shared widgets/cards/panels use the Appearance surface tokens. */
+.vx-app :is(
+  .vx-panel,.vxh-widget,.vxf-panel,.vxf-metric,.vxp2-card,.vxp2-panel,.vxp2-metric,
+  .vxw-panel,.vxw-card,.vxw-stat,.vxw-insight-card,
+  .vxs-panel,.vxl-panel,.vxsup-panel,.vxsup-metric,
+  .vxsoc-panel,.vxsel-panel,.vxsel-metric,.vxr-card,.vxloc-card,
+  .vxh-exact-widget,.vxp2-portfolio-value-widget
+){
+  background:var(--vx-widget-bg)!important;
+  border-color:var(--vx-widget-stroke)!important;
+  color:var(--vx-text);
+}
+
+/* Figma Home widgets had literal #000/#262626; convert those literals into live theme tokens. */
+.vx-app .vxh-exact-widget,
+.vx-app .vxh-exact-widget>header,
+.vx-app .vxh-exact-small-body,
+.vx-app .vxh-exact-medium-body,
+.vx-app .vxh-overall-left,
+.vx-app .vxh-overall-allocation,
+.vx-app .vxh-calendar-month,
+.vx-app .vxh-calendar-agenda,
+.vx-app .vxh-radar-chart,
+.vx-app .vxh-radar-signals,
+.vx-app .vxh-brief-large,
+.vx-app .vxh-alerts-summary,
+.vx-app .vxh-alert-feed{
+  background-color:var(--vx-widget-bg)!important;
+}
+.vx-app .vxh-exact-widget{
+  border-color:var(--vx-widget-stroke)!important;
+}
+.vx-app .vxh-exact-widget :is(h1,h2,h3,h4,strong,b),
+.vx-app .vxh-exact-page-title h1{
+  color:var(--vx-text);
+}
+.vx-app .vxh-exact-widget :is(.vxh-exact-small-sub,.vxh-exact-small-secondary,small,p,time),
+.vx-app .vxh-exact-page-title p{
+  color:var(--vx-muted);
+}
+
+/* Dark neutral controls match the chosen widget surface/stroke. Accent states still use --vx-accent. */
+.vx-app :is(
+  .vxh-exact-page-title>button,
+  .vxh-exact-menu,
+  .vxh-calendar-controls button,
+  .vxh-overall-ranges button.active,
+  .vxt-row button:not(.vxt-toggle),
+  .vxt-actions button:not(.primary),
+  .vxui-button.secondary
+){
+  background:var(--vx-widget-bg)!important;
+  border-color:var(--vx-widget-stroke)!important;
+  color:var(--vx-text);
+}
+.vx-app .vxh-exact-page-title>button.active{
+  border-color:var(--vx-accent)!important;
+}
+
+/* Search and common neutral controls follow the same customizable surface family. */
+.vx-app :is(.vx-searchbox,input,select,textarea){
+  border-color:var(--vx-widget-stroke);
+}
+.vx-app .vx-searchbox{background:var(--vx-widget-bg)}
+
+/* Keep dividers visually related to the selected widget stroke instead of stale hard-coded gray. */
+.vx-app{
+  --vx-line2:color-mix(in srgb,var(--vx-widget-stroke) 72%,transparent);
 }
