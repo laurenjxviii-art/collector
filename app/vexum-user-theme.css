@@ -1,0 +1,75 @@
+/* User-configurable VEXUM appearance tokens.
+   Loaded after generated Home/mobile CSS so saved Appearance choices win the cascade. */
+
+:root{
+  --vx-widget-bg:#070707;
+  --vx-widget-stroke:#191818;
+}
+
+/* Shared application surfaces */
+.vx-app :is(
+  .vx-panel,.vxh-widget,.vxf-panel,.vxf-metric,.vxp2-card,.vxp2-panel,.vxp2-metric,
+  .vxw-panel,.vxw-card,.vxw-stat,.vxw-insight-card,.vxs-panel,.vxl-panel,
+  .vxsup-panel,.vxsup-metric,.vxsoc-panel,.vxsel-panel,.vxsel-metric,.vxr-card,.vxloc-card
+){
+  background-color:var(--vx-widget-bg,var(--vx-card,#070707))!important;
+  border-color:var(--vx-widget-stroke,var(--vx-line,#191818))!important;
+}
+
+/* Desktop Figma Home: the first generated node inside each draggable widget is the widget shell. */
+.vx-app .vxc-widget-clip>div>[data-node-id],
+.vx-app .vxc-mini>div>[data-node-id]{
+  background-color:var(--vx-widget-bg,#070707)!important;
+  border-color:var(--vx-widget-stroke,#191818)!important;
+}
+
+/* Mobile Figma Home uses the same generated widget roots inside vxm-frame. */
+.vx-app .vxm-frame>[data-node-id],
+.vx-app .vxm-preview .vxm-frame>[data-node-id]{
+  background-color:var(--vx-widget-bg,#070707)!important;
+  border-color:var(--vx-widget-stroke,#191818)!important;
+}
+
+/* Widget customization controls should visually belong to the same surface system. */
+.vx-app .vxc-actions button,
+.vx-app .vxc-actions button.primary,
+.vx-app .vxc-editor-buttons button,
+.vx-app .vxc-nudge button,
+.vx-app .vxc-placement select,
+.vx-app .vxf-dialog-actions button,
+.vx-app .vxm-editbar button,
+.vx-app .vxm-add,
+.vx-app .vxm-menu button,
+.vx-app .vxm-sheet button:not(.vxm-card-add){
+  background:var(--vx-widget-bg,#070707)!important;
+  border-color:var(--vx-widget-stroke,#191818)!important;
+  color:var(--vx-text,#f3f4f5);
+}
+
+/* Edit mode remains identifiable without replacing the user's chosen surface colors. */
+.vx-app .vxc-actions button.primary,
+.vx-app .vxc-actions button[aria-pressed="true"],
+.vx-app .vxm-editbar button{
+  color:var(--vx-accent,#ff0000)!important;
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--vx-accent,#ff0000) 42%,transparent);
+}
+
+/* Common neutral controls */
+.vx-app :is(
+  .vx-searchbox,
+  .vxt-row button:not(.vxt-toggle),
+  .vxt-actions button:not(.primary),
+  .vxui-button.secondary
+){
+  background-color:var(--vx-widget-bg,#070707)!important;
+  border-color:var(--vx-widget-stroke,#191818)!important;
+}
+
+/* Keep text preferences connected to shared interface typography. */
+.vx-app,
+.vx-app .vx-content{
+  color:var(--vx-text,#f3f4f5);
+}
+.vx-app :is(.tone-muted,.vxt-section-head p,.vxt-row>div:first-child span){
+  color:var(--vx-muted,#adb5bd);
+}
