@@ -558,3 +558,31 @@
 @media(prefers-reduced-motion:reduce){
   .vx-app:not(.view-home) *, .cloud-overlay.auth-overlay *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 }
+
+/* Radar live-signal controls */
+.vx-app.view-radar .vxr-context>b{
+  margin-left:auto;min-width:34px;height:28px;display:grid;place-items:center;
+  border:1px solid var(--vx-widget-stroke);border-radius:7px;background:var(--vx-widget-bg);
+  color:var(--vx-text);font-size:12px;font-variant-numeric:tabular-nums;
+}
+.vx-app.view-radar .vxr-filterbar{
+  display:flex;align-items:center;gap:5px;margin:0 0 10px;padding:6px;
+  border:1px solid var(--vx-widget-stroke);border-radius:8px;background:var(--vx-widget-bg);overflow:auto;
+}
+.vx-app.view-radar .vxr-filterbar button{
+  flex:0 0 auto;height:31px;display:flex;align-items:center;gap:7px;padding:0 9px;
+  border:1px solid transparent;border-radius:6px;background:transparent;color:var(--vx-muted2);font-size:11px;font-weight:550;
+}
+.vx-app.view-radar .vxr-filterbar button small{
+  min-width:18px;height:18px;display:grid;place-items:center;border-radius:9px;background:var(--vx-soft-2);color:var(--vx-muted);font-size:9px;
+}
+.vx-app.view-radar .vxr-filterbar button.active{border-color:var(--vx-red-line);background:var(--vx-red-soft);color:var(--vx-text)}
+.vx-app.view-radar .vxr-card{position:relative;padding:14px 15px 15px;overflow:hidden}
+.vx-app.view-radar .vxr-card>header{min-height:24px!important;padding:0!important;border:0!important;display:flex;align-items:center;gap:7px}
+.vx-app.view-radar .vxr-card>header>span:last-child{margin-left:auto;color:var(--vx-muted2);font-size:10px}
+.vx-app.view-radar .vxr-card>div{display:flex;flex-direction:column;margin-top:13px;padding-right:34px}
+.vx-app.view-radar .vxr-card>div strong{font-size:13px;font-weight:600}
+.vx-app.view-radar .vxr-card>div span{margin-top:4px;color:var(--vx-muted2);font-size:11px;line-height:1.4}
+.vx-app.view-radar .vxr-card>b{display:block;margin-top:12px;font-size:17px;font-weight:620}
+.vx-app.view-radar .vxr-card>i{position:absolute;right:14px;bottom:14px;color:color-mix(in srgb,var(--vx-accent) 65%,var(--vx-muted));opacity:.72}
+.vx-app.view-radar .vxr-card>i svg{width:17px;height:17px}
