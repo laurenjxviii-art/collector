@@ -360,6 +360,25 @@ export default function VexumApp({
     '--vx-muted':platform.appearance.mutedTextColor
   } as CSSProperties;
 
+  useEffect(()=>{
+    const root=document.documentElement;
+    const tokens:Record<string,string>={
+      '--vx-red':platform.appearance.accentColor,
+      '--vx-accent':platform.appearance.accentColor,
+      '--vx-bg':platform.appearance.backgroundColor,
+      '--vx-card':platform.appearance.widgetBackgroundColor,
+      '--vx-widget-bg':platform.appearance.widgetBackgroundColor,
+      '--vx-line':platform.appearance.widgetStrokeColor,
+      '--vx-widget-stroke':platform.appearance.widgetStrokeColor,
+      '--vx-text':platform.appearance.textColor,
+      '--vx-muted':platform.appearance.mutedTextColor
+    };
+    for(const [key,value] of Object.entries(tokens))root.style.setProperty(key,value);
+  },[
+    platform.appearance.accentColor,platform.appearance.backgroundColor,platform.appearance.widgetBackgroundColor,
+    platform.appearance.widgetStrokeColor,platform.appearance.textColor,platform.appearance.mutedTextColor
+  ]);
+
   return <div className={rootClass} style={rootStyle}>
     <a className="vx-skip-link" href="#vexum-main">Skip to main content</a>
     {view==='home'?null:<Sidebar view={view} navigate={navigate} enabled={enabled} order={platform.moduleOrder} displayName={displayName} sections={sidebarSections} activeSection={activeSection} onSection={setModuleSection} onProfile={openProfile}/>} 
