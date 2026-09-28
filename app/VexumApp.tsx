@@ -347,7 +347,7 @@ export default function VexumApp({
   else if(view==='social')content=frame('social',<VexumSocial section={moduleSections.social} onSectionChange={section=>setModuleSection('social',section)}/>);
 
 
-  const rootClass=['vx-app','vxp-platform','theme-'+platform.appearance.theme,'density-'+platform.appearance.density,'text-'+platform.appearance.textSize,'motion-'+platform.appearance.motion,'glow-'+platform.appearance.glow,'sidebar-'+platform.appearance.sidebarWidth].join(' ');
+  const rootClass=['vx-app','vxp-platform','view-'+view,'theme-'+platform.appearance.theme,'density-'+platform.appearance.density,'text-'+platform.appearance.textSize,'motion-'+platform.appearance.motion,'glow-'+platform.appearance.glow,'sidebar-'+platform.appearance.sidebarWidth].join(' ');
   const rootStyle={
     '--vx-red':platform.appearance.accentColor,
     '--vx-accent':platform.appearance.accentColor,
