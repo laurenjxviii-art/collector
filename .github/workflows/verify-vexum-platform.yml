@@ -5,6 +5,10 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    env:
+      NODE_ENV: production
+      VERCEL: "1"
+      VERCEL_ENV: production
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -14,23 +18,22 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --no-frozen-lockfile
-      - run: node scripts/apply-market-refinement.mjs
-      - name: TypeScript diagnostics
+      - name: Production-style install diagnostics
         shell: bash
         run: |
           set +e
-          pnpm exec tsc --noEmit --pretty false > tsc.log 2>&1
+          pnpm install --no-frozen-lockfile > install.log 2>&1
           code=$?
-          echo "TSC_EXIT=$code"
-          tail -n 250 tsc.log
+          echo "INSTALL_EXIT=$code"
+          tail -n 180 install.log
           exit 0
-      - name: Build diagnostics
+      - run: node scripts/apply-market-refinement.mjs
+      - name: Production-style build diagnostics
         shell: bash
         run: |
           set +e
-          pnpm build > build.log 2>&1
+          node node_modules/next/dist/bin/next build > build.log 2>&1
           code=$?
           echo "BUILD_EXIT=$code"
-          tail -n 250 build.log
+          tail -n 300 build.log
           exit 0
