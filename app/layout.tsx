@@ -24,6 +24,7 @@ import './home-figma/mobile-generated.css';
 import './home-figma/mobile.css';
 import './vexum-workspace.css';
 import './vexum-user-theme.css';
+import './pixel-perfect.css';
 import type {Metadata} from 'next';
 import localFont from 'next/font/local';
 

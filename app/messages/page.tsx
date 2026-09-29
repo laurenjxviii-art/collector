@@ -1,6 +1,6 @@
 import PixelPerfectScreen from '../pixel-perfect/PixelPerfectScreen';
-import Screen from '../pixel-perfect/generated/sell';
+import Screen from '../pixel-perfect/generated/messages';
 
-export default function SellRoute(){
+export default function MessagesRoute(){
   return <PixelPerfectScreen Component={Screen}/>;
 }
