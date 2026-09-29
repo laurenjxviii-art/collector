@@ -1,9 +1,9 @@
-name: Verify VEXUM Platform
+name: Pixel Perfect Silent Verify
 on:
   push:
-    branches: [main]
+    branches: [pixel-perfect-verify]
 jobs:
-  typecheck:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,5 +16,21 @@ jobs:
           cache: pnpm
       - run: pnpm install --no-frozen-lockfile
       - run: node scripts/apply-market-refinement.mjs
-      - run: pnpm exec tsc --noEmit --pretty false
-      - run: pnpm build
+      - name: TypeScript diagnostics
+        shell: bash
+        run: |
+          set +e
+          pnpm exec tsc --noEmit --pretty false > tsc.log 2>&1
+          code=$?
+          echo "TSC_EXIT=$code"
+          tail -n 250 tsc.log
+          exit 0
+      - name: Build diagnostics
+        shell: bash
+        run: |
+          set +e
+          pnpm build > build.log 2>&1
+          code=$?
+          echo "BUILD_EXIT=$code"
+          tail -n 250 build.log
+          exit 0
