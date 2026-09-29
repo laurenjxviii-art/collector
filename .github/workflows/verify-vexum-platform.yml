@@ -1,7 +1,7 @@
 name: Verify VEXUM Platform
 on:
   push:
-    branches: [main, pixel-perfect-full-port]
+    branches: [main]
 jobs:
   typecheck:
     runs-on: ubuntu-latest
